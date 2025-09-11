@@ -8,4 +8,17 @@
         <UseWPF>true</UseWPF>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc5.4" />
+      <PackageReference Include="LoadingSpinner.WPF" Version="1.0.0" />
+      <PackageReference Include="MahApps.Metro.IconPacks" Version="6.1.0" />
+      <PackageReference Include="MvvmCross" Version="9.4.0" />
+      <PackageReference Include="MvvmCross.Forms.Platforms.Wpf" Version="8.0.2" />
+      <PackageReference Include="Serilog" Version="4.3.0" />
+      <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.2" />
+      <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" />
+      <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+      <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    </ItemGroup>
+
 </Project>
