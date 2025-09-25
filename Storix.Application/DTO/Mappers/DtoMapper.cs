@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Storix.Application.DTO.Category;
+using Storix.Application.DTO.Categories;
 using Storix.Application.DTO.Customer;
 using Storix.Application.DTO.Inventory;
 using Storix.Application.DTO.InventoryMovement;
@@ -9,10 +9,11 @@ using Storix.Application.DTO.InventoryTransaction;
 using Storix.Application.DTO.Location;
 using Storix.Application.DTO.Order;
 using Storix.Application.DTO.OrderItem;
-using Storix.Application.DTO.Product;
+using Storix.Application.DTO.Products;
 using Storix.Application.DTO.Supplier;
 using Storix.Application.DTO.User;
 using Storix.Domain.Enums;
+using Storix.Domain.Models;
 
 namespace Storix.Application.DTO.Mappers
 {
@@ -20,84 +21,131 @@ namespace Storix.Application.DTO.Mappers
     {
         #region Product Mappings
 
-        public static ProductDto ToDto( this Domain.Models.Product product ) => new()
-        {
-            ProductId = product.ProductId,
-            Name = product.Name,
-            SKU = product.SKU,
-            Description = product.Description,
-            Barcode = product.Barcode,
-            Price = product.Price,
-            Cost = product.Cost,
-            MinStockLevel = product.MinStockLevel,
-            MaxStockLevel = product.MaxStockLevel,
-            SupplierId = product.SupplierId,
-            CategoryId = product.CategoryId,
-            IsActive = product.IsActive,
-            CreatedDate = product.CreatedDate,
-            UpdatedDate = product.UpdatedDate
-        };
-
-
-        public static Domain.Models.Product ToDomain( this CreateProductDto dto ) => new(
-            0, // Will be set by database
-            dto.Name,
-            dto.SKU,
-            dto.Description,
-            dto.Barcode,
-            dto.Price,
-            dto.Cost,
-            dto.MinStockLevel,
-            dto.MaxStockLevel,
-            dto.SupplierId,
-            dto.CategoryId,
-            dto.IsActive,
-            DateTime.UtcNow,
-            null
-        );
-
-        public static Domain.Models.Product ToDomain( this UpdateProductDto dto ) => new(
-            dto.ProductId,
-            dto.Name,
-            dto.SKU,
-            dto.Description,
-            dto.Barcode,
-            dto.Price,
-            dto.Cost,
-            dto.MinStockLevel,
-            dto.MaxStockLevel,
-            dto.SupplierId,
-            dto.CategoryId,
-            dto.IsActive,
-            DateTime.MinValue, // Will be preserved from existing
-            DateTime.UtcNow
-        );
+        // public static ProductDto ToDto( this Product product ) => new()
+        // {
+        //     ProductId = product.ProductId,
+        //     Name = product.Name,
+        //     SKU = product.SKU,
+        //     Description = product.Description,
+        //     Barcode = product.Barcode,
+        //     Price = product.Price,
+        //     Cost = product.Cost,
+        //     MinStockLevel = product.MinStockLevel,
+        //     MaxStockLevel = product.MaxStockLevel,
+        //     SupplierId = product.SupplierId,
+        //     CategoryId = product.CategoryId,
+        //     IsActive = product.IsActive,
+        //     CreatedDate = product.CreatedDate,
+        //     UpdatedDate = product.UpdatedDate
+        // };
+        //
+        // public static CreateProductDto ToCreateDto( this Product product ) => new()
+        // {
+        //     Name = product.Name,
+        //     SKU = product.SKU,
+        //     Description = product.Description,
+        //     Barcode = product.Barcode,
+        //     Price = product.Price,
+        //     Cost = product.Cost,
+        //     MinStockLevel = product.MinStockLevel,
+        //     MaxStockLevel = product.MaxStockLevel,
+        //     SupplierId = product.SupplierId,
+        //     CategoryId = product.CategoryId,
+        //     IsActive = product.IsActive
+        // };
+        //
+        // public static UpdateProductDto ToUpdateDto( this Product product ) => new()
+        // {
+        //     ProductId = product.ProductId,
+        //     Name = product.Name,
+        //     SKU = product.SKU,
+        //     Description = product.Description,
+        //     Barcode = product.Barcode,
+        //     Price = product.Price,
+        //     Cost = product.Cost,
+        //     MinStockLevel = product.MinStockLevel,
+        //     MaxStockLevel = product.MaxStockLevel,
+        //     SupplierId = product.SupplierId,
+        //     CategoryId = product.CategoryId,
+        //     IsActive = product.IsActive
+        // };
+        //
+        //
+        // public static Product ToDomain( this CreateProductDto dto ) => new(
+        //     0, // Will be set by database
+        //     dto.Name,
+        //     dto.SKU,
+        //     dto.Description,
+        //     dto.Barcode,
+        //     dto.Price,
+        //     dto.Cost,
+        //     dto.MinStockLevel,
+        //     dto.MaxStockLevel,
+        //     dto.SupplierId,
+        //     dto.CategoryId,
+        //     dto.IsActive,
+        //     DateTime.UtcNow
+        // );
+        //
+        // public static Product ToDomain( this UpdateProductDto dto ) => new(
+        //     dto.ProductId,
+        //     dto.Name,
+        //     dto.SKU,
+        //     dto.Description,
+        //     dto.Barcode,
+        //     dto.Price,
+        //     dto.Cost,
+        //     dto.MinStockLevel,
+        //     dto.MaxStockLevel,
+        //     dto.SupplierId,
+        //     dto.CategoryId,
+        //     dto.IsActive,
+        //     DateTime.MinValue, // Will be preserved from existing
+        //     DateTime.UtcNow
+        // );
+        //
+        // public static Product ToDomain( this ProductDto dto ) => new(
+        //     dto.ProductId,
+        //     dto.Name,
+        //     dto.SKU,
+        //     dto.Description,
+        //     dto.Barcode,
+        //     dto.Price,
+        //     dto.Cost,
+        //     dto.MinStockLevel,
+        //     dto.MaxStockLevel,
+        //     dto.SupplierId,
+        //     dto.CategoryId,
+        //     dto.IsActive,
+        //     DateTime.MinValue, // Will be preserved from existing
+        //     DateTime.UtcNow
+        // );
 
         #endregion
 
         #region Category Mappings
 
-        public static CategoryDto ToDto( this Domain.Models.Category category ) => new()
-        {
-            CategoryId = category.CategoryId,
-            Name = category.Name,
-            Description = category.Description,
-            ParentCategoryId = category.ParentCategoryId
-        };
-
-        public static Domain.Models.Category ToDomain( this CreateCategoryDto dto ) => new(
-            0,
-            dto.Name,
-            dto.Description,
-            dto.ParentCategoryId
-        );
-
-        public static Domain.Models.Category ToDomain( this UpdateCategoryDto dto ) => new(
-            dto.CategoryId,
-            dto.Name,
-            dto.Description,
-            dto.ParentCategoryId
-        );
+        // public static CategoryDto ToDto( this Category category ) => new()
+        // {
+        //     CategoryId = category.CategoryId,
+        //     Name = category.Name,
+        //     Description = category.Description,
+        //     ParentCategoryId = category.ParentCategoryId
+        // };
+        //
+        // public static Category ToDomain( this CreateCategoryDto dto ) => new(
+        //     0,
+        //     dto.Name,
+        //     dto.Description,
+        //     dto.ParentCategoryId
+        // );
+        //
+        // public static Category ToDomain( this UpdateCategoryDto dto ) => new(
+        //     dto.CategoryId,
+        //     dto.Name,
+        //     dto.Description,
+        //     dto.ParentCategoryId
+        // );
 
         #endregion
 
@@ -390,12 +438,12 @@ namespace Storix.Application.DTO.Mappers
 
         #region Collection Mappings
 
-        public static IEnumerable<ProductDto> ToDto( this IEnumerable<Domain.Models.Product> products )
+        public static IEnumerable<ProductDto> ToDto( this IEnumerable<Product> products )
         {
             return products.Select(p => p.ToDto());
         }
 
-        public static IEnumerable<CategoryDto> ToDto( this IEnumerable<Domain.Models.Category> categories )
+        public static IEnumerable<CategoryDto> ToDto( this IEnumerable<Category> categories )
         {
             return categories.Select(c => c.ToDto());
         }
