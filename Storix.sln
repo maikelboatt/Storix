@@ -8,6 +8,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.DataAccess", "Storix
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.Application", "Storix.Application\Storix.Application.csproj", "{E0BF2077-EDF7-4786-A511-CB4E3943BBA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.Core", "Storix.Core\Storix.Core.csproj", "{4347AB8B-0F79-4F4F-9144-26DACE0737CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.Infrastructure", "Storix.Infrastructure\Storix.Infrastructure.csproj", "{DAABC736-F7BF-40AE-A62F-E058CF24D35F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{E0BF2077-EDF7-4786-A511-CB4E3943BBA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E0BF2077-EDF7-4786-A511-CB4E3943BBA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E0BF2077-EDF7-4786-A511-CB4E3943BBA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4347AB8B-0F79-4F4F-9144-26DACE0737CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4347AB8B-0F79-4F4F-9144-26DACE0737CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4347AB8B-0F79-4F4F-9144-26DACE0737CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4347AB8B-0F79-4F4F-9144-26DACE0737CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
