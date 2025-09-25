@@ -1,4 +1,4 @@
-﻿using Storix.Application.DTO.Product;
+﻿using Storix.Application.DTO.Products;
 
 namespace Storix.Application.DTO
 {
