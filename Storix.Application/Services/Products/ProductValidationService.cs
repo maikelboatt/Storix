@@ -4,6 +4,7 @@ using Storix.Application.Common;
 using Storix.Application.Common.Errors;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
+using Storix.Application.Services.Products.Interfaces;
 
 namespace Storix.Application.Services.Products
 {

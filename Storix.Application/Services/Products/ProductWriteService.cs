@@ -142,12 +142,12 @@ namespace Storix.Application.Services.Products
             if (result.IsSuccess && result.Value)
             {
                 // Update the product in store to reflect soft deletion
-                var product = productStore.GetProductById(productId);
-                if (product != null)
-                {
-                    var updatedProduct = product with { IsActive = false };
-                    productStore.UpdateProduct(updatedProduct);
-                }
+                // var product = productStore.GetProductById(productId);
+                // if (product != null)
+                // {
+                //     var updatedProduct = product with { IsActive = false };
+                //     productStore.UpdateProduct(updatedProduct);
+                // }
 
                 logger.LogInformation("Successfully soft deleted product with ID {ProductId}", productId);
                 return DatabaseResult.Success();
