@@ -83,6 +83,34 @@ namespace Storix.DataAccess.DBAccess
         }
 
         /// <summary>
+        ///     Executes a stored procedure that performs an action and returns the number of affected rows.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<int> ExecuteAsync( string storedProcedure, object? parameters = null, int? commandTimeout = null )
+        {
+            try
+            {
+                LogExecuting("execute", storedProcedure, parameters);
+
+                await using SqlConnection connection = new(connectionString);
+                int affectedRows = await connection.ExecuteAsync(
+                    storedProcedure,
+                    parameters,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: commandTimeout ?? DefaultCommandTimeout);
+
+                LogSuccess("execute", storedProcedure, affectedRows);
+
+                return affectedRows;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+        }
+
+        /// <summary>
         ///     Executes a stored procedure that returns a collection of results.
         /// </summary>
         /// <typeparam name="T" >The type of objects returned.</typeparam>

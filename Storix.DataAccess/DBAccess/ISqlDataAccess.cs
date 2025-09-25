@@ -17,6 +17,15 @@ namespace Storix.DataAccess.DBAccess
             int? commandTimeout = null );
 
         /// <summary>
+        ///     Executes a stored procedure that performs an action and returns the number of affected rows.
+        /// </summary>
+        /// <returns></returns>
+        Task<int> ExecuteAsync(
+            string storedProcedure,
+            object? parameters = null,
+            int? commandTimeout = null );
+
+        /// <summary>
         ///     Executes a stored procedure and returns a collection of results.
         /// </summary>
         Task<IEnumerable<T>> QueryAsync<T>(
