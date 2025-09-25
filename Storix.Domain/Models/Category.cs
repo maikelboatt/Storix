@@ -4,5 +4,6 @@
         int CategoryId,
         string Name,
         string? Description,
-        int? ParentCategoryId );
+        int? ParentCategoryId,
+        string? ImageUrl );
 }
