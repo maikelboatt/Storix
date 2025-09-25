@@ -1,4 +1,4 @@
-﻿namespace Storix.Application.DTO.Product
+﻿namespace Storix.Application.DTO.Products
 {
     public class UpdateProductDto
     {
