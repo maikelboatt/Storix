@@ -1,0 +1,146 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Views.ShellView"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:viewModels="clr-namespace:Storix.Core.ViewModels;assembly=Storix.Core"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  x:Name="Home"
+                  d:DataContext="{d:DesignInstance Type=viewModels:ShellViewModel}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="auto"
+                  Loaded="ShellView_OnLoaded"
+                  mc:Ignorable="d">
+    <DockPanel>
+        <!--  Sidebar  -->
+        <StackPanel Width="220"
+                    Background="#2C3E50"
+                    DockPanel.Dock="Left">
+            <TextBlock Margin="20,30"
+                       FontSize="20"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       Text="STORIX" />
+
+            <ListBox Background="Transparent"
+                     BorderThickness="0"
+                     FontSize="14"
+                     Foreground="White"
+                     SelectedIndex="0">
+                <ListBoxItem Content="Dashboard" />
+                <ListBoxItem Content="Products" />
+                <ListBoxItem Content="Orders" />
+                <ListBoxItem Content="Suppliers" />
+                <ListBoxItem Content="Reports" />
+            </ListBox>
+        </StackPanel>
+
+        <!--  Main Content  -->
+        <Grid Background="#ECF0F1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  Top Bar  -->
+            <DockPanel Grid.Row="0"
+                       Height="60"
+                       Margin="0,0,0,1"
+                       VerticalAlignment="Center"
+                       Background="White">
+                <TextBox Width="250"
+                         Height="30"
+                         Margin="10"
+                         VerticalAlignment="Center" />
+                <Button Margin="10"
+                        Padding="15,5"
+                        HorizontalAlignment="Right"
+                        Background="#27AE60"
+                        Content="Add Product"
+                        Foreground="White" />
+            </DockPanel>
+
+            <!--  Main Grid: List + Details  -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*" />
+                    <ColumnDefinition Width="3*" />
+                </Grid.ColumnDefinitions>
+
+                <!--  Product List  -->
+                <DataGrid Grid.Column="0"
+                          Margin="10"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          ItemsSource="{Binding Products}"
+                          SelectedItem="{Binding SelectedProduct, Mode=TwoWay}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding SKU}" Header="SKU" />
+                        <DataGridTextColumn Binding="{Binding Name}" Header="Name" />
+                        <DataGridTextColumn Binding="{Binding CategoryName}" Header="Category" />
+                        <DataGridTextColumn Binding="{Binding Price, StringFormat=C}" Header="Price" />
+                        <DataGridTextColumn Binding="{Binding StockLevel}" Header="Stock" />
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!--  Product Detail / Edit Form  -->
+                <Border Grid.Column="1"
+                        Margin="10"
+                        Padding="20"
+                        Background="White"
+                        BorderBrush="#BDC3C7"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,20"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Text="Product Details" />
+
+                        <StackPanel Margin="0,5" Orientation="Vertical">
+                            <TextBlock Text="Name" />
+                            <TextBox Text="{Binding Input.Name, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5" Orientation="Vertical">
+                            <TextBlock Text="SKU" />
+                            <TextBox Text="{Binding Input.SKU, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5" Orientation="Vertical">
+                            <TextBlock Text="Price" />
+                            <TextBox Text="{Binding Input.Price}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5" Orientation="Vertical">
+                            <TextBlock Text="Cost" />
+                            <TextBox Text="{Binding Input.Cost}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,5" Orientation="Vertical">
+                            <TextBlock Text="Stock Level" />
+                            <TextBox Text="{Binding Input.MinStockLevel}" />
+                        </StackPanel>
+
+                        <StackPanel Margin="0,20,0,0"
+                                    HorizontalAlignment="Right"
+                                    Orientation="Horizontal">
+                            <Button Margin="5"
+                                    Padding="15,5"
+                                    Background="#2980B9"
+                                    Command="{Binding SaveCommand}"
+                                    Content="Save"
+                                    Foreground="White" />
+                            <Button Margin="5"
+                                    Padding="15,5"
+                                    Background="#95A5A6"
+                                    Command="{Binding CancelCommand}"
+                                    Content="Cancel"
+                                    Foreground="White" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</views:MvxWpfView>
