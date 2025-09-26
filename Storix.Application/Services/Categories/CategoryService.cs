@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
 using Storix.Application.DTO.Categories;
 using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Stores.Categories;
+using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Categories
 {
@@ -58,14 +60,14 @@ namespace Storix.Application.Services.Categories
         public IEnumerable<CategoryDto> SearchCategories( string? searchTerm = null, bool? isActive = null )
         {
             logger.LogDebug("Searching categories with term '{SearchTerm}', isActive {IsActive}", searchTerm, isActive);
-            var categories = categoryStore.SearchCategories(searchTerm, isActive);
+            IEnumerable<Category> categories = categoryStore.SearchCategories(searchTerm, isActive);
             return categories.ToDto();
         }
 
         public IEnumerable<CategoryDto> GetActiveCategories()
         {
             logger.LogDebug("Retrieving active categories from store");
-            var categories = categoryStore.GetActiveCategories();
+            IEnumerable<Category> categories = categoryStore.GetActiveCategories();
             return categories.ToDto();
         }
 

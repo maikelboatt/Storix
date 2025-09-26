@@ -10,6 +10,7 @@ using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Products.Interfaces;
+using Storix.Application.Stores.Products;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Products
@@ -39,26 +40,7 @@ namespace Storix.Application.Services.Products
                 return businessValidation;
 
             // Create product
-            Product product = createProductDto.ToDomain();
-            DatabaseResult<Product> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.CreateAsync(product),
-                "Creating new product"
-            );
-
-            if (result.IsSuccess && result.Value != null)
-            {
-                productStore.AddProduct(result.Value);
-                logger.LogInformation(
-                    "Successfully created product with ID {ProductId} and SKU '{SKU}'",
-                    result.Value.ProductId,
-                    result.Value.SKU);
-
-                ProductDto productDto = result.Value.ToDto();
-                return DatabaseResult<ProductDto>.Success(productDto);
-            }
-
-            logger.LogWarning("Failed to create product: {ErrorMessage}", result.ErrorMessage);
-            return DatabaseResult<ProductDto>.Failure(result.ErrorMessage!, result.ErrorCode);
+            return await PerformCreate(createProductDto);
         }
 
         public async Task<DatabaseResult<ProductDto>> UpdateProductAsync( UpdateProductDto updateProductDto )
@@ -92,24 +74,7 @@ namespace Storix.Application.Services.Products
                 return validationResult;
 
             // Perform deletion
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.DeleteAsync(productId),
-                "Deleting product",
-                enableRetry: false
-            );
-
-            if (result.IsSuccess && result.Value)
-            {
-                productStore.DeleteProduct(productId);
-                logger.LogInformation("Successfully deleted product with ID {ProductId}", productId);
-                return DatabaseResult.Success();
-            }
-
-            logger.LogWarning(
-                "Failed to delete product with ID {ProductId}: {ErrorMessage}",
-                productId,
-                result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to delete product", result.ErrorCode);
+            return await PerformDelete(productId);
         }
 
         public async Task<DatabaseResult> SoftDeleteProductAsync( int productId )
@@ -122,137 +87,41 @@ namespace Storix.Application.Services.Products
             }
 
             // Business validation
-            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(productId);
-            if (!existsResult.IsSuccess)
-                return DatabaseResult.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
-
-            if (!existsResult.Value)
-            {
-                logger.LogWarning("Attempted to soft delete non-existent product with ID {ProductId}", productId);
-                return DatabaseResult.Failure($"Product with ID {productId} not found.", DatabaseErrorCode.NotFound);
-            }
+            DatabaseResult businessValidation = await ValidateSoftDeleteBusiness(productId);
+            if (!businessValidation.IsSuccess)
+                return businessValidation;
 
             // Perform soft deletion
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.SoftDeleteAsync(productId),
-                "Soft deleting product",
-                enableRetry: false
+            return await PerformSoftDelete(productId);
+        }
+
+        #region Helper Methods
+
+        private async Task<DatabaseResult<ProductDto>> PerformCreate( CreateProductDto createProductDto )
+        {
+
+            Product product = createProductDto.ToDomain();
+            DatabaseResult<Product> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.CreateAsync(product),
+                "Creating new product"
             );
 
-            if (result.IsSuccess && result.Value)
+            if (result is { IsSuccess: true, Value: not null })
             {
-                // Update the product in store to reflect soft deletion
-                // var product = productStore.GetProductById(productId);
-                // if (product != null)
-                // {
-                //     var updatedProduct = product with { IsActive = false };
-                //     productStore.UpdateProduct(updatedProduct);
-                // }
+                ProductDto productDto = result.Value.ToDto();
+                int productId = result.Value.ProductId;
 
-                logger.LogInformation("Successfully soft deleted product with ID {ProductId}", productId);
-                return DatabaseResult.Success();
+                productStore.Create(productId, productDto);
+                logger.LogInformation(
+                    "Successfully created product with ID {ProductId} and SKU '{SKU}'",
+                    result.Value.ProductId,
+                    result.Value.SKU);
+
+                return DatabaseResult<ProductDto>.Success(productDto);
             }
 
-            logger.LogWarning(
-                "Failed to soft delete product with ID {ProductId}: {ErrorMessage}",
-                productId,
-                result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to soft delete product", result.ErrorCode);
-        }
-
-        // Private helper methods
-        private DatabaseResult<ProductDto> ValidateCreateInput( CreateProductDto createProductDto )
-        {
-            if (createProductDto == null)
-            {
-                logger.LogWarning("Null CreateProductDto provided");
-                return DatabaseResult<ProductDto>.Failure("Product data cannot be null.", DatabaseErrorCode.InvalidInput);
-            }
-
-            ValidationResult? validationResult = createValidator.Validate(createProductDto);
-            if (!validationResult.IsValid)
-            {
-                string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                logger.LogWarning("Product creation validation failed: {ValidationErrors}", errors);
-                return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-            }
-
-            return DatabaseResult<ProductDto>.Success(null!);
-        }
-
-        private async Task<DatabaseResult<ProductDto>> ValidateCreateBusiness( CreateProductDto createProductDto )
-        {
-            DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(createProductDto.SKU);
-            if (!skuAvailableResult.IsSuccess)
-                return DatabaseResult<ProductDto>.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
-
-            if (!skuAvailableResult.Value)
-            {
-                logger.LogWarning("Attempted to create product with duplicate SKU: {SKU}", createProductDto.SKU);
-                return DatabaseResult<ProductDto>.Failure(
-                    $"A product with SKU '{createProductDto.SKU}' already exists.",
-                    DatabaseErrorCode.DuplicateKey);
-            }
-
-            return DatabaseResult<ProductDto>.Success(null!);
-        }
-
-        private DatabaseResult<ProductDto> ValidateUpdateInput( UpdateProductDto updateProductDto )
-        {
-            if (updateProductDto == null)
-            {
-                logger.LogWarning("Null UpdateProductDto provided");
-                return DatabaseResult<ProductDto>.Failure("Product data cannot be null.", DatabaseErrorCode.InvalidInput);
-            }
-
-            ValidationResult? validationResult = updateValidator.Validate(updateProductDto);
-            if (!validationResult.IsValid)
-            {
-                string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                logger.LogWarning(
-                    "Product update validation failed for ID {ProductId}: {ValidationErrors}",
-                    updateProductDto.ProductId,
-                    errors);
-                return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-            }
-
-            return DatabaseResult<ProductDto>.Success(null!);
-        }
-
-        private async Task<DatabaseResult<ProductDto>> ValidateUpdateBusiness( UpdateProductDto updateProductDto )
-        {
-            // Check existence
-            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(updateProductDto.ProductId);
-            if (!existsResult.IsSuccess)
-                return DatabaseResult<ProductDto>.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
-
-            if (!existsResult.Value)
-            {
-                logger.LogWarning("Attempted to update non-existent product with ID {ProductId}", updateProductDto.ProductId);
-                return DatabaseResult<ProductDto>.Failure(
-                    $"Product with ID {updateProductDto.ProductId} not found.",
-                    DatabaseErrorCode.NotFound);
-            }
-
-            // Check SKU availability
-            DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(
-                updateProductDto.SKU,
-                updateProductDto.ProductId);
-            if (!skuAvailableResult.IsSuccess)
-                return DatabaseResult<ProductDto>.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
-
-            if (!skuAvailableResult.Value)
-            {
-                logger.LogWarning(
-                    "Attempted to update product {ProductId} with duplicate SKU: {SKU}",
-                    updateProductDto.ProductId,
-                    updateProductDto.SKU);
-                return DatabaseResult<ProductDto>.Failure(
-                    $"Another product with SKU '{updateProductDto.SKU}' already exists.",
-                    DatabaseErrorCode.DuplicateKey);
-            }
-
-            return DatabaseResult<ProductDto>.Success(null!);
+            logger.LogWarning("Failed to create product: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<ProductDto>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
         private async Task<DatabaseResult<ProductDto>> PerformUpdate( UpdateProductDto updateProductDto )
@@ -295,10 +164,11 @@ namespace Storix.Application.Services.Products
 
             if (updateResult.IsSuccess && updateResult.Value != null)
             {
-                productStore.UpdateProduct(updateResult.Value);
+                ProductDto productDto = updateResult.Value.ToDto();
+
+                productStore.Update(productDto);
                 logger.LogInformation("Successfully updated product with ID {ProductId}", updateProductDto.ProductId);
 
-                ProductDto productDto = updateResult.Value.ToDto();
                 return DatabaseResult<ProductDto>.Success(productDto);
             }
 
@@ -308,5 +178,192 @@ namespace Storix.Application.Services.Products
                 updateResult.ErrorMessage);
             return DatabaseResult<ProductDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
         }
+
+        private async Task<DatabaseResult> PerformDelete( int productId )
+        {
+
+            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.DeleteAsync(productId),
+                "Deleting product",
+                enableRetry: false
+            );
+
+            if (result.IsSuccess && result.Value)
+            {
+                productStore.Delete(productId);
+                logger.LogInformation("Successfully deleted product with ID {ProductId}", productId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to delete product with ID {ProductId}: {ErrorMessage}",
+                productId,
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to delete product", result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformSoftDelete( int productId )
+        {
+            // Get existing product
+            DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.GetByIdAsync(productId),
+                $"Retrieving product {productId} for soft deletion",
+                false
+            );
+
+            if (!getResult.IsSuccess || getResult.Value == null)
+            {
+                return DatabaseResult.Failure(
+                    getResult.ErrorMessage ?? "Product not found",
+                    getResult.ErrorCode);
+            }
+
+            // Update product to set IsActive = false
+            Product softDeletedProduct = getResult.Value with
+            {
+                IsActive = false,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            DatabaseResult<Product> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.UpdateAsync(softDeletedProduct),
+                "Soft deleting product"
+            );
+
+            if (updateResult.IsSuccess && updateResult.Value != null)
+            {
+                ProductDto productDto = updateResult.Value.ToDto();
+                productStore.Update(productDto);
+
+                logger.LogInformation("Successfully soft deleted product with ID {ProductId}", productId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to soft delete product with ID {ProductId}: {ErrorMessage}",
+                productId,
+                updateResult.ErrorMessage);
+            return DatabaseResult.Failure(updateResult.ErrorMessage ?? "Failed to soft delete product", updateResult.ErrorCode);
+        }
+
+        #endregion
+
+        #region Validation Methods
+
+        private DatabaseResult<ProductDto> ValidateCreateInput( CreateProductDto? createProductDto )
+        {
+            if (createProductDto == null)
+            {
+                logger.LogWarning("Null CreateProductDto provided");
+                return DatabaseResult<ProductDto>.Failure("Product data cannot be null.", DatabaseErrorCode.InvalidInput);
+            }
+
+            ValidationResult? validationResult = createValidator.Validate(createProductDto);
+
+            if (validationResult.IsValid) return DatabaseResult<ProductDto>.Success(null!);
+            string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            logger.LogWarning("Product creation validation failed: {ValidationErrors}", errors);
+            return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
+
+        }
+
+        private async Task<DatabaseResult<ProductDto>> ValidateCreateBusiness( CreateProductDto createProductDto )
+        {
+            DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(createProductDto.SKU);
+            if (!skuAvailableResult.IsSuccess)
+                return DatabaseResult<ProductDto>.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
+
+            if (!skuAvailableResult.Value)
+            {
+                logger.LogWarning("Attempted to create product with duplicate SKU: {SKU}", createProductDto.SKU);
+                return DatabaseResult<ProductDto>.Failure(
+                    $"A product with SKU '{createProductDto.SKU}' already exists.",
+                    DatabaseErrorCode.DuplicateKey);
+            }
+
+            return DatabaseResult<ProductDto>.Success(null!);
+        }
+
+        private DatabaseResult<ProductDto> ValidateUpdateInput( UpdateProductDto? updateProductDto )
+        {
+            if (updateProductDto == null)
+            {
+                logger.LogWarning("Null UpdateProductDto provided");
+                return DatabaseResult<ProductDto>.Failure("Product data cannot be null.", DatabaseErrorCode.InvalidInput);
+            }
+
+            ValidationResult? validationResult = updateValidator.Validate(updateProductDto);
+
+            if (validationResult.IsValid) return DatabaseResult<ProductDto>.Success(null!);
+            string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            logger.LogWarning(
+                "Product update validation failed for ID {ProductId}: {ValidationErrors}",
+                updateProductDto.ProductId,
+                errors);
+            return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
+
+        }
+
+        private async Task<DatabaseResult<ProductDto>> ValidateUpdateBusiness( UpdateProductDto updateProductDto )
+        {
+            // Check existence
+            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(updateProductDto.ProductId);
+            if (!existsResult.IsSuccess)
+                return DatabaseResult<ProductDto>.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
+
+            if (!existsResult.Value)
+            {
+                logger.LogWarning("Attempted to update non-existent product with ID {ProductId}", updateProductDto.ProductId);
+                return DatabaseResult<ProductDto>.Failure(
+                    $"Product with ID {updateProductDto.ProductId} not found.",
+                    DatabaseErrorCode.NotFound);
+            }
+
+            // Check SKU availability
+            DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(
+                updateProductDto.SKU,
+                updateProductDto.ProductId);
+            if (!skuAvailableResult.IsSuccess)
+                return DatabaseResult<ProductDto>.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
+
+            if (!skuAvailableResult.Value)
+            {
+                logger.LogWarning(
+                    "Attempted to update product {ProductId} with duplicate SKU: {SKU}",
+                    updateProductDto.ProductId,
+                    updateProductDto.SKU);
+                return DatabaseResult<ProductDto>.Failure(
+                    $"Another product with SKU '{updateProductDto.SKU}' already exists.",
+                    DatabaseErrorCode.DuplicateKey);
+            }
+
+            return DatabaseResult<ProductDto>.Success(null!);
+        }
+
+        private async Task<DatabaseResult> ValidateSoftDeleteBusiness( int productId )
+        {
+            // Check existence
+            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(productId);
+            if (!existsResult.IsSuccess)
+                return DatabaseResult.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
+
+            if (!existsResult.Value)
+            {
+                logger.LogWarning("Attempted to soft delete non-existent product with ID {ProductId}", productId);
+                return DatabaseResult.Failure($"Product with ID {productId} not found.", DatabaseErrorCode.NotFound);
+            }
+
+            // Check if product is already soft deleted
+            Product? product = productStore.GetById(productId)?.ToDomain();
+            if (product != null && !product.IsActive)
+            {
+                logger.LogWarning("Attempted to soft delete already inactive product with ID {ProductId}", productId);
+                return DatabaseResult.Failure($"Product with ID {productId} is already inactive.", DatabaseErrorCode.InvalidInput);
+            }
+
+            return DatabaseResult.Success();
+        }
+
+        #endregion
     }
 }

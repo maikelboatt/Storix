@@ -10,6 +10,7 @@ using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Products.Interfaces;
+using Storix.Application.Stores.Products;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Products
@@ -32,8 +33,8 @@ namespace Storix.Application.Services.Products
             }
 
             logger.LogDebug("Retrieving product with ID {ProductId} from store", productId);
-            var product = productStore.GetProductById(productId);
-            return product?.ToDto();
+            ProductDto? product = productStore.GetById(productId);
+            return product;
         }
 
         public ProductDto? GetProductBySku( string sku )
@@ -45,8 +46,9 @@ namespace Storix.Application.Services.Products
             }
 
             logger.LogDebug("Retrieving product with SKU {SKU} from store", sku);
-            var product = productStore.GetProductBySku(sku.Trim());
-            return product?.ToDto();
+            List<ProductDto>? product = productStore.GetBySKU(sku.Trim());
+            return product.FirstOrDefault();
+            // TODO: Clarify why SKU is not unique in the store
         }
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync()
@@ -58,10 +60,11 @@ namespace Storix.Application.Services.Products
 
             if (result.IsSuccess && result.Value != null)
             {
-                productStore.LoadProducts(result.Value);
+                IEnumerable<ProductDto> productDtos = ProductDtoMapper.ToDto(result.Value);
+
+                productStore.Initialize(result.Value.ToList());
                 logger.LogInformation("Successfully loaded {ProductCount} products", result.Value.Count());
 
-                IEnumerable<ProductDto> productDtos = DtoMapper.ToDto(result.Value);
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
 

@@ -3,9 +3,12 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
 using Storix.Application.Common.Errors;
+using Storix.Application.DTO.Categories;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Stores.Categories;
+using Storix.Application.Stores.Products;
 
 namespace Storix.Application.Services.Categories
 {
@@ -15,6 +18,7 @@ namespace Storix.Application.Services.Categories
     public class CategoryValidationService(
         ICategoryRepository categoryRepository,
         ICategoryStore categoryStore,
+        IProductStore productStore,
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<CategoryValidationService> logger ):ICategoryValidationService
     {
@@ -24,7 +28,7 @@ namespace Storix.Application.Services.Categories
                 return DatabaseResult<bool>.Success(false);
 
             // Check store first
-            var categoryInStore = categoryStore.GetCategoryById(categoryId);
+            CategoryDto? categoryInStore = categoryStore.GetById(categoryId);
             if (categoryInStore != null)
                 return DatabaseResult<bool>.Success(true);
 
@@ -85,7 +89,7 @@ namespace Storix.Application.Services.Categories
             }
 
             // Check for products
-            var hasProducts = categoryStore.HasProductsInCategory(categoryId);
+            bool hasProducts = productStore.HasProductsInCategory(categoryId);
             if (!hasProducts) return DatabaseResult.Success();
             logger.LogWarning("Cannot delete category {CategoryId} - it contains products", categoryId);
             return DatabaseResult.Failure(

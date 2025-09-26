@@ -8,6 +8,7 @@ using Storix.Application.DTO.Categories;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Stores.Categories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Categories
@@ -30,8 +31,8 @@ namespace Storix.Application.Services.Categories
             }
 
             logger.LogDebug("Retrieving category with ID {CategoryId} from store", categoryId);
-            var category = categoryStore.GetCategoryById(categoryId);
-            return category?.ToDto();
+            CategoryDto? category = categoryStore.GetById(categoryId);
+            return category;
         }
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync()
@@ -43,7 +44,7 @@ namespace Storix.Application.Services.Categories
 
             if (result.IsSuccess && result.Value != null)
             {
-                categoryStore.LoadCategories(result.Value);
+                categoryStore.Initialize(result.Value);
                 logger.LogInformation("Successfully loaded {CategoryCount} categories", result.Value.Count());
 
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();

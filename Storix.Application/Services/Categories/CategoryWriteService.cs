@@ -9,6 +9,7 @@ using Storix.Application.DTO.Categories;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Stores.Categories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Categories
@@ -37,27 +38,8 @@ namespace Storix.Application.Services.Categories
             if (!businessValidation.IsSuccess)
                 return businessValidation;
 
-            // Create category
-            Category category = createCategoryDto.ToDomain();
-            DatabaseResult<Category> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.CreateAsync(category),
-                "Creating new category"
-            );
-
-            if (result.IsSuccess && result.Value != null)
-            {
-                categoryStore.AddCategory(result.Value);
-                logger.LogInformation(
-                    "Successfully created category with ID {CategoryId} and name '{CategoryName}'",
-                    result.Value.CategoryId,
-                    result.Value.Name);
-
-                CategoryDto categoryDto = result.Value.ToDto();
-                return DatabaseResult<CategoryDto>.Success(categoryDto);
-            }
-
-            logger.LogWarning("Failed to create category: {ErrorMessage}", result.ErrorMessage);
-            return DatabaseResult<CategoryDto>.Failure(result.ErrorMessage!, result.ErrorCode);
+            // Create category in database first
+            return await PerformCreate(createCategoryDto);
         }
 
         public async Task<DatabaseResult<CategoryDto>> UpdateCategoryAsync( UpdateCategoryDto updateCategoryDto )
@@ -91,6 +73,102 @@ namespace Storix.Application.Services.Categories
                 return validationResult;
 
             // Perform deletion
+            return await PerformDelete(categoryId);
+        }
+
+
+        #region Helper Methods
+
+        private async Task<DatabaseResult<CategoryDto>> PerformCreate( CreateCategoryDto createCategoryDto )
+        {
+
+            Category category = createCategoryDto.ToDomain();
+            DatabaseResult<Category> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.CreateAsync(category),
+                "Creating new category"
+            );
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                // Convert to DTO for store operations
+                CategoryDto categoryDto = result.Value.ToDto();
+                int createdCategoryId = result.Value.CategoryId;
+
+                // Add to in-memory store using the database-generated ID
+                CategoryDto? storeResult = categoryStore.Create(createdCategoryId, categoryDto);
+
+                if (storeResult == null)
+                {
+                    // Log warning but don't fail the operation since database succeeded
+                    logger.LogWarning(
+                        "Category created in database (ID: {CategoryId}) but failed to add to cache",
+                        result.Value.CategoryId);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Successfully created category with ID {CategoryId} and name '{CategoryName}' in both database and cache",
+                        result.Value.CategoryId,
+                        result.Value.Name);
+                }
+
+                return DatabaseResult<CategoryDto>.Success(categoryDto);
+            }
+
+            logger.LogWarning("Failed to create category: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<CategoryDto>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult<CategoryDto>> PerformUpdate( UpdateCategoryDto updateCategoryDto )
+        {
+            // Get existing category
+            DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId),
+                $"Retrieving category {updateCategoryDto.CategoryId} for update",
+                false
+            );
+
+            if (!getResult.IsSuccess || getResult.Value == null)
+            {
+                return DatabaseResult<CategoryDto>.Failure(
+                    getResult.ErrorMessage ?? "Category not found",
+                    getResult.ErrorCode);
+            }
+
+            // Update category
+            Category updatedCategory = getResult.Value with
+            {
+                Name = updateCategoryDto.Name,
+                Description = updateCategoryDto.Description,
+                ParentCategoryId = updateCategoryDto.ParentCategoryId,
+                ImageUrl = updateCategoryDto.ImageUrl
+            };
+
+            DatabaseResult<Category> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.UpdateAsync(updatedCategory),
+                "Updating category"
+            );
+
+            if (updateResult.IsSuccess && updateResult.Value != null)
+            {
+                CategoryDto categoryDto = updateResult.Value.ToDto();
+                // Update in-memory store
+                categoryStore.Update(categoryDto);
+                logger.LogInformation("Successfully updated category with ID {CategoryId}", updateCategoryDto.CategoryId);
+
+                return DatabaseResult<CategoryDto>.Success(categoryDto);
+            }
+
+            logger.LogWarning(
+                "Failed to update category with ID {CategoryId}: {ErrorMessage}",
+                updateCategoryDto.CategoryId,
+                updateResult.ErrorMessage);
+            return DatabaseResult<CategoryDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformDelete( int categoryId )
+        {
+
             DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => categoryRepository.DeleteAsync(categoryId),
                 "Deleting category",
@@ -99,7 +177,7 @@ namespace Storix.Application.Services.Categories
 
             if (result.IsSuccess && result.Value)
             {
-                categoryStore.DeleteCategory(categoryId);
+                categoryStore.Delete(categoryId);
                 logger.LogInformation("Successfully deleted category with ID {CategoryId}", categoryId);
                 return DatabaseResult.Success();
             }
@@ -111,7 +189,10 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to delete category", result.ErrorCode);
         }
 
-        // Private helper methods to keep main methods focused
+        #endregion
+
+        #region Validation Methods
+
         private DatabaseResult<CategoryDto> ValidateCreateInput( CreateCategoryDto? createCategoryDto )
         {
             if (createCategoryDto == null)
@@ -201,50 +282,6 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<CategoryDto>.Success(null!); // Valid
         }
 
-        public async Task<DatabaseResult<CategoryDto>> PerformUpdate( UpdateCategoryDto updateCategoryDto )
-        {
-            // Get existing category
-            DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId),
-                $"Retrieving category {updateCategoryDto.CategoryId} for update",
-                false
-            );
-
-            if (!getResult.IsSuccess || getResult.Value == null)
-            {
-                return DatabaseResult<CategoryDto>.Failure(
-                    getResult.ErrorMessage ?? "Category not found",
-                    getResult.ErrorCode);
-            }
-
-            // Update category
-            Category updatedCategory = getResult.Value with
-            {
-                Name = updateCategoryDto.Name,
-                Description = updateCategoryDto.Description,
-                ParentCategoryId = updateCategoryDto.ParentCategoryId,
-                ImageUrl = updateCategoryDto.ImageUrl
-            };
-
-            DatabaseResult<Category> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.UpdateAsync(updatedCategory),
-                "Updating category"
-            );
-
-            if (updateResult.IsSuccess && updateResult.Value != null)
-            {
-                categoryStore.UpdateCategory(updateResult.Value);
-                logger.LogInformation("Successfully updated category with ID {CategoryId}", updateCategoryDto.CategoryId);
-
-                CategoryDto categoryDto = updateResult.Value.ToDto();
-                return DatabaseResult<CategoryDto>.Success(categoryDto);
-            }
-
-            logger.LogWarning(
-                "Failed to update category with ID {CategoryId}: {ErrorMessage}",
-                updateCategoryDto.CategoryId,
-                updateResult.ErrorMessage);
-            return DatabaseResult<CategoryDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
-        }
+        #endregion
     }
 }

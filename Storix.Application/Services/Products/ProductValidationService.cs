@@ -2,9 +2,11 @@
 using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
 using Storix.Application.Common.Errors;
+using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Products.Interfaces;
+using Storix.Application.Stores.Products;
 
 namespace Storix.Application.Services.Products
 {
@@ -23,7 +25,7 @@ namespace Storix.Application.Services.Products
                 return DatabaseResult<bool>.Success(false);
 
             // Check store first
-            var productInStore = productStore.GetProductById(productId);
+            ProductDto? productInStore = productStore.GetById(productId);
             if (productInStore != null)
                 return DatabaseResult<bool>.Success(true);
 

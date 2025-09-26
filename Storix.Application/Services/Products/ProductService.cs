@@ -5,6 +5,8 @@ using Storix.Application.Common;
 using Storix.Application.DTO;
 using Storix.Application.DTO.Products;
 using Storix.Application.Services.Products.Interfaces;
+using Storix.Application.Stores.Products;
+using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Products
 {
@@ -78,14 +80,14 @@ namespace Storix.Application.Services.Products
                 categoryId,
                 isActive);
 
-            var products = productStore.SearchProducts(searchTerm, categoryId, isActive);
+            IEnumerable<Product> products = productStore.SearchProducts(searchTerm, categoryId, isActive);
             return products.ToDto();
         }
 
         public IEnumerable<ProductDto> GetLowStockProducts()
         {
             logger.LogDebug("Retrieving low stock products from store");
-            var products = productStore.GetLowStockProducts();
+            IEnumerable<Product> products = productStore.GetLowStockProducts();
             return products.ToDto();
         }
 
