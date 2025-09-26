@@ -45,6 +45,12 @@ namespace Storix.Core.ViewModels.Categories
             return base.Initialize();
         }
 
+        public override void ViewDestroy( bool viewFinishing = true )
+        {
+            UnsubscribeFromInputModelEvents();
+            base.ViewDestroy(viewFinishing);
+        }
+
         private void LoadCategoryById()
         {
             IsLoading = true;
@@ -154,7 +160,7 @@ namespace Storix.Core.ViewModels.Categories
         public bool IsLoading
         {
             get => _isLoading;
-            set => SetProperty(ref _isLoading, value);
+            set => SetProperty(ref _isLoading, value, () => ResetCommand.RaiseCanExecuteChanged());
         }
 
         public string Title => IsEditMode ? "Edit Category" : "Create Category";
