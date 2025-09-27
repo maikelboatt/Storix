@@ -1,4 +1,6 @@
-﻿namespace Storix.Application.DTO.Categories
+﻿using System;
+
+namespace Storix.Application.DTO.Categories
 {
     public class CategoryDto
     {
@@ -7,5 +9,7 @@
         public string? Description { get; set; }
         public int? ParentCategoryId { get; set; }
         public string? ImageUrl { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; } = null;
     }
 }
