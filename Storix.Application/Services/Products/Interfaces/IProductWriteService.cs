@@ -4,17 +4,16 @@ using Storix.Application.DTO.Products;
 
 namespace Storix.Application.Services.Products.Interfaces
 {
-    /// <summary>
-    ///     Interface for product write operations.
-    /// </summary>
     public interface IProductWriteService
     {
         Task<DatabaseResult<ProductDto>> CreateProductAsync( CreateProductDto createProductDto );
 
         Task<DatabaseResult<ProductDto>> UpdateProductAsync( UpdateProductDto updateProductDto );
 
-        Task<DatabaseResult> DeleteProductAsync( int productId );
-
         Task<DatabaseResult> SoftDeleteProductAsync( int productId );
+
+        Task<DatabaseResult> RestoreProductAsync( int productId );
+
+        Task<DatabaseResult> HardDeleteProductAsync( int productId );
     }
 }

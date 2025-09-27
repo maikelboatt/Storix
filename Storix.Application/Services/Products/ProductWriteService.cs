@@ -16,7 +16,7 @@ using Storix.Domain.Models;
 namespace Storix.Application.Services.Products
 {
     /// <summary>
-    ///     Service responsible for product write operations.
+    ///     Service responsible for product write operations with ISoftDeletable support.
     /// </summary>
     public class ProductWriteService(
         IProductRepository productRepository,
@@ -59,24 +59,6 @@ namespace Storix.Application.Services.Products
             return await PerformUpdate(updateProductDto);
         }
 
-        public async Task<DatabaseResult> DeleteProductAsync( int productId )
-        {
-            // Input validation
-            if (productId <= 0)
-            {
-                logger.LogWarning("Invalid product ID {ProductId} provided for deletion", productId);
-                return DatabaseResult.Failure("Product ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
-            }
-
-            // Business validation
-            DatabaseResult validationResult = await productValidationService.ValidateForDeletion(productId);
-            if (!validationResult.IsSuccess)
-                return validationResult;
-
-            // Perform deletion
-            return await PerformDelete(productId);
-        }
-
         public async Task<DatabaseResult> SoftDeleteProductAsync( int productId )
         {
             // Input validation
@@ -95,12 +77,57 @@ namespace Storix.Application.Services.Products
             return await PerformSoftDelete(productId);
         }
 
+        public async Task<DatabaseResult> RestoreProductAsync( int productId )
+        {
+            // Input validation
+            if (productId <= 0)
+            {
+                logger.LogWarning("Invalid product ID {ProductId} provided for restoration", productId);
+                return DatabaseResult.Failure("Product ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
+            }
+
+            // Business validation
+            DatabaseResult businessValidation = await ValidateRestoreBusiness(productId);
+            if (!businessValidation.IsSuccess)
+                return businessValidation;
+
+            // Perform restoration
+            return await PerformRestore(productId);
+        }
+
+        public async Task<DatabaseResult> HardDeleteProductAsync( int productId )
+        {
+            // Input validation
+            if (productId <= 0)
+            {
+                logger.LogWarning("Invalid product ID {ProductId} provided for hard deletion", productId);
+                return DatabaseResult.Failure("Product ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
+            }
+
+            // Business validation - check if product exists (including deleted ones)
+            DatabaseResult validationResult = await productValidationService.ValidateForHardDeletion(productId);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            // Perform hard deletion
+            return await PerformHardDelete(productId);
+        }
+
+
         #region Helper Methods
 
         private async Task<DatabaseResult<ProductDto>> PerformCreate( CreateProductDto createProductDto )
         {
-
             Product product = createProductDto.ToDomain();
+
+            // Ensure new products are not marked as deleted
+            product = product with
+            {
+                IsDeleted = false,
+                DeletedAt = null,
+                CreatedDate = DateTime.UtcNow
+            };
+
             DatabaseResult<Product> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => productRepository.CreateAsync(product),
                 "Creating new product"
@@ -126,9 +153,9 @@ namespace Storix.Application.Services.Products
 
         private async Task<DatabaseResult<ProductDto>> PerformUpdate( UpdateProductDto updateProductDto )
         {
-            // Get existing product
+            // Get existing product (including soft-deleted ones for update operations)
             DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByIdAsync(updateProductDto.ProductId),
+                () => productRepository.GetByIdAsync(updateProductDto.ProductId, true),
                 $"Retrieving product {updateProductDto.ProductId} for update",
                 false
             );
@@ -140,7 +167,7 @@ namespace Storix.Application.Services.Products
                     getResult.ErrorCode);
             }
 
-            // Update product
+            // Update product while preserving ISoftDeletable properties
             Product updatedProduct = getResult.Value with
             {
                 Name = updateProductDto.Name,
@@ -153,8 +180,8 @@ namespace Storix.Application.Services.Products
                 MaxStockLevel = updateProductDto.MaxStockLevel,
                 SupplierId = updateProductDto.SupplierId,
                 CategoryId = updateProductDto.CategoryId,
-                IsActive = updateProductDto.IsActive,
                 UpdatedDate = DateTime.UtcNow
+                // ISoftDeletable properties are preserved from existing product
             };
 
             DatabaseResult<Product> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -179,62 +206,18 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<ProductDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
         }
 
-        private async Task<DatabaseResult> PerformDelete( int productId )
+        private async Task<DatabaseResult> PerformSoftDelete( int productId )
         {
-
             DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.DeleteAsync(productId),
-                "Deleting product",
+                () => productRepository.SoftDeleteAsync(productId),
+                "Soft deleting product",
                 enableRetry: false
             );
 
             if (result.IsSuccess && result.Value)
             {
-                productStore.Delete(productId);
-                logger.LogInformation("Successfully deleted product with ID {ProductId}", productId);
-                return DatabaseResult.Success();
-            }
-
-            logger.LogWarning(
-                "Failed to delete product with ID {ProductId}: {ErrorMessage}",
-                productId,
-                result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to delete product", result.ErrorCode);
-        }
-
-        private async Task<DatabaseResult> PerformSoftDelete( int productId )
-        {
-            // Get existing product
-            DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByIdAsync(productId),
-                $"Retrieving product {productId} for soft deletion",
-                false
-            );
-
-            if (!getResult.IsSuccess || getResult.Value == null)
-            {
-                return DatabaseResult.Failure(
-                    getResult.ErrorMessage ?? "Product not found",
-                    getResult.ErrorCode);
-            }
-
-            // Update product to set IsActive = false
-            Product softDeletedProduct = getResult.Value with
-            {
-                IsActive = false,
-                UpdatedDate = DateTime.UtcNow
-            };
-
-            DatabaseResult<Product> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.UpdateAsync(softDeletedProduct),
-                "Soft deleting product"
-            );
-
-            if (updateResult.IsSuccess && updateResult.Value != null)
-            {
-                ProductDto productDto = updateResult.Value.ToDto();
-                productStore.Update(productDto);
-
+                // Remove from store cache since it's now soft deleted
+                productStore.SoftDelete(productId);
                 logger.LogInformation("Successfully soft deleted product with ID {ProductId}", productId);
                 return DatabaseResult.Success();
             }
@@ -242,8 +225,64 @@ namespace Storix.Application.Services.Products
             logger.LogWarning(
                 "Failed to soft delete product with ID {ProductId}: {ErrorMessage}",
                 productId,
-                updateResult.ErrorMessage);
-            return DatabaseResult.Failure(updateResult.ErrorMessage ?? "Failed to soft delete product", updateResult.ErrorCode);
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to soft delete product", result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformRestore( int productId )
+        {
+            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.RestoreAsync(productId),
+                "Restoring product",
+                enableRetry: false
+            );
+
+            if (result.IsSuccess && result.Value)
+            {
+                // Get the restored product and add it back to the store cache
+                DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    () => productRepository.GetByIdAsync(productId),
+                    $"Retrieving restored product {productId}",
+                    false
+                );
+
+                if (getResult.IsSuccess && getResult.Value != null)
+                {
+                    ProductDto productDto = getResult.Value.ToDto();
+                    productStore.Update(productDto);
+                }
+
+                logger.LogInformation("Successfully restored product with ID {ProductId}", productId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to restore product with ID {ProductId}: {ErrorMessage}",
+                productId,
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to restore product", result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformHardDelete( int productId )
+        {
+            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.HardDeleteAsync(productId),
+                "Hard deleting product",
+                enableRetry: false
+            );
+
+            if (result.IsSuccess && result.Value)
+            {
+                productStore.Delete(productId);
+                logger.LogWarning("Successfully hard deleted product with ID {ProductId} - THIS IS PERMANENT", productId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to hard delete product with ID {ProductId}: {ErrorMessage}",
+                productId,
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to hard delete product", result.ErrorCode);
         }
 
         #endregion
@@ -264,11 +303,11 @@ namespace Storix.Application.Services.Products
             string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
             logger.LogWarning("Product creation validation failed: {ValidationErrors}", errors);
             return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-
         }
 
         private async Task<DatabaseResult<ProductDto>> ValidateCreateBusiness( CreateProductDto createProductDto )
         {
+            // Check SKU availability (excluding soft-deleted products by default)
             DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(createProductDto.SKU);
             if (!skuAvailableResult.IsSuccess)
                 return DatabaseResult<ProductDto>.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
@@ -301,13 +340,12 @@ namespace Storix.Application.Services.Products
                 updateProductDto.ProductId,
                 errors);
             return DatabaseResult<ProductDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-
         }
 
         private async Task<DatabaseResult<ProductDto>> ValidateUpdateBusiness( UpdateProductDto updateProductDto )
         {
-            // Check existence
-            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(updateProductDto.ProductId);
+            // Check existence (including soft-deleted products for updates)
+            DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(updateProductDto.ProductId, true);
             if (!existsResult.IsSuccess)
                 return DatabaseResult<ProductDto>.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
 
@@ -319,7 +357,7 @@ namespace Storix.Application.Services.Products
                     DatabaseErrorCode.NotFound);
             }
 
-            // Check SKU availability
+            // Check SKU availability (excluding soft-deleted products)
             DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(
                 updateProductDto.SKU,
                 updateProductDto.ProductId);
@@ -342,23 +380,60 @@ namespace Storix.Application.Services.Products
 
         private async Task<DatabaseResult> ValidateSoftDeleteBusiness( int productId )
         {
-            // Check existence
+            // Check existence (only active products can be soft deleted)
             DatabaseResult<bool> existsResult = await productValidationService.ProductExistsAsync(productId);
             if (!existsResult.IsSuccess)
                 return DatabaseResult.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
 
             if (!existsResult.Value)
             {
-                logger.LogWarning("Attempted to soft delete non-existent product with ID {ProductId}", productId);
+                logger.LogWarning("Attempted to soft delete non-existent or already deleted product with ID {ProductId}", productId);
+                return DatabaseResult.Failure($"Product with ID {productId} not found or already deleted.", DatabaseErrorCode.NotFound);
+            }
+
+            // Additional business validations can be added here
+            DatabaseResult validationResult = await productValidationService.ValidateForDeletion(productId);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            return DatabaseResult.Success();
+        }
+
+        private async Task<DatabaseResult> ValidateRestoreBusiness( int productId )
+        {
+            // Check if product exists and is soft deleted
+            DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.GetByIdAsync(productId, true),
+                $"Retrieving product {productId} for restore validation",
+                false
+            );
+
+            if (!getResult.IsSuccess || getResult.Value == null)
+            {
+                logger.LogWarning("Attempted to restore non-existent product with ID {ProductId}", productId);
                 return DatabaseResult.Failure($"Product with ID {productId} not found.", DatabaseErrorCode.NotFound);
             }
 
-            // Check if product is already soft deleted
-            Product? product = productStore.GetById(productId)?.ToDomain();
-            if (product != null && !product.IsActive)
+            if (!getResult.Value.IsDeleted)
             {
-                logger.LogWarning("Attempted to soft delete already inactive product with ID {ProductId}", productId);
-                return DatabaseResult.Failure($"Product with ID {productId} is already inactive.", DatabaseErrorCode.InvalidInput);
+                logger.LogWarning("Attempted to restore product with ID {ProductId} that is not deleted", productId);
+                return DatabaseResult.Failure($"Product with ID {productId} is not deleted and cannot be restored.", DatabaseErrorCode.InvalidInput);
+            }
+
+            // Check SKU conflicts before restoration
+            DatabaseResult<bool> skuAvailableResult = await productValidationService.IsSkuAvailableAsync(getResult.Value.SKU, productId);
+            if (!skuAvailableResult.IsSuccess)
+                return DatabaseResult.Failure(skuAvailableResult.ErrorMessage!, skuAvailableResult.ErrorCode);
+
+            if (!skuAvailableResult.Value)
+            {
+                logger.LogWarning(
+                    "Cannot restore product {ProductId} due to SKU conflict: {SKU}",
+                    productId,
+                    getResult.Value.SKU);
+                return DatabaseResult.Failure(
+                    $"Cannot restore product: Another active product with SKU '{getResult.Value.SKU}' already exists.",
+                    DatabaseErrorCode.DuplicateKey);
             }
 
             return DatabaseResult.Success();
