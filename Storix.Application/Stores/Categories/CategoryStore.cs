@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Storix.Application.DTO.Categories;
 using Storix.Domain.Models;
@@ -8,15 +9,25 @@ namespace Storix.Application.Stores.Categories
     public class CategoryStore:ICategoryStore
     {
         private readonly Dictionary<int, Category> _categories;
+        private readonly Dictionary<int, Category> _deletedCategories;
 
         public CategoryStore( List<Category>? initialCategories = null )
         {
             _categories = new Dictionary<int, Category>();
+            _deletedCategories = new Dictionary<int, Category>();
+
             if (initialCategories == null) return;
 
             foreach (Category category in initialCategories)
             {
-                _categories[category.CategoryId] = category;
+                if (category.IsDeleted)
+                {
+                    _deletedCategories[category.CategoryId] = category;
+                }
+                else
+                {
+                    _categories[category.CategoryId] = category;
+                }
             }
         }
 
@@ -24,17 +35,26 @@ namespace Storix.Application.Stores.Categories
         {
             // Clear existing data first
             _categories.Clear();
+            _deletedCategories.Clear();
 
-            // Add all categories to the store
+            // Add categories to appropriate dictionaries based on deletion status
             foreach (Category category in categories)
             {
-                _categories[category.CategoryId] = category;
+                if (category.IsDeleted)
+                {
+                    _deletedCategories[category.CategoryId] = category;
+                }
+                else
+                {
+                    _categories[category.CategoryId] = category;
+                }
             }
         }
 
         public void Clear()
         {
             _categories.Clear();
+            _deletedCategories.Clear();
         }
 
         public CategoryDto? Create( int categoryId, CategoryDto categoryDto )
@@ -45,7 +65,8 @@ namespace Storix.Application.Stores.Categories
                 return null;
             }
 
-            if (categoryDto.ParentCategoryId.HasValue && !Exists(categoryDto.ParentCategoryId.Value))
+            // Check if parent exists and is active (not deleted)
+            if (categoryDto.ParentCategoryId.HasValue && !Exists(categoryDto.ParentCategoryId.Value, false))
             {
                 return null;
             }
@@ -56,23 +77,29 @@ namespace Storix.Application.Stores.Categories
                 categoryDto.Description?.Trim(),
                 categoryDto.ParentCategoryId,
                 categoryDto.ImageUrl?.Trim()
+                // IsDeleted defaults to false
+                // DeletedAt defaults to null
             );
 
             _categories[categoryId] = category;
-            // return MapToDto(category);
             return category.ToDto();
-        }
-
-        public CategoryDto? GetById( int categoryId )
-        {
-            _categories.TryGetValue(categoryId, out Category? category);
-            return category?.ToDto();
         }
 
         public CategoryDto? Update( CategoryDto categoryDto )
         {
-            // Use the CategoryId from the DTO itself
-            if (!_categories.TryGetValue(categoryDto.CategoryId, out Category? existingCategory))
+            // Try to find the category in either collection
+            Category? existingCategory = null;
+            bool isCurrentlyDeleted = false;
+
+            if (_categories.TryGetValue(categoryDto.CategoryId, out existingCategory))
+            {
+                isCurrentlyDeleted = false;
+            }
+            else if (_deletedCategories.TryGetValue(categoryDto.CategoryId, out existingCategory))
+            {
+                isCurrentlyDeleted = true;
+            }
+            else
             {
                 return null; // Category not found
             }
@@ -82,11 +109,12 @@ namespace Storix.Application.Stores.Categories
                 return null; // Invalid name
             }
 
+            // Check parent exists and is active (only check active categories for parent validation)
             if (categoryDto.ParentCategoryId.HasValue)
             {
-                if (!Exists(categoryDto.ParentCategoryId.Value))
+                if (!Exists(categoryDto.ParentCategoryId.Value, false))
                 {
-                    return null; // Parent not found
+                    return null; // Parent not found or deleted
                 }
 
                 if (WouldCreateCircularReference(categoryDto.CategoryId, categoryDto.ParentCategoryId.Value))
@@ -95,37 +123,132 @@ namespace Storix.Application.Stores.Categories
                 }
             }
 
-            Category updatedCategory = new(
-                categoryDto.CategoryId,
-                categoryDto.Name.Trim(),
-                categoryDto.Description?.Trim(),
-                categoryDto.ParentCategoryId,
-                categoryDto.ImageUrl?.Trim()
-            );
+            Category updatedCategory = existingCategory with
+            {
+                Name = categoryDto.Name.Trim(),
+                Description = categoryDto.Description?.Trim(),
+                ParentCategoryId = categoryDto.ParentCategoryId,
+                ImageUrl = categoryDto.ImageUrl?.Trim(),
+                // Preserve ISoftDeletable properties from DTO
+                IsDeleted = categoryDto.IsDeleted,
+                DeletedAt = categoryDto.DeletedAt
+            };
 
-            _categories[categoryDto.CategoryId] = updatedCategory;
+            // Move category between collections if deletion status changed
+            if (isCurrentlyDeleted && !updatedCategory.IsDeleted)
+            {
+                // Moving from deleted to active
+                _deletedCategories.Remove(categoryDto.CategoryId);
+                _categories[categoryDto.CategoryId] = updatedCategory;
+            }
+            else if (!isCurrentlyDeleted && updatedCategory.IsDeleted)
+            {
+                // Moving from active to deleted
+                _categories.Remove(categoryDto.CategoryId);
+                _deletedCategories[categoryDto.CategoryId] = updatedCategory;
+            }
+            else
+            {
+                // Status hasn't changed, update in current collection
+                if (isCurrentlyDeleted)
+                {
+                    _deletedCategories[categoryDto.CategoryId] = updatedCategory;
+                }
+                else
+                {
+                    _categories[categoryDto.CategoryId] = updatedCategory;
+                }
+            }
+
             return updatedCategory.ToDto();
         }
 
         public bool Delete( int categoryId )
         {
-            if (!_categories.ContainsKey(categoryId))
-            {
-                return false; // Category not found
-            }
+            // Remove from both collections to handle any case
+            bool removedFromActive = _categories.Remove(categoryId);
+            bool removedFromDeleted = _deletedCategories.Remove(categoryId);
 
-            if (HasChildren(categoryId))
-            {
-                return false; // Has children, cannot delete
-            }
-
-            _categories.Remove(categoryId);
-            return true; // Successfully deleted
+            return removedFromActive || removedFromDeleted;
         }
 
-        public List<CategoryDto> GetAll( int? parentId = null, string? search = null, int skip = 0, int take = 100 )
+        public IEnumerable<Category> GetActiveCategories()
         {
-            IEnumerable<Category> categories = _categories.Values.AsEnumerable();
+            return _categories.Values
+                              .OrderBy(c => c.Name)
+                              .ToList();
+        }
+
+        public CategoryDto? GetById( int categoryId, bool includeDeleted = false )
+        {
+            if (_categories.TryGetValue(categoryId, out Category? category))
+            {
+                return category.ToDto();
+            }
+
+            if (includeDeleted && _deletedCategories.TryGetValue(categoryId, out Category? deletedCategory))
+            {
+                return deletedCategory.ToDto();
+            }
+
+            return null;
+        }
+
+        public bool SoftDelete( int categoryId )
+        {
+            if (!_categories.TryGetValue(categoryId, out Category? category))
+            {
+                return false; // Category not found or already deleted
+            }
+
+            // Check if category has active children
+            if (HasChildren(categoryId, false))
+            {
+                return false; // Has active children, cannot delete
+            }
+
+            // Move category to deleted collection
+            Category softDeletedCategory = category with
+            {
+                IsDeleted = true,
+                DeletedAt = DateTime.UtcNow
+            };
+
+            _categories.Remove(categoryId);
+            _deletedCategories[categoryId] = softDeletedCategory;
+            return true;
+        }
+
+        public bool Restore( int categoryId )
+        {
+            if (!_deletedCategories.TryGetValue(categoryId, out Category? category))
+            {
+                return false; // Category not found or not deleted
+            }
+
+            // Check if parent still exists and is active
+            if (category.ParentCategoryId.HasValue && !Exists(category.ParentCategoryId.Value, false))
+            {
+                return false; // Cannot restore because parent is deleted or doesn't exist
+            }
+
+            // Move category back to active collection
+            Category restoredCategory = category with
+            {
+                IsDeleted = false,
+                DeletedAt = null
+            };
+
+            _deletedCategories.Remove(categoryId);
+            _categories[categoryId] = restoredCategory;
+            return true;
+        }
+
+        public List<CategoryDto> GetAll( int? parentId = null, string? search = null, bool includeDeleted = false, int skip = 0, int take = 100 )
+        {
+            IEnumerable<Category> categories = includeDeleted
+                ? _categories.Values.Concat(_deletedCategories.Values)
+                : _categories.Values;
 
             // Filter by parent
             if (parentId.HasValue)
@@ -150,56 +273,81 @@ namespace Storix.Application.Stores.Categories
                    .ToList();
         }
 
-        public List<CategoryDto> GetChildren( int parentCategoryId ) => GetAll(parentCategoryId);
+        public List<CategoryDto> GetChildren( int parentCategoryId, bool includeDeleted = false ) => GetAll(parentCategoryId, includeDeleted: includeDeleted);
 
-        public List<CategoryDto> GetRootCategories()
+        public List<CategoryDto> GetRootCategories( bool includeDeleted = false )
         {
-            return _categories.Values
-                              .Where(c => c.ParentCategoryId == null)
-                              .OrderBy(c => c.Name)
-                              .Select(c => c.ToDto())
-                              .ToList();
+            IEnumerable<Category> categories = includeDeleted
+                ? _categories.Values.Concat(_deletedCategories.Values)
+                : _categories.Values;
+
+            return categories
+                   .Where(c => c.ParentCategoryId == null)
+                   .OrderBy(c => c.Name)
+                   .Select(c => c.ToDto())
+                   .ToList();
         }
 
-        public bool Exists( int categoryId ) => _categories.ContainsKey(categoryId);
-
-        public int GetCount( int? parentId = null )
+        public List<CategoryDto> GetDeletedCategories()
         {
+            return _deletedCategories.Values
+                                     .OrderBy(c => c.Name)
+                                     .Select(c => c.ToDto())
+                                     .ToList();
+        }
+
+        public bool Exists( int categoryId, bool includeDeleted = false )
+        {
+            bool existsInActive = _categories.ContainsKey(categoryId);
+            return existsInActive || includeDeleted && _deletedCategories.ContainsKey(categoryId);
+        }
+
+        public bool IsDeleted( int categoryId ) => _deletedCategories.ContainsKey(categoryId);
+
+        public int GetCount( int? parentId = null, bool includeDeleted = false )
+        {
+            IEnumerable<Category> categories = includeDeleted
+                ? _categories.Values.Concat(_deletedCategories.Values)
+                : _categories.Values;
+
             if (parentId.HasValue)
             {
-                return _categories.Values.Count(c => c.ParentCategoryId == parentId.Value);
+                return categories.Count(c => c.ParentCategoryId == parentId.Value);
             }
-            return _categories.Count;
+            return categories.Count();
         }
 
-        public bool HasChildren( int categoryId )
+        public int GetActiveCount() => _categories.Count;
+
+        public int GetDeletedCount() => _deletedCategories.Count;
+
+        public int GetTotalCount() => _categories.Count + _deletedCategories.Count;
+
+        public bool HasChildren( int categoryId, bool includeDeleted = false )
         {
-            return _categories.Values.Any(c => c.ParentCategoryId == categoryId);
+            IEnumerable<Category> categories = includeDeleted
+                ? _categories.Values.Concat(_deletedCategories.Values)
+                : _categories.Values;
+
+            return categories.Any(c => c.ParentCategoryId == categoryId);
         }
 
-        public IEnumerable<Category> SearchCategories( string? searchTerm = null, bool? isActive = null )
+        public IEnumerable<Category> SearchCategories( string? searchTerm = null, bool includeDeleted = false )
         {
-            IEnumerable<Category> query = _categories.Values.AsEnumerable();
+            IEnumerable<Category> query = includeDeleted
+                ? _categories.Values.Concat(_deletedCategories.Values)
+                : _categories.Values;
 
             // Apply search term filter if provided
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 query = query.Where(c =>
-                                        c.Description != null && (c.Name.Contains(searchTerm) ||
-                                                                  c.Description.Contains(searchTerm)));
+                                        c.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                        (c.Description?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
             }
-
 
             return query.OrderBy(c => c.Name).ToList();
         }
-
-        public IEnumerable<Category> GetActiveCategories()
-        {
-            return _categories.Values
-                              .OrderBy(c => c.Name)
-                              .ToList();
-        }
-
 
         private bool WouldCreateCircularReference( int categoryId, int parentId )
         {
@@ -212,7 +360,7 @@ namespace Storix.Application.Stores.Categories
                     return true;
                 }
 
-                CategoryDto? category = GetById(currentId);
+                CategoryDto? category = GetById(currentId, false); // Only check active categories for hierarchy validation
                 if (category?.ParentCategoryId == null) break;
                 currentId = category.ParentCategoryId.Value;
             }

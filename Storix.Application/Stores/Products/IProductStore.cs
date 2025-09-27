@@ -6,58 +6,67 @@ namespace Storix.Application.Stores.Products
 {
     public interface IProductStore
     {
-        // Store Initialization
         void Initialize( List<Product> products );
 
         void Clear();
 
-        // Basic CRUD - Database provides the ID for Create
         ProductDto? Create( int productId, ProductDto productDto );
 
-        ProductDto? GetById( int productId );
+        ProductDto? GetById( int productId, bool includeDeleted = false );
 
         ProductDto? Update( ProductDto productDto );
 
         bool Delete( int productId );
 
-        // Query Operations
-        List<ProductDto> GetAll( int? categoryId = null, int? supplierId = null, string? search = null, bool? isActive = null, int skip = 0, int take = 100 );
+        bool SoftDelete( int productId );
 
-        List<ProductDto> GetByCategory( int categoryId );
+        bool Restore( int productId );
 
-        List<ProductDto> GetBySupplier( int supplierId );
+        List<ProductDto> GetAll( int? categoryId = null, int? supplierId = null, string? search = null, bool includeDeleted = false, int skip = 0,
+            int take = 100 );
 
-        List<ProductDto> GetBySKU( string sku );
+        List<ProductDto> GetByCategory( int categoryId, bool includeDeleted = false );
 
-        List<ProductDto> GetByBarcode( string barcode );
+        List<ProductDto> GetBySupplier( int supplierId, bool includeDeleted = false );
+
+        List<ProductDto> GetBySKU( string sku, bool includeDeleted = false );
+
+        List<ProductDto> GetByBarcode( string barcode, bool includeDeleted = false );
 
         List<ProductDto> GetActiveProducts();
 
-        List<ProductDto> GetInactiveProducts();
+        List<ProductDto> GetDeletedProducts();
 
-        // Utility Operations
-        bool Exists( int productId );
+        bool Exists( int productId, bool includeDeleted = false );
 
-        bool SKUExists( string sku, int? excludeProductId = null );
+        bool IsDeleted( int productId );
 
-        bool BarcodeExists( string barcode, int? excludeProductId = null );
+        bool SKUExists( string sku, int? excludeProductId = null, bool includeDeleted = false );
 
-        int GetCount( int? categoryId = null, int? supplierId = null, bool? isActive = null );
+        bool BarcodeExists( string barcode, int? excludeProductId = null, bool includeDeleted = false );
 
-        // Category-specific operations
-        bool HasProductsInCategory( int categoryId );
+        int GetCount( int? categoryId = null, int? supplierId = null, bool includeDeleted = false );
 
-        int GetProductCountInCategory( int categoryId );
+        int GetActiveCount();
 
-        IEnumerable<Product> SearchProducts( string? searchTerm = null, int? categoryId = null, bool? isActive = null );
+        int GetDeletedCount();
 
-        IEnumerable<Product> GetLowStockProducts();
+        int GetTotalCount();
+
+        bool HasProductsInCategory( int categoryId, bool includeDeleted = false );
+
+        int GetProductCountInCategory( int categoryId, bool includeDeleted = false );
 
         List<ProductDto> GetActiveProductsInCategory( int categoryId );
 
-        // Supplier-specific operations
-        bool HasProductsFromSupplier( int supplierId );
+        bool HasProductsFromSupplier( int supplierId, bool includeDeleted = false );
 
-        int GetProductCountFromSupplier( int supplierId );
+        int GetProductCountFromSupplier( int supplierId, bool includeDeleted = false );
+
+        IEnumerable<Product> SearchProducts( string? searchTerm = null, int? categoryId = null, bool includeDeleted = false );
+
+        IEnumerable<Product> GetLowStockProducts( bool includeDeleted = false );
+
+        List<ProductDto> GetLowStockProducts( Dictionary<int, int> currentStockLevels, bool includeDeleted = false );
     }
 }

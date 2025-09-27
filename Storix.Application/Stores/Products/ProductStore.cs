@@ -8,17 +8,26 @@ namespace Storix.Application.Stores.Products
 {
     public class ProductStore:IProductStore
     {
+        private readonly Dictionary<int, Product> _deletedProducts;
         private readonly Dictionary<int, Product> _products;
 
         public ProductStore( List<Product>? initialProducts = null )
         {
             _products = new Dictionary<int, Product>();
+            _deletedProducts = new Dictionary<int, Product>();
 
             if (initialProducts == null) return;
 
             foreach (Product product in initialProducts)
             {
-                _products[product.ProductId] = product;
+                if (product.IsDeleted)
+                {
+                    _deletedProducts[product.ProductId] = product;
+                }
+                else
+                {
+                    _products[product.ProductId] = product;
+                }
             }
         }
 
@@ -26,17 +35,26 @@ namespace Storix.Application.Stores.Products
         {
             // Clear existing data first
             _products.Clear();
+            _deletedProducts.Clear();
 
-            // Add all products to the store
+            // Add products to appropriate dictionaries based on deletion status
             foreach (Product product in products)
             {
-                _products[product.ProductId] = product;
+                if (product.IsDeleted)
+                {
+                    _deletedProducts[product.ProductId] = product;
+                }
+                else
+                {
+                    _products[product.ProductId] = product;
+                }
             }
         }
 
         public void Clear()
         {
             _products.Clear();
+            _deletedProducts.Clear();
         }
 
         public ProductDto? Create( int productId, ProductDto productDto )
@@ -52,14 +70,14 @@ namespace Storix.Application.Stores.Products
                 return null;
             }
 
-            if (SKUExists(productDto.SKU))
+            if (SKUExists(productDto.SKU, includeDeleted: false))
             {
-                return null; // SKU must be unique
+                return null; // SKU must be unique among active products
             }
 
-            if (!string.IsNullOrEmpty(productDto.Barcode) && BarcodeExists(productDto.Barcode))
+            if (!string.IsNullOrEmpty(productDto.Barcode) && BarcodeExists(productDto.Barcode, includeDeleted: false))
             {
-                return null; // Barcode must be unique if provided
+                return null; // Barcode must be unique among active products if provided
             }
 
             Product product = new(
@@ -74,23 +92,44 @@ namespace Storix.Application.Stores.Products
                 productDto.MaxStockLevel,
                 productDto.SupplierId,
                 productDto.CategoryId,
-                productDto.IsActive,
-                DateTime.UtcNow
+                DateTime.UtcNow // DeletedAt
             );
 
             _products[productId] = product;
             return product.ToDto();
         }
 
-        public ProductDto? GetById( int productId )
+        public ProductDto? GetById( int productId, bool includeDeleted = false )
         {
-            _products.TryGetValue(productId, out Product? product);
-            return product?.ToDto();
+            if (_products.TryGetValue(productId, out Product? product))
+            {
+                return product.ToDto();
+            }
+
+            if (includeDeleted && _deletedProducts.TryGetValue(productId, out Product? deletedProduct))
+            {
+                return deletedProduct.ToDto();
+            }
+
+            return null;
         }
+
 
         public ProductDto? Update( ProductDto productDto )
         {
-            if (!_products.TryGetValue(productDto.ProductId, out Product? existingProduct))
+            // Try to find the product in either collection
+            Product? existingProduct = null;
+            bool isCurrentlyDeleted = false;
+
+            if (_products.TryGetValue(productDto.ProductId, out existingProduct))
+            {
+                isCurrentlyDeleted = false;
+            }
+            else if (_deletedProducts.TryGetValue(productDto.ProductId, out existingProduct))
+            {
+                isCurrentlyDeleted = true;
+            }
+            else
             {
                 return null; // Product not found
             }
@@ -107,12 +146,12 @@ namespace Storix.Application.Stores.Products
 
             if (SKUExists(productDto.SKU, productDto.ProductId))
             {
-                return null; // SKU already exists for another product
+                return null; // SKU already exists for another active product
             }
 
             if (!string.IsNullOrEmpty(productDto.Barcode) && BarcodeExists(productDto.Barcode, productDto.ProductId))
             {
-                return null; // Barcode already exists for another product
+                return null; // Barcode already exists for another active product
             }
 
             Product updatedProduct = existingProduct with
@@ -127,28 +166,107 @@ namespace Storix.Application.Stores.Products
                 MaxStockLevel = productDto.MaxStockLevel,
                 SupplierId = productDto.SupplierId,
                 CategoryId = productDto.CategoryId,
-                IsActive = productDto.IsActive,
-                UpdatedDate = DateTime.UtcNow
+                UpdatedDate = DateTime.UtcNow,
+                // Preserve ISoftDeletable properties from DTO
+                IsDeleted = productDto.IsDeleted,
+                DeletedAt = productDto.DeletedAt
             };
 
-            _products[productDto.ProductId] = updatedProduct;
+            // Move product between collections if deletion status changed
+            if (isCurrentlyDeleted && !updatedProduct.IsDeleted)
+            {
+                // Moving from deleted to active
+                _deletedProducts.Remove(productDto.ProductId);
+                _products[productDto.ProductId] = updatedProduct;
+            }
+            else if (!isCurrentlyDeleted && updatedProduct.IsDeleted)
+            {
+                // Moving from active to deleted
+                _products.Remove(productDto.ProductId);
+                _deletedProducts[productDto.ProductId] = updatedProduct;
+            }
+            else
+            {
+                // Status hasn't changed, update in current collection
+                if (isCurrentlyDeleted)
+                {
+                    _deletedProducts[productDto.ProductId] = updatedProduct;
+                }
+                else
+                {
+                    _products[productDto.ProductId] = updatedProduct;
+                }
+            }
+
             return updatedProduct.ToDto();
         }
 
         public bool Delete( int productId )
         {
-            if (!_products.ContainsKey(productId))
-            {
-                return false; // Product not found
-            }
+            // Remove from both collections to handle any case
+            bool removedFromActive = _products.Remove(productId);
+            bool removedFromDeleted = _deletedProducts.Remove(productId);
 
-            _products.Remove(productId);
-            return true; // Successfully deleted
+            return removedFromActive || removedFromDeleted;
         }
 
-        public List<ProductDto> GetAll( int? categoryId = null, int? supplierId = null, string? search = null, bool? isActive = null, int skip = 0, int take = 100 )
+        public bool SoftDelete( int productId )
         {
-            IEnumerable<Product> products = _products.Values.AsEnumerable();
+            if (!_products.TryGetValue(productId, out Product? product))
+            {
+                return false; // Product not found or already deleted
+            }
+
+            // Move product to deleted collection
+            Product softDeletedProduct = product with
+            {
+                IsDeleted = true,
+                DeletedAt = DateTime.UtcNow,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            _products.Remove(productId);
+            _deletedProducts[productId] = softDeletedProduct;
+            return true;
+        }
+
+        public bool Restore( int productId )
+        {
+            if (!_deletedProducts.TryGetValue(productId, out Product? product))
+            {
+                return false; // Product not found or not deleted
+            }
+
+            // Check for SKU conflicts before restoring
+            if (SKUExists(product.SKU, productId))
+            {
+                return false; // Cannot restore due to SKU conflict
+            }
+
+            // Move product back to active collection
+            Product restoredProduct = product with
+            {
+                IsDeleted = false,
+                DeletedAt = null,
+                UpdatedDate = DateTime.UtcNow
+            };
+
+            _deletedProducts.Remove(productId);
+            _products[productId] = restoredProduct;
+            return true;
+        }
+
+        public List<ProductDto> GetAll(
+            int? categoryId = null,
+            int? supplierId = null,
+            string? search = null,
+            bool includeDeleted = false,
+            int skip = 0,
+            int take = 100 )
+        {
+            IEnumerable<Product> products = includeDeleted
+                ? _products.Values.Concat(_deletedProducts.Values)
+                : _products.Values.Where(p => !p.IsDeleted);
 
             // Filter by category
             if (categoryId.HasValue)
@@ -162,12 +280,6 @@ namespace Storix.Application.Stores.Products
                 products = products.Where(p => p.SupplierId == supplierId.Value);
             }
 
-            // Filter by active status
-            if (isActive.HasValue)
-            {
-                products = products.Where(p => p.IsActive == isActive.Value);
-            }
-
             // Filter by search
             if (!string.IsNullOrEmpty(search))
             {
@@ -176,7 +288,8 @@ namespace Storix.Application.Stores.Products
                                               p.Name.ToLowerInvariant().Contains(searchLower) ||
                                               p.SKU.ToLowerInvariant().Contains(searchLower) ||
                                               p.Description.ToLowerInvariant().Contains(searchLower) ||
-                                              !string.IsNullOrEmpty(p.Barcode) && p.Barcode.ToLowerInvariant().Contains(searchLower));
+                                              !string.IsNullOrEmpty(p.Barcode) &&
+                                              p.Barcode.ToLowerInvariant().Contains(searchLower));
             }
 
             return products
@@ -187,50 +300,94 @@ namespace Storix.Application.Stores.Products
                    .ToList();
         }
 
-        public List<ProductDto> GetByCategory( int categoryId ) => GetAll(categoryId);
 
-        public List<ProductDto> GetBySupplier( int supplierId ) => GetAll(supplierId: supplierId);
+        public List<ProductDto> GetByCategory( int categoryId, bool includeDeleted = false ) => GetAll(categoryId, includeDeleted: includeDeleted);
 
-        public List<ProductDto> GetBySKU( string sku )
-        {
-            return _products.Values
-                            .Where(p => p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase))
-                            .Select(p => p.ToDto())
-                            .ToList();
-        }
+        public List<ProductDto> GetBySupplier( int supplierId, bool includeDeleted = false ) => GetAll(supplierId: supplierId, includeDeleted: includeDeleted);
 
-        public List<ProductDto> GetByBarcode( string barcode )
-        {
-            return _products.Values
-                            .Where(p => !string.IsNullOrEmpty(p.Barcode) && p.Barcode.Equals(barcode, StringComparison.OrdinalIgnoreCase))
-                            .Select(p => p.ToDto())
-                            .ToList();
-        }
-
-        public List<ProductDto> GetActiveProducts() => GetAll(isActive: true);
-
-        public List<ProductDto> GetInactiveProducts() => GetAll(isActive: false);
-
-        public bool Exists( int productId ) => _products.ContainsKey(productId);
-
-        public bool SKUExists( string sku, int? excludeProductId = null )
-        {
-            return _products.Values.Any(p =>
-                                            p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase) &&
-                                            p.ProductId != excludeProductId);
-        }
-
-        public bool BarcodeExists( string barcode, int? excludeProductId = null )
-        {
-            return _products.Values.Any(p =>
-                                            !string.IsNullOrEmpty(p.Barcode) &&
-                                            p.Barcode.Equals(barcode, StringComparison.OrdinalIgnoreCase) &&
-                                            p.ProductId != excludeProductId);
-        }
-
-        public int GetCount( int? categoryId = null, int? supplierId = null, bool? isActive = null )
+        public List<ProductDto> GetBySKU( string sku, bool includeDeleted = false )
         {
             IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products
+                   .Where(p => p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase))
+                   .Select(p => p.ToDto())
+                   .ToList();
+        }
+
+        public List<ProductDto> GetByBarcode( string barcode, bool includeDeleted = false )
+        {
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products
+                   .Where(p => !string.IsNullOrEmpty(p.Barcode) && p.Barcode.Equals(barcode, StringComparison.OrdinalIgnoreCase))
+                   .Select(p => p.ToDto())
+                   .ToList();
+        }
+
+        public List<ProductDto> GetActiveProducts() => GetAll(includeDeleted: false);
+
+        public List<ProductDto> GetDeletedProducts()
+        {
+            return _deletedProducts.Values
+                                   .OrderBy(p => p.Name)
+                                   .Select(p => p.ToDto())
+                                   .ToList();
+        }
+
+        public bool Exists( int productId, bool includeDeleted = false )
+        {
+            bool existsInActive = _products.ContainsKey(productId);
+            return existsInActive || includeDeleted && _deletedProducts.ContainsKey(productId);
+        }
+
+        public bool IsDeleted( int productId ) => _deletedProducts.ContainsKey(productId);
+
+        public bool SKUExists( string sku, int? excludeProductId = null, bool includeDeleted = false )
+        {
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products.Any(p =>
+                                    p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase) &&
+                                    p.ProductId != excludeProductId);
+        }
+
+        public bool BarcodeExists( string barcode, int? excludeProductId = null, bool includeDeleted = false )
+        {
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products.Any(p =>
+                                    !string.IsNullOrEmpty(p.Barcode) &&
+                                    p.Barcode.Equals(barcode, StringComparison.OrdinalIgnoreCase) &&
+                                    p.ProductId != excludeProductId);
+        }
+
+        public int GetCount( int? categoryId = null, int? supplierId = null, bool includeDeleted = false )
+        {
+            // Fix: Remove isActive parameter since you removed IsActive property
+            IEnumerable<Product> products = includeDeleted
+                ? _products.Values.Concat(_deletedProducts.Values)
+                : _products.Values;
 
             if (categoryId.HasValue)
             {
@@ -242,35 +399,79 @@ namespace Storix.Application.Stores.Products
                 products = products.Where(p => p.SupplierId == supplierId.Value);
             }
 
-            if (isActive.HasValue)
-            {
-                products = products.Where(p => p.IsActive == isActive.Value);
-            }
-
             return products.Count();
         }
 
+        public int GetActiveCount() => _products.Count;
+
+        public int GetDeletedCount() => _deletedProducts.Count;
+
+        public int GetTotalCount() => _products.Count + _deletedProducts.Count;
+
         // Category-specific operations
-        public bool HasProductsInCategory( int categoryId )
+        public bool HasProductsInCategory( int categoryId, bool includeDeleted = false )
         {
-            return _products.Values.Any(p => p.CategoryId == categoryId);
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products.Any(p => p.CategoryId == categoryId);
         }
 
-        public int GetProductCountInCategory( int categoryId ) => GetCount(categoryId);
+        public int GetProductCountInCategory( int categoryId, bool includeDeleted = false ) => GetCount(categoryId, includeDeleted: includeDeleted);
 
-        public List<ProductDto> GetActiveProductsInCategory( int categoryId ) => GetAll(categoryId, isActive: true);
+        public List<ProductDto> GetActiveProductsInCategory( int categoryId ) => GetAll(categoryId, includeDeleted: false);
 
         // Supplier-specific operations
-        public bool HasProductsFromSupplier( int supplierId )
+        public bool HasProductsFromSupplier( int supplierId, bool includeDeleted = false )
         {
-            return _products.Values.Any(p => p.SupplierId == supplierId);
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products.Any(p => p.SupplierId == supplierId);
         }
 
-        public int GetProductCountFromSupplier( int supplierId ) => GetCount(supplierId: supplierId);
+        public int GetProductCountFromSupplier( int supplierId, bool includeDeleted = false ) => GetCount(supplierId: supplierId, includeDeleted: includeDeleted);
 
-        public IEnumerable<Product> SearchProducts( string? searchTerm = null, int? categoryId = null, bool? isActive = null )
+        public IEnumerable<Product> GetLowStockProducts( bool includeDeleted = false )
         {
-            IEnumerable<Product> query = _products.Values.AsEnumerable();
+            IEnumerable<Product> products = includeDeleted
+                ? _products.Values.Concat(_deletedProducts.Values)
+                : _products.Values;
+
+            return products
+                   .OrderBy(p => p.Name)
+                   .ToList();
+        }
+
+        public List<ProductDto> GetLowStockProducts( Dictionary<int, int> currentStockLevels, bool includeDeleted = false )
+        {
+            IEnumerable<Product> products = _products.Values.AsEnumerable();
+
+            if (includeDeleted)
+            {
+                products = products.Concat(_deletedProducts.Values);
+            }
+
+            return products
+                   .Where(p => currentStockLevels.ContainsKey(p.ProductId) && p.IsLowStock(currentStockLevels[p.ProductId]))
+                   .Select(p => p.ToDto())
+                   .ToList();
+        }
+
+        public IEnumerable<Product> SearchProducts( string? searchTerm = null, int? categoryId = null, bool includeDeleted = false )
+        {
+            // Fix: Remove isActive parameter since you removed IsActive property
+            IEnumerable<Product> query = includeDeleted
+                ? _products.Values.Concat(_deletedProducts.Values)
+                : _products.Values;
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -285,28 +486,7 @@ namespace Storix.Application.Stores.Products
                 query = query.Where(p => p.CategoryId == categoryId.Value);
             }
 
-            if (isActive.HasValue)
-            {
-                query = query.Where(p => p.IsActive == isActive.Value);
-            }
-
             return query.OrderBy(p => p.Name).ToList();
-        }
-
-        public IEnumerable<Product> GetLowStockProducts()
-        {
-            return _products.Values
-                            .Where(p => p.IsActive)
-                            .OrderBy(p => p.Name)
-                            .ToList();
-        }
-
-        public List<ProductDto> GetLowStockProducts( Dictionary<int, int> currentStockLevels )
-        {
-            return _products.Values
-                            .Where(p => currentStockLevels.ContainsKey(p.ProductId) && p.IsLowStock(currentStockLevels[p.ProductId]))
-                            .Select(p => p.ToDto())
-                            .ToList();
         }
     }
 }
