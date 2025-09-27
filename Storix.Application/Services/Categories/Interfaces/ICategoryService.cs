@@ -5,119 +5,64 @@ using Storix.Application.DTO.Categories;
 
 namespace Storix.Application.Services.Categories.Interfaces
 {
-    /// <summary>
-    ///     Interface for category service operations with enhanced error handling.
-    /// </summary>
     public interface ICategoryService
     {
-        #region Read Operations
+        CategoryDto? GetCategoryById( int categoryId, bool includeDeleted = false );
 
-        /// <summary>
-        ///     Gets a category by its ID from the store (no database call needed).
-        /// </summary>
-        /// <param name="categoryId" >Unique Identifier</param>
-        /// <returns>The category DTO or null if not found.</returns>
-        CategoryDto? GetCategoryById( int categoryId );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync( bool includeDeleted = false );
 
-        /// <summary>
-        ///     Retrieves all categories from database and loads them into the store.
-        /// </summary>
-        /// <returns>A DatabaseResult containing all categories as DTOs.</returns>
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync();
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync();
 
-        /// <summary>
-        ///     Gets all root categories (categories without a parent).
-        /// </summary>
-        /// <returns>A DatabaseResult containing root categories.</returns>
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync();
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllDeletedCategoriesAsync();
 
-        /// <summary>
-        ///     Gets all subcategories of a given parent category.
-        /// </summary>
-        /// <param name="parentCategoryId" >ID of the parent category</param>
-        /// <returns>A DatabaseResult containing subcategories.</returns>
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync( bool includeDeleted = false );
 
-        #endregion
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false );
 
-        #region Write Operations
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false );
 
-        /// <summary>
-        ///     Creates a new category with business validation.
-        /// </summary>
-        /// <param name="createCategoryDto" >The category creation record</param>
-        /// <returns>A DatabaseResult containing the created category DTO</returns>
+        Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false );
+
+        Task<DatabaseResult<int>> GetActiveCategoryCountAsync();
+
+        Task<DatabaseResult<int>> GetDeletedCategoryCountAsync();
+
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm, bool includeDeleted = false );
+
         Task<DatabaseResult<CategoryDto>> CreateCategoryAsync( CreateCategoryDto createCategoryDto );
 
-        /// <summary>
-        ///     Updates an existing category with business validation.
-        /// </summary>
-        /// <param name="updateCategoryDto" >The category update record.</param>
-        /// <returns>A DatabaseResult containing the updated category DTO.</returns>
         Task<DatabaseResult<CategoryDto>> UpdateCategoryAsync( UpdateCategoryDto updateCategoryDto );
 
-        /// <summary>
-        ///     Permanently deletes a category by its ID.
-        /// </summary>
-        /// <param name="categoryId" >Unique Identifier of the category.</param>
-        /// <returns>A DatabaseResult indicating success or failure.</returns>
+        Task<DatabaseResult> SoftDeleteCategoryAsync( int categoryId );
+
+        Task<DatabaseResult> RestoreCategoryAsync( int categoryId );
+
+        Task<DatabaseResult> HardDeleteCategoryAsync( int categoryId );
+
         Task<DatabaseResult> DeleteCategoryAsync( int categoryId );
 
-        #endregion
+        Task<DatabaseResult<bool>> CategoryExistsAsync( int categoryId, bool includeDeleted = false );
 
-        #region Validation
+        Task<DatabaseResult<bool>> CategoryNameExistsAsync( string name, int? excludeCategoryId = null, bool includeDeleted = false );
 
-        /// <summary>
-        ///     Checks if a category exists by ID (from store first, then database if needed).
-        /// </summary>
-        /// <param name="categoryId" >The category ID to check</param>
-        /// <returns>A DatabaseResult containing true if exists, false otherwise.</returns>
-        Task<DatabaseResult<bool>> CategoryExistsAsync( int categoryId );
+        Task<DatabaseResult<bool>> IsCategorySoftDeleted( int categoryId );
 
-        /// <summary>
-        ///     Checks if a category name already exists (optionally excluding a specific category ID).
-        /// </summary>
-        /// <param name="name" >The category name to check</param>
-        /// <param name="excludeCategoryId" >Optional category ID to exclude from the check</param>
-        /// <returns>A DatabaseResult containing true if name exists, false otherwise.</returns>
-        Task<DatabaseResult<bool>> CategoryNameExistsAsync( string name, int? excludeCategoryId = null );
+        Task<DatabaseResult> ValidateForDeletion( int categoryId );
 
-        #endregion
+        Task<DatabaseResult> ValidateForHardDeletion( int categoryId );
 
-        #region Pagination
+        Task<DatabaseResult> ValidateForRestore( int categoryId );
 
-        /// <summary>
-        ///     Gets the total count of categories.
-        /// </summary>
-        /// <returns>A DatabaseResult containing the total count.</returns>
-        Task<DatabaseResult<int>> GetTotalCategoryCountAsync();
+        IEnumerable<CategoryDto> SearchCategories( string? searchTerm = null, bool includeDeleted = false );
 
-        /// <summary>
-        ///     Gets a paged list of categories.
-        /// </summary>
-        /// <param name="pageNumber" >The page number (1-based)</param>
-        /// <param name="pageSize" >The number of items per page</param>
-        /// <returns>A DatabaseResult containing the paged categories.</returns>
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize );
+        IEnumerable<CategoryDto> GetActiveCategoriesFromStore();
 
-        #endregion
+        IEnumerable<CategoryDto> GetDeletedCategoriesFromStore();
 
-        #region Store Operations
+        void RefreshStoreCache();
 
-        /// <summary>
-        ///     Searches categories by name or description from the store.
-        /// </summary>
-        /// <param name="searchTerm" >The search term to match against category name or description.</param>
-        /// <param name="isActive" >Optional active status filter.</param>
-        /// <returns>A collection of matching category DTOs.</returns>
-        IEnumerable<CategoryDto> SearchCategories( string? searchTerm = null, bool? isActive = null );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> BulkSoftDeleteAsync( IEnumerable<int> categoryIds );
 
-        /// <summary>
-        ///     Gets all active categories from the store.
-        /// </summary>
-        /// <returns>A collection of active category DTOs.</returns>
-        IEnumerable<CategoryDto> GetActiveCategories();
-
-        #endregion
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> BulkRestoreAsync( IEnumerable<int> categoryIds );
     }
 }

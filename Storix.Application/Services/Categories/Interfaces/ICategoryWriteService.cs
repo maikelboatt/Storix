@@ -10,6 +10,10 @@ namespace Storix.Application.Services.Categories.Interfaces
 
         Task<DatabaseResult<CategoryDto>> UpdateCategoryAsync( UpdateCategoryDto updateCategoryDto );
 
-        Task<DatabaseResult> DeleteCategoryAsync( int categoryId );
+        Task<DatabaseResult> SoftDeleteCategoryAsync( int categoryId );
+
+        Task<DatabaseResult> RestoreCategoryAsync( int categoryId );
+
+        Task<DatabaseResult> HardDeleteCategoryAsync( int categoryId );
     }
 }

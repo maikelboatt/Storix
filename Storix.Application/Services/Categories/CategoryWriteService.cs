@@ -15,7 +15,7 @@ using Storix.Domain.Models;
 namespace Storix.Application.Services.Categories
 {
     /// <summary>
-    ///     Service responsible for category write operations.
+    ///     Service responsible for category write operations with ISoftDeletable support.
     /// </summary>
     public class CategoryWriteService(
         ICategoryRepository categoryRepository,
@@ -38,7 +38,7 @@ namespace Storix.Application.Services.Categories
             if (!businessValidation.IsSuccess)
                 return businessValidation;
 
-            // Create category in database first
+            // Create category
             return await PerformCreate(createCategoryDto);
         }
 
@@ -58,12 +58,12 @@ namespace Storix.Application.Services.Categories
             return await PerformUpdate(updateCategoryDto);
         }
 
-        public async Task<DatabaseResult> DeleteCategoryAsync( int categoryId )
+        public async Task<DatabaseResult> SoftDeleteCategoryAsync( int categoryId )
         {
             // Input validation
             if (categoryId <= 0)
             {
-                logger.LogWarning("Invalid category ID {CategoryId} provided for deletion", categoryId);
+                logger.LogWarning("Invalid category ID {CategoryId} provided for soft deletion", categoryId);
                 return DatabaseResult.Failure("Category ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
             }
 
@@ -72,17 +72,59 @@ namespace Storix.Application.Services.Categories
             if (!validationResult.IsSuccess)
                 return validationResult;
 
-            // Perform deletion
-            return await PerformDelete(categoryId);
+            // Perform soft deletion
+            return await PerformSoftDelete(categoryId);
         }
 
+        public async Task<DatabaseResult> RestoreCategoryAsync( int categoryId )
+        {
+            // Input validation
+            if (categoryId <= 0)
+            {
+                logger.LogWarning("Invalid category ID {CategoryId} provided for restoration", categoryId);
+                return DatabaseResult.Failure("Category ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
+            }
+
+            // Business validation
+            DatabaseResult validationResult = await categoryValidationService.ValidateForRestore(categoryId);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            // Perform restoration
+            return await PerformRestore(categoryId);
+        }
+
+        public async Task<DatabaseResult> HardDeleteCategoryAsync( int categoryId )
+        {
+            // Input validation
+            if (categoryId <= 0)
+            {
+                logger.LogWarning("Invalid category ID {CategoryId} provided for hard deletion", categoryId);
+                return DatabaseResult.Failure("Category ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
+            }
+
+            // Business validation
+            DatabaseResult validationResult = await categoryValidationService.ValidateForHardDeletion(categoryId);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            // Perform hard deletion
+            return await PerformHardDelete(categoryId);
+        }
 
         #region Helper Methods
 
         private async Task<DatabaseResult<CategoryDto>> PerformCreate( CreateCategoryDto createCategoryDto )
         {
-
             Category category = createCategoryDto.ToDomain();
+
+            // Ensure new categories are not marked as deleted
+            category = category with
+            {
+                IsDeleted = false,
+                DeletedAt = null
+            };
+
             DatabaseResult<Category> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => categoryRepository.CreateAsync(category),
                 "Creating new category"
@@ -121,9 +163,9 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult<CategoryDto>> PerformUpdate( UpdateCategoryDto updateCategoryDto )
         {
-            // Get existing category
+            // Get existing category (including soft-deleted ones for update operations)
             DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId),
+                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId, true),
                 $"Retrieving category {updateCategoryDto.CategoryId} for update",
                 false
             );
@@ -135,13 +177,14 @@ namespace Storix.Application.Services.Categories
                     getResult.ErrorCode);
             }
 
-            // Update category
+            // Update category while preserving ISoftDeletable properties
             Category updatedCategory = getResult.Value with
             {
                 Name = updateCategoryDto.Name,
                 Description = updateCategoryDto.Description,
                 ParentCategoryId = updateCategoryDto.ParentCategoryId,
                 ImageUrl = updateCategoryDto.ImageUrl
+                // ISoftDeletable properties are preserved from existing category
             };
 
             DatabaseResult<Category> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -152,6 +195,7 @@ namespace Storix.Application.Services.Categories
             if (updateResult.IsSuccess && updateResult.Value != null)
             {
                 CategoryDto categoryDto = updateResult.Value.ToDto();
+
                 // Update in-memory store
                 categoryStore.Update(categoryDto);
                 logger.LogInformation("Successfully updated category with ID {CategoryId}", updateCategoryDto.CategoryId);
@@ -166,27 +210,83 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<CategoryDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
         }
 
-        private async Task<DatabaseResult> PerformDelete( int categoryId )
+        private async Task<DatabaseResult> PerformSoftDelete( int categoryId )
         {
-
             DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.DeleteAsync(categoryId),
-                "Deleting category",
+                () => categoryRepository.SoftDeleteAsync(categoryId),
+                "Soft deleting category",
+                enableRetry: false
+            );
+
+            if (result.IsSuccess && result.Value)
+            {
+                // Remove from store cache since it's now soft deleted
+                categoryStore.Delete(categoryId);
+                logger.LogInformation("Successfully soft deleted category with ID {CategoryId}", categoryId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to soft delete category with ID {CategoryId}: {ErrorMessage}",
+                categoryId,
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to soft delete category", result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformRestore( int categoryId )
+        {
+            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.RestoreAsync(categoryId),
+                "Restoring category",
+                enableRetry: false
+            );
+
+            if (result.IsSuccess && result.Value)
+            {
+                // Get the restored category and add it back to the store cache
+                DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    () => categoryRepository.GetByIdAsync(categoryId),
+                    $"Retrieving restored category {categoryId}",
+                    false
+                );
+
+                if (getResult.IsSuccess && getResult.Value != null)
+                {
+                    CategoryDto categoryDto = getResult.Value.ToDto();
+                    categoryStore.Update(categoryDto);
+                }
+
+                logger.LogInformation("Successfully restored category with ID {CategoryId}", categoryId);
+                return DatabaseResult.Success();
+            }
+
+            logger.LogWarning(
+                "Failed to restore category with ID {CategoryId}: {ErrorMessage}",
+                categoryId,
+                result.ErrorMessage);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to restore category", result.ErrorCode);
+        }
+
+        private async Task<DatabaseResult> PerformHardDelete( int categoryId )
+        {
+            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.HardDeleteAsync(categoryId),
+                "Hard deleting category",
                 enableRetry: false
             );
 
             if (result.IsSuccess && result.Value)
             {
                 categoryStore.Delete(categoryId);
-                logger.LogInformation("Successfully deleted category with ID {CategoryId}", categoryId);
+                logger.LogWarning("Successfully hard deleted category with ID {CategoryId} - THIS IS PERMANENT", categoryId);
                 return DatabaseResult.Success();
             }
 
             logger.LogWarning(
-                "Failed to delete category with ID {CategoryId}: {ErrorMessage}",
+                "Failed to hard delete category with ID {CategoryId}: {ErrorMessage}",
                 categoryId,
                 result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to delete category", result.ErrorCode);
+            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to hard delete category", result.ErrorCode);
         }
 
         #endregion
@@ -203,25 +303,29 @@ namespace Storix.Application.Services.Categories
 
             ValidationResult? validationResult = createValidator.Validate(createCategoryDto);
 
-            if (validationResult.IsValid) return DatabaseResult<CategoryDto>.Success(null!); // Valid input
+            if (validationResult.IsValid) return DatabaseResult<CategoryDto>.Success(null!);
 
             string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
             logger.LogWarning("Category creation validation failed: {ValidationErrors}", errors);
             return DatabaseResult<CategoryDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-
         }
 
-        public async Task<DatabaseResult<CategoryDto>> ValidateCreateBusiness( CreateCategoryDto createCategoryDto )
+        private async Task<DatabaseResult<CategoryDto>> ValidateCreateBusiness( CreateCategoryDto createCategoryDto )
         {
-            DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(createCategoryDto.Name);
+            // Check name availability (excluding soft-deleted categories by default)
+            DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(createCategoryDto.Name, includeDeleted: false);
             if (!nameExistsResult.IsSuccess)
                 return DatabaseResult<CategoryDto>.Failure(nameExistsResult.ErrorMessage!, nameExistsResult.ErrorCode);
 
-            if (!nameExistsResult.Value) return DatabaseResult<CategoryDto>.Success(null!); // Valid
-            logger.LogWarning("Attempted to create category with duplicate name: {CategoryName}", createCategoryDto.Name);
-            return DatabaseResult<CategoryDto>.Failure(
-                $"A category with the name '{createCategoryDto.Name}' already exists.",
-                DatabaseErrorCode.DuplicateKey);
+            if (nameExistsResult.Value)
+            {
+                logger.LogWarning("Attempted to create category with duplicate name: {CategoryName}", createCategoryDto.Name);
+                return DatabaseResult<CategoryDto>.Failure(
+                    $"A category with the name '{createCategoryDto.Name}' already exists.",
+                    DatabaseErrorCode.DuplicateKey);
+            }
+
+            return DatabaseResult<CategoryDto>.Success(null!);
         }
 
         private DatabaseResult<CategoryDto> ValidateUpdateInput( UpdateCategoryDto? updateCategoryDto )
@@ -243,13 +347,13 @@ namespace Storix.Application.Services.Categories
                 return DatabaseResult<CategoryDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
             }
 
-            return DatabaseResult<CategoryDto>.Success(null!); // Valid
+            return DatabaseResult<CategoryDto>.Success(null!);
         }
 
-        public async Task<DatabaseResult<CategoryDto>> ValidateUpdateBusiness( UpdateCategoryDto updateCategoryDto )
+        private async Task<DatabaseResult<CategoryDto>> ValidateUpdateBusiness( UpdateCategoryDto updateCategoryDto )
         {
-            // Check existence
-            DatabaseResult<bool> existsResult = await categoryValidationService.CategoryExistsAsync(updateCategoryDto.CategoryId);
+            // Check existence (including soft-deleted categories for updates)
+            DatabaseResult<bool> existsResult = await categoryValidationService.CategoryExistsAsync(updateCategoryDto.CategoryId, true);
             if (!existsResult.IsSuccess)
                 return DatabaseResult<CategoryDto>.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
 
@@ -261,7 +365,7 @@ namespace Storix.Application.Services.Categories
                     DatabaseErrorCode.NotFound);
             }
 
-            // Check duplicate name
+            // Check name availability (excluding soft-deleted categories)
             DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(
                 updateCategoryDto.Name,
                 updateCategoryDto.CategoryId);
@@ -279,7 +383,7 @@ namespace Storix.Application.Services.Categories
                     DatabaseErrorCode.DuplicateKey);
             }
 
-            return DatabaseResult<CategoryDto>.Success(null!); // Valid
+            return DatabaseResult<CategoryDto>.Success(null!);
         }
 
         #endregion
