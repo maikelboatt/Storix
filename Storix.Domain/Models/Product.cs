@@ -1,4 +1,6 @@
-﻿namespace Storix.Domain.Models
+﻿using Storix.Domain.Interfaces;
+
+namespace Storix.Domain.Models
 {
     public record Product(
         int ProductId,
@@ -12,11 +14,14 @@
         int MaxStockLevel,
         int SupplierId,
         int CategoryId,
-        bool IsActive,
         DateTime CreatedDate,
-        DateTime? UpdatedDate = null )
+        DateTime? UpdatedDate = null,
+        bool IsDeleted = false,
+        DateTime? DeletedAt = null
+    ):ISoftDeletable
     {
         public decimal ProfitMargin => Price - Cost;
+
 
         // You can still add business logic methods if needed
         public bool IsLowStock( int currentStock ) => currentStock <= MinStockLevel;

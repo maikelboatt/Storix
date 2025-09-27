@@ -20,9 +20,10 @@ namespace Storix.Application.DTO.Products
             MaxStockLevel = product.MaxStockLevel,
             SupplierId = product.SupplierId,
             CategoryId = product.CategoryId,
-            IsActive = product.IsActive,
             CreatedDate = product.CreatedDate,
-            UpdatedDate = product.UpdatedDate
+            UpdatedDate = product.UpdatedDate,
+            IsDeleted = product.IsDeleted,
+            DeletedAt = product.DeletedAt
         };
 
         public static Product ToDomain( this ProductDto productDto ) => new(
@@ -37,9 +38,10 @@ namespace Storix.Application.DTO.Products
             productDto.MaxStockLevel,
             productDto.SupplierId,
             productDto.CategoryId,
-            productDto.IsActive,
             productDto.CreatedDate,
-            productDto.UpdatedDate);
+            productDto.UpdatedDate,
+            productDto.IsDeleted,
+            productDto.DeletedAt);
 
         public static CreateProductDto ToCreateDto( this ProductDto product ) => new()
         {
@@ -53,7 +55,8 @@ namespace Storix.Application.DTO.Products
             MaxStockLevel = product.MaxStockLevel,
             SupplierId = product.SupplierId,
             CategoryId = product.CategoryId,
-            IsActive = product.IsActive
+            IsDeleted = product.IsDeleted,
+            DeletedAt = product.DeletedAt
         };
 
         public static UpdateProductDto ToUpdateDto( this ProductDto product ) => new()
@@ -69,7 +72,8 @@ namespace Storix.Application.DTO.Products
             MaxStockLevel = product.MaxStockLevel,
             SupplierId = product.SupplierId,
             CategoryId = product.CategoryId,
-            IsActive = product.IsActive
+            IsDeleted = product.IsDeleted,
+            DeletedAt = product.DeletedAt
         };
 
         public static CreateProductDto ToCreateDto( this Product product ) => new()
@@ -84,7 +88,8 @@ namespace Storix.Application.DTO.Products
             MaxStockLevel = product.MaxStockLevel,
             SupplierId = product.SupplierId,
             CategoryId = product.CategoryId,
-            IsActive = product.IsActive
+            IsDeleted = product.IsDeleted,
+            DeletedAt = product.DeletedAt
         };
 
         public static Product ToDomain( this CreateProductDto dto ) => new(
@@ -99,8 +104,10 @@ namespace Storix.Application.DTO.Products
             dto.MaxStockLevel,
             dto.SupplierId,
             dto.CategoryId,
-            dto.IsActive,
-            DateTime.UtcNow
+            DateTime.MinValue,
+            DateTime.UtcNow,
+            dto.IsDeleted,
+            dto.DeletedAt
         );
 
         public static Product ToDomain( this UpdateProductDto dto ) => new(
@@ -115,9 +122,10 @@ namespace Storix.Application.DTO.Products
             dto.MaxStockLevel,
             dto.SupplierId,
             dto.CategoryId,
-            dto.IsActive,
             DateTime.MinValue,
-            DateTime.UtcNow
+            DateTime.UtcNow,
+            dto.IsDeleted,
+            dto.DeletedAt
         );
 
         public static IEnumerable<ProductDto> ToDto( this IEnumerable<Product> products ) => products.Select(p => p.ToDto());

@@ -1,4 +1,6 @@
-﻿namespace Storix.Application.DTO.Products
+﻿using System;
+
+namespace Storix.Application.DTO.Products
 {
     public class CreateProductDto
     {
@@ -12,6 +14,7 @@
         public int MaxStockLevel { get; set; }
         public int SupplierId { get; set; }
         public int CategoryId { get; set; }
-        public bool IsActive { get; set; } = true;
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; } = null;
     }
 }
