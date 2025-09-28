@@ -185,7 +185,6 @@ namespace Storix.Core.InputModel
             _maxStockLevel = dto.MaxStockLevel;
             _supplierId = dto.SupplierId;
             _categoryId = dto.CategoryId;
-            _isActive = dto.IsActive;
         }
 
         private void LoadFromDto( UpdateProductDto dto )
@@ -201,7 +200,6 @@ namespace Storix.Core.InputModel
             _maxStockLevel = dto.MaxStockLevel;
             _supplierId = dto.SupplierId;
             _categoryId = dto.CategoryId;
-            _isActive = dto.IsActive;
         }
 
         // Build DTO from current field values
@@ -216,8 +214,7 @@ namespace Storix.Core.InputModel
             MinStockLevel = _minStockLevel,
             MaxStockLevel = _maxStockLevel,
             SupplierId = _supplierId,
-            CategoryId = _categoryId,
-            IsActive = _isActive
+            CategoryId = _categoryId
         };
 
         public UpdateProductDto ToUpdateDto() => new()
@@ -232,8 +229,7 @@ namespace Storix.Core.InputModel
             MinStockLevel = _minStockLevel,
             MaxStockLevel = _maxStockLevel,
             SupplierId = _supplierId,
-            CategoryId = _categoryId,
-            IsActive = _isActive
+            CategoryId = _categoryId
         };
 
         private void ValidateProperty( object value, [CallerMemberName] string propertyName = "" )
