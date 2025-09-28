@@ -177,6 +177,11 @@ namespace Storix.Infrastructure.Services.Errors
                 DatabaseErrorCode.DuplicateKey        => "This record already exists. Please check your data and try again.",
                 DatabaseErrorCode.ForeignKeyViolation => "Cannot complete this operation because it would violate data integrity rules.",
                 DatabaseErrorCode.UnexpectedError     => "An unexpected error occurred. Please try again or contact support.",
+                DatabaseErrorCode.ValidationFailure   => "The data provided is invalid. Please review and correct any errors.",
+                DatabaseErrorCode.InvalidInput        => "The input provided is not valid. Please check and try again.",
+                DatabaseErrorCode.PartialFailure      => "The operation was only partially successful. Please review the results and try again if necessary.",
+                DatabaseErrorCode.ConstraintViolation => "The operation could not be completed due to a constraint violation. Please check your data and try again.",
+                DatabaseErrorCode.NotFound            => "The requested record was not found. Please verify the information and try again.",
                 _                                     => "An unexpected error occurred. Please try again or contact support."
             };
         }

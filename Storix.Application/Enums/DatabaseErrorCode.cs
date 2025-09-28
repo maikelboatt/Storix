@@ -11,6 +11,8 @@
         UnexpectedError,     // Catch-all for unknown errors
         ValidationFailure,   // Business validation failed ← NEW
         InvalidInput,        // Invalid parameters/input ← NEW
+        PartialFailure,      // Some operations succeeded, others failed ← NEW
+        ConstraintViolation, // General constraint violation ← NEW
         NotFound             // Record not found ← NEW
     }
 }
