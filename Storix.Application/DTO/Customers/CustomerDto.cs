@@ -1,4 +1,6 @@
-﻿namespace Storix.Application.DTO.Customer
+﻿using System;
+
+namespace Storix.Application.DTO.Customers
 {
     public class CustomerDto
     {
@@ -7,6 +9,7 @@
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; } = null;
     }
 }

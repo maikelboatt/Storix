@@ -1,7 +1,7 @@
-﻿using Storix.Domain.Enums;
-using System;
+﻿using System;
+using Storix.Domain.Enums;
 
-namespace Storix.Application.DTO.Order
+namespace Storix.Application.DTO.Orders
 {
     public class UpdateOrderDto
     {

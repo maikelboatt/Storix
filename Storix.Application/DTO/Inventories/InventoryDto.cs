@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Storix.Application.DTO.Inventory
+namespace Storix.Application.DTO.Inventories
 {
     public class InventoryDto
     {

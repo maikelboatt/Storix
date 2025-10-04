@@ -1,11 +1,13 @@
-﻿using Storix.Domain.Enums;
-using System;
+﻿using System;
+using Storix.Domain.Enums;
 
-namespace Storix.Application.DTO.Order
+namespace Storix.Application.DTO.Orders
 {
-    public class CreateOrderDto
+    public class OrderDto
     {
+        public int OrderId { get; set; }
         public OrderType Type { get; set; }
+        public OrderStatus Status { get; set; }
         public int? SupplierId { get; set; }
         public int? CustomerId { get; set; }
         public DateTime OrderDate { get; set; }

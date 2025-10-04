@@ -1,12 +1,15 @@
-﻿namespace Storix.Application.DTO.Customer
+﻿using System;
+
+namespace Storix.Application.DTO.Customers
 {
-    public abstract class UpdateCustomerDto
+    public class UpdateCustomerDto
     {
         public int CustomerId { get; set; }
         public string Name { get; set; } = string.Empty;
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public bool IsActive { get; set; }
+        public bool IsDeleted { get; set; } = false;
+        public DateTime? DeletedAt { get; set; } = null;
     }
 }
