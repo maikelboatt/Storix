@@ -138,6 +138,7 @@ namespace Storix.Infrastructure.Services.Errors
                 : DatabaseResult.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+
         /// <summary>
         ///     Classifies an exception and determines if it should be retried.
         /// </summary>
@@ -171,18 +172,19 @@ namespace Storix.Infrastructure.Services.Errors
         {
             return errorCode switch
             {
-                DatabaseErrorCode.PermissionDenied    => "You do not have permission to perform this action. Please contact your administrator.",
-                DatabaseErrorCode.ConnectionFailure   => "Unable to connect to the database. Please check your network connection or contact support.",
-                DatabaseErrorCode.Timeout             => "The operation took too long to complete. Please try again or contact support if the problem persists.",
-                DatabaseErrorCode.DuplicateKey        => "This record already exists. Please check your data and try again.",
+                DatabaseErrorCode.PermissionDenied => "You do not have permission to perform this action. Please contact your administrator.",
+                DatabaseErrorCode.ConnectionFailure => "Unable to connect to the database. Please check your network connection or contact support.",
+                DatabaseErrorCode.Timeout => "The operation took too long to complete. Please try again or contact support if the problem persists.",
+                DatabaseErrorCode.DuplicateKey => "This record already exists. Please check your data and try again.",
                 DatabaseErrorCode.ForeignKeyViolation => "Cannot complete this operation because it would violate data integrity rules.",
-                DatabaseErrorCode.UnexpectedError     => "An unexpected error occurred. Please try again or contact support.",
-                DatabaseErrorCode.ValidationFailure   => "The data provided is invalid. Please review and correct any errors.",
-                DatabaseErrorCode.InvalidInput        => "The input provided is not valid. Please check and try again.",
-                DatabaseErrorCode.PartialFailure      => "The operation was only partially successful. Please review the results and try again if necessary.",
-                DatabaseErrorCode.ConstraintViolation => "The operation could not be completed due to a constraint violation. Please check your data and try again.",
-                DatabaseErrorCode.NotFound            => "The requested record was not found. Please verify the information and try again.",
-                _                                     => "An unexpected error occurred. Please try again or contact support."
+                DatabaseErrorCode.UnexpectedError => "An unexpected error occurred. Please try again or contact support.",
+                DatabaseErrorCode.ValidationFailure => "The data provided is invalid. Please review and correct any errors.",
+                DatabaseErrorCode.InvalidInput => "The input provided is not valid. Please check and try again.",
+                DatabaseErrorCode.PartialFailure => "The operation was only partially successful. Please review the results and try again if necessary.",
+                DatabaseErrorCode.ConstraintViolation =>
+                    "The operation could not be completed due to a constraint violation. Please check your data and try again.",
+                DatabaseErrorCode.NotFound => "The requested record was not found. Please verify the information and try again.",
+                _                          => "An unexpected error occurred. Please try again or contact support."
             };
         }
 
@@ -201,7 +203,11 @@ namespace Storix.Infrastructure.Services.Errors
                 _                                     => ("Database Error", MessageBoxImage.Error)
             };
 
-            messageService.Show(message, title, MessageBoxButton.OK, icon);
+            messageService.Show(
+                message,
+                title,
+                MessageBoxButton.OK,
+                icon);
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Storix.Application.Common;
 
-namespace Storix.Application.Services.Categories
+namespace Storix.Application.Services.Categories.Interfaces
 {
     public interface ICategoryValidationService
     {
