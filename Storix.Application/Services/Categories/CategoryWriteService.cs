@@ -212,13 +212,9 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult> PerformSoftDelete( int categoryId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.SoftDeleteAsync(categoryId),
-                "Soft deleting category",
-                enableRetry: false
-            );
+            DatabaseResult result = await categoryRepository.SoftDeleteAsync(categoryId);
 
-            if (result.IsSuccess && result.Value)
+            if (result is { IsSuccess: true })
             {
                 // Remove from store cache since it's now soft deleted
                 categoryStore.Delete(categoryId);
@@ -269,13 +265,9 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult> PerformHardDelete( int categoryId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.HardDeleteAsync(categoryId),
-                "Hard deleting category",
-                enableRetry: false
-            );
+            DatabaseResult result = await categoryRepository.HardDeleteAsync(categoryId);
 
-            if (result.IsSuccess && result.Value)
+            if (result is { IsSuccess: true })
             {
                 categoryStore.Delete(categoryId);
                 logger.LogWarning("Successfully hard deleted category with ID {CategoryId} - THIS IS PERMANENT", categoryId);

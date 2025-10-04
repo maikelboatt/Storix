@@ -6,6 +6,7 @@ using Storix.Application.Common.Errors;
 using Storix.Application.DTO.Categories;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
+using Storix.Application.Services.Categories.Interfaces;
 using Storix.Application.Stores.Categories;
 using Storix.Application.Stores.Products;
 using Storix.Domain.Models;
@@ -72,7 +73,9 @@ namespace Storix.Application.Services.Categories
 
             // Check business rules for soft deletion
             DatabaseResult businessRulesResult = await ValidateCategoryDeletionBusinessRules(categoryId);
-            return !businessRulesResult.IsSuccess ? businessRulesResult : DatabaseResult.Success();
+            return !businessRulesResult.IsSuccess
+                ? businessRulesResult
+                : DatabaseResult.Success();
         }
 
         public async Task<DatabaseResult> ValidateForHardDeletion( int categoryId )
@@ -151,7 +154,9 @@ namespace Storix.Application.Services.Categories
 
             if (!existsResult.Value)
             {
-                string statusMessage = includeDeleted ? "" : " or already deleted";
+                string statusMessage = includeDeleted
+                    ? ""
+                    : " or already deleted";
                 logger.LogWarning("Attempted operation on non-existent category with ID {CategoryId}{StatusMessage}", categoryId, statusMessage);
                 return DatabaseResult.Failure($"Category with ID {categoryId} not found{statusMessage}.", DatabaseErrorCode.NotFound);
             }

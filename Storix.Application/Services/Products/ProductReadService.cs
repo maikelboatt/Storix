@@ -100,9 +100,7 @@ namespace Storix.Application.Services.Products
             }
 
             logger.LogDebug("Retrieving product with SKU {SKU} from store (includeDeleted: {IncludeDeleted})", sku, includeDeleted);
-            List<ProductDto>? products = productStore.GetBySKU(sku.Trim(), includeDeleted);
-            return products?.FirstOrDefault();
-            // TODO: Clarify why SKU is not unique in the store
+            return productStore.GetBySKU(sku.Trim(), includeDeleted);
         }
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false )
@@ -273,7 +271,9 @@ namespace Storix.Application.Services.Products
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
-                string errorMsg = pageNumber <= 0 ? "Page number must be positive" : "Page size must be positive";
+                string errorMsg = pageNumber <= 0
+                    ? "Page number must be positive"
+                    : "Page size must be positive";
                 logger.LogWarning("Invalid pagination parameters: page {PageNumber}, size {PageSize}", pageNumber, pageSize);
                 return DatabaseResult<IEnumerable<ProductDto>>.Failure(errorMsg, DatabaseErrorCode.InvalidInput);
             }

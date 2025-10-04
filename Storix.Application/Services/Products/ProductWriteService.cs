@@ -208,13 +208,9 @@ namespace Storix.Application.Services.Products
 
         private async Task<DatabaseResult> PerformSoftDelete( int productId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.SoftDeleteAsync(productId),
-                "Soft deleting product",
-                enableRetry: false
-            );
+            DatabaseResult result = await productRepository.SoftDeleteAsync(productId);
 
-            if (result.IsSuccess && result.Value)
+            if (result.IsSuccess)
             {
                 // Remove from store cache since it's now soft deleted
                 productStore.SoftDelete(productId);
@@ -231,13 +227,9 @@ namespace Storix.Application.Services.Products
 
         private async Task<DatabaseResult> PerformRestore( int productId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.RestoreAsync(productId),
-                "Restoring product",
-                enableRetry: false
-            );
+            DatabaseResult result = await productRepository.RestoreAsync(productId);
 
-            if (result.IsSuccess && result.Value)
+            if (result.IsSuccess)
             {
                 // Get the restored product and add it back to the store cache
                 DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -265,13 +257,9 @@ namespace Storix.Application.Services.Products
 
         private async Task<DatabaseResult> PerformHardDelete( int productId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.HardDeleteAsync(productId),
-                "Hard deleting product",
-                enableRetry: false
-            );
+            DatabaseResult result = await productRepository.HardDeleteAsync(productId);
 
-            if (result.IsSuccess && result.Value)
+            if (result.IsSuccess)
             {
                 productStore.Delete(productId);
                 logger.LogWarning("Successfully hard deleted product with ID {ProductId} - THIS IS PERMANENT", productId);
