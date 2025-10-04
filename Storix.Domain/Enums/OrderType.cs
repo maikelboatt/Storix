@@ -1,13 +1,11 @@
 ﻿namespace Storix.Domain.Enums
 {
     /// <summary>
-    ///     Represents the type of an order (Purchase, Sale, Transfer, Adjustment).
+    ///     Represents the type of order (Purchase, Sale).
     /// </summary>
     public enum OrderType
     {
         Purchase,
-        Sale,
-        Transfer,
-        Return
+        Sale
     }
 }

@@ -15,9 +15,5 @@ namespace Storix.Domain.Models
     {
         // You can add computed properties
         public bool IsOverdue => DeliveryDate.HasValue && DeliveryDate < DateTime.UtcNow;
-        public bool IsPending => Status == OrderStatus.Pending;
-
-        // If Order needs complex behavior, consider making it a class instead
-        // and having OrderService handle the business logic
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Storix.Domain.Enums;
+using Storix.Domain.Interfaces;
 
 namespace Storix.Domain.Models
 {
@@ -7,5 +8,7 @@ namespace Storix.Domain.Models
         string Name,
         string? Description,
         LocationType Type,
-        string? Address );
+        string? Address,
+        bool IsDeleted = false,
+        DateTime? DeletedAt = null ):ISoftDeletable;
 }

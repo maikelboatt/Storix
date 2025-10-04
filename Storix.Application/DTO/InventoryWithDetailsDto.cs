@@ -1,4 +1,4 @@
-﻿using Storix.Application.DTO.Inventory;
+﻿using Storix.Application.DTO.Inventories;
 
 namespace Storix.Application.DTO
 {

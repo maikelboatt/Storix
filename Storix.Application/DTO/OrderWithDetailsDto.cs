@@ -1,4 +1,4 @@
-﻿using Storix.Application.DTO.Order;
+﻿using Storix.Application.DTO.Orders;
 
 namespace Storix.Application.DTO
 {

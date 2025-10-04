@@ -1,4 +1,6 @@
-﻿namespace Storix.Domain.Models
+﻿using Storix.Domain.Interfaces;
+
+namespace Storix.Domain.Models
 {
     public record User(
         int UserId,
@@ -7,5 +9,7 @@
         string Role,
         string? FullName,
         string? Email,
-        bool IsActive );
+        bool IsActive,
+        bool IsDeleted = false,
+        DateTime? DeletedAt = null ):ISoftDeletable;
 }
