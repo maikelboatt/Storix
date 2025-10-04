@@ -22,14 +22,18 @@ namespace Storix.Application.Stores.Products
 
         bool Restore( int productId );
 
-        List<ProductDto> GetAll( int? categoryId = null, int? supplierId = null, string? search = null, bool includeDeleted = false, int skip = 0,
+        List<ProductDto> GetAll( int? categoryId = null,
+            int? supplierId = null,
+            string? search = null,
+            bool includeDeleted = false,
+            int skip = 0,
             int take = 100 );
 
         List<ProductDto> GetByCategory( int categoryId, bool includeDeleted = false );
 
         List<ProductDto> GetBySupplier( int supplierId, bool includeDeleted = false );
 
-        List<ProductDto> GetBySKU( string sku, bool includeDeleted = false );
+        ProductDto? GetBySKU( string sku, bool includeDeleted = false );
 
         List<ProductDto> GetByBarcode( string barcode, bool includeDeleted = false );
 

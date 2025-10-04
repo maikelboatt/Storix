@@ -285,11 +285,19 @@ namespace Storix.Application.Stores.Products
             {
                 string searchLower = search.ToLowerInvariant();
                 products = products.Where(p =>
-                                              p.Name.ToLowerInvariant().Contains(searchLower) ||
-                                              p.SKU.ToLowerInvariant().Contains(searchLower) ||
-                                              p.Description.ToLowerInvariant().Contains(searchLower) ||
+                                              p
+                                                  .Name.ToLowerInvariant()
+                                                  .Contains(searchLower) ||
+                                              p
+                                                  .SKU.ToLowerInvariant()
+                                                  .Contains(searchLower) ||
+                                              p
+                                                  .Description.ToLowerInvariant()
+                                                  .Contains(searchLower) ||
                                               !string.IsNullOrEmpty(p.Barcode) &&
-                                              p.Barcode.ToLowerInvariant().Contains(searchLower));
+                                              p
+                                                  .Barcode.ToLowerInvariant()
+                                                  .Contains(searchLower));
             }
 
             return products
@@ -305,7 +313,7 @@ namespace Storix.Application.Stores.Products
 
         public List<ProductDto> GetBySupplier( int supplierId, bool includeDeleted = false ) => GetAll(supplierId: supplierId, includeDeleted: includeDeleted);
 
-        public List<ProductDto> GetBySKU( string sku, bool includeDeleted = false )
+        public ProductDto? GetBySKU( string sku, bool includeDeleted = false )
         {
             IEnumerable<Product> products = _products.Values.AsEnumerable();
 
@@ -314,10 +322,20 @@ namespace Storix.Application.Stores.Products
                 products = products.Concat(_deletedProducts.Values);
             }
 
-            return products
-                   .Where(p => p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase))
-                   .Select(p => p.ToDto())
-                   .ToList();
+            List<Product> matchingProducts = products
+                                             .Where(p => p.SKU.Equals(sku, StringComparison.OrdinalIgnoreCase))
+                                             .ToList();
+
+            if (matchingProducts.Count > 1)
+            {
+                // This should NEVER happen - log as critical error
+                throw new InvalidOperationException(
+                    $"Data integrity violation: Multiple products found with SKU '{sku}'. SKUs must be unique.");
+            }
+
+            return matchingProducts
+                   .FirstOrDefault()
+                   ?.ToDto();
         }
 
         public List<ProductDto> GetByBarcode( string barcode, bool includeDeleted = false )
@@ -339,10 +357,11 @@ namespace Storix.Application.Stores.Products
 
         public List<ProductDto> GetDeletedProducts()
         {
-            return _deletedProducts.Values
-                                   .OrderBy(p => p.Name)
-                                   .Select(p => p.ToDto())
-                                   .ToList();
+            return _deletedProducts
+                   .Values
+                   .OrderBy(p => p.Name)
+                   .Select(p => p.ToDto())
+                   .ToList();
         }
 
         public bool Exists( int productId, bool includeDeleted = false )
@@ -438,7 +457,8 @@ namespace Storix.Application.Stores.Products
             return products.Any(p => p.SupplierId == supplierId);
         }
 
-        public int GetProductCountFromSupplier( int supplierId, bool includeDeleted = false ) => GetCount(supplierId: supplierId, includeDeleted: includeDeleted);
+        public int GetProductCountFromSupplier( int supplierId, bool includeDeleted = false ) =>
+            GetCount(supplierId: supplierId, includeDeleted: includeDeleted);
 
         public IEnumerable<Product> GetLowStockProducts( bool includeDeleted = false )
         {
@@ -486,7 +506,9 @@ namespace Storix.Application.Stores.Products
                 query = query.Where(p => p.CategoryId == categoryId.Value);
             }
 
-            return query.OrderBy(p => p.Name).ToList();
+            return query
+                   .OrderBy(p => p.Name)
+                   .ToList();
         }
     }
 }
