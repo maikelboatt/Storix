@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Storix.Application.Common;
 using Storix.Application.DTO;
 using Storix.Domain.Models;
 
@@ -59,17 +60,17 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Permanently deletes a product by ID (hard delete).
         /// </summary>
-        Task<bool> HardDeleteAsync( int productId );
+        Task<DatabaseResult> HardDeleteAsync( int productId );
 
         /// <summary>
         ///     Soft deletes a product (sets IsDeleted = true and DeletedAt = current timestamp).
         /// </summary>
-        Task<bool> SoftDeleteAsync( int productId );
+        Task<DatabaseResult> SoftDeleteAsync( int productId );
 
         /// <summary>
         ///     Restores a soft-deleted product (sets IsDeleted = false and DeletedAt = null).
         /// </summary>
-        Task<bool> RestoreAsync( int productId );
+        Task<DatabaseResult> RestoreAsync( int productId );
 
         /// <summary>
         ///     Gets a product by its ID.

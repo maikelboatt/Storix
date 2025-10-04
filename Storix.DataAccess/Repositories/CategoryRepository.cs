@@ -1,4 +1,6 @@
-﻿using Storix.Application.Repositories;
+﻿using Storix.Application.Common;
+using Storix.Application.Enums;
+using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;
 using Storix.Domain.Models;
 
@@ -61,7 +63,9 @@ namespace Storix.DataAccess.Repositories
         /// <returns>Total count</returns>
         public async Task<int> GetTotalCountAsync( bool includeDeleted = false )
         {
-            string storedProcedure = includeDeleted ? "sp_GetCategoryCountIncludeDeleted" : "sp_GetCategoryCount";
+            string storedProcedure = includeDeleted
+                ? "sp_GetCategoryCountIncludeDeleted"
+                : "sp_GetCategoryCount";
 
             return await sqlDataAccess.ExecuteScalarAsync<int>(storedProcedure);
         }
@@ -106,7 +110,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetCategoriesPagedIncludeDeleted" : "sp_GetCategoriesPaged";
+            string storedProcedure = includeDeleted
+                ? "sp_GetCategoriesPagedIncludeDeleted"
+                : "sp_GetCategoriesPaged";
 
             return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
         }
@@ -129,7 +135,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetCategoryByIdIncludeDeleted" : "sp_GetCategoryById";
+            string storedProcedure = includeDeleted
+                ? "sp_GetCategoryByIdIncludeDeleted"
+                : "sp_GetCategoryById";
 
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Category>(
                 storedProcedure,
@@ -147,7 +155,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetAllCategoriesIncludeDeleted" : "sp_GetAllCategories";
+            string storedProcedure = includeDeleted
+                ? "sp_GetAllCategoriesIncludeDeleted"
+                : "sp_GetAllCategories";
             return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
         }
 
@@ -163,7 +173,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetRootCategoriesIncludeDeleted" : "sp_GetRootCategories";
+            string storedProcedure = includeDeleted
+                ? "sp_GetRootCategoriesIncludeDeleted"
+                : "sp_GetRootCategories";
             return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
         }
 
@@ -182,7 +194,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetSubCategoriesIncludeDeleted" : "sp_GetSubCategories";
+            string storedProcedure = includeDeleted
+                ? "sp_GetSubCategoriesIncludeDeleted"
+                : "sp_GetSubCategories";
             return await sqlDataAccess.QueryAsync<Category>(
                 storedProcedure,
                 parameters
@@ -202,7 +216,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_SearchCategoriesIncludeDeleted" : "sp_SearchCategories";
+            string storedProcedure = includeDeleted
+                ? "sp_SearchCategoriesIncludeDeleted"
+                : "sp_SearchCategories";
             return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
         }
 
@@ -222,6 +238,7 @@ namespace Storix.DataAccess.Repositories
                 category.Name,
                 category.Description,
                 category.ParentCategoryId,
+                category.ImageUrl,
                 IsDeleted = false,
                 DeletedAt = (DateTime?)null
             };
@@ -230,7 +247,12 @@ namespace Storix.DataAccess.Repositories
                 "sp_CreateCategory",
                 parameters);
 
-            return category with { CategoryId = newCategoryId, IsDeleted = false, DeletedAt = null };
+            return category with
+            {
+                CategoryId = newCategoryId,
+                IsDeleted = false,
+                DeletedAt = null
+            };
         }
 
         /// <summary>
@@ -246,6 +268,7 @@ namespace Storix.DataAccess.Repositories
                 category.Name,
                 category.Description,
                 category.ParentCategoryId,
+                category.ImageUrl,
                 category.IsDeleted,
                 category.DeletedAt
             };
@@ -260,13 +283,25 @@ namespace Storix.DataAccess.Repositories
         /// </summary>
         /// <param name="categoryId" >Unique identifier</param>
         /// <returns></returns>
-        public async Task<bool> HardDeleteAsync( int categoryId )
+        public async Task<DatabaseResult> HardDeleteAsync( int categoryId )
         {
-            int affectedRow = await sqlDataAccess.ExecuteAsync(
-                "sp_HardDeleteCategory",
-                new { CategoryId = categoryId });
+            try
+            {
+                int affectedRow = await sqlDataAccess.ExecuteAsync(
+                    "sp_HardDeleteCategory",
+                    new
+                    {
+                        CategoryId = categoryId
+                    });
 
-            return affectedRow > 0;
+                return affectedRow > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure($"Category with ID {categoryId} not found", DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure($"Error deleting category with ID {categoryId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
+            }
         }
 
         /// <summary>
@@ -274,19 +309,30 @@ namespace Storix.DataAccess.Repositories
         /// </summary>
         /// <param name="categoryId" >Unique identifier</param>
         /// <returns></returns>
-        public async Task<bool> SoftDeleteAsync( int categoryId )
+        public async Task<DatabaseResult> SoftDeleteAsync( int categoryId )
         {
-            var parameters = new
+            try
             {
-                CategoryId = categoryId,
-                DeletedAt = DateTime.UtcNow
-            };
+                var parameters = new
+                {
+                    CategoryId = categoryId,
+                    DeletedAt = DateTime.UtcNow
+                };
 
-            int affectedRow = await sqlDataAccess.ExecuteAsync(
-                "sp_SoftDeleteCategory",
-                parameters);
+                int affectedRow = await sqlDataAccess.ExecuteAsync(
+                    "sp_SoftDeleteCategory",
+                    parameters);
 
-            return affectedRow > 0;
+                return affectedRow > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure($"Category with ID {categoryId} not found", DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure($"Error soft deleting category with ID {categoryId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
+            }
+
+
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Storix.Application.Common;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Repositories
@@ -117,14 +118,14 @@ namespace Storix.Application.Repositories
         /// </summary>
         /// <param name="categoryId" >Unique identifier</param>
         /// <returns></returns>
-        Task<bool> HardDeleteAsync( int categoryId );
+        Task<DatabaseResult> HardDeleteAsync( int categoryId );
 
         /// <summary>
         ///     Soft deletes a category (sets IsDeleted = true and DeletedAt = current timestamp.
         /// </summary>
         /// <param name="categoryId" >Unique identifier</param>
         /// <returns></returns>
-        Task<bool> SoftDeleteAsync( int categoryId );
+        Task<DatabaseResult> SoftDeleteAsync( int categoryId );
 
         /// <summary>
         ///     Restores a soft-deleted category (sets IsDeleted = false and DeletedAt = null).

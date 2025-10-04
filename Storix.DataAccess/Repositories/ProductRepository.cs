@@ -1,4 +1,6 @@
-﻿using Storix.Application.DTO;
+﻿using Storix.Application.Common;
+using Storix.Application.DTO;
+using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;
 using Storix.Domain.Models;
@@ -20,7 +22,9 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products in the count.</param>
         public async Task<int> GetTotalCountAsync( bool includeDeleted = false )
         {
-            string storedProcedure = includeDeleted ? "sp_GetProductCountIncludeDeleted" : "sp_GetProductCount";
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductCountIncludeDeleted"
+                : "sp_GetProductCount";
             return await sqlDataAccess.ExecuteScalarAsync<int>(storedProcedure);
         }
 
@@ -50,7 +54,9 @@ namespace Storix.DataAccess.Repositories
                 IncludeDeleted = includeDeleted
             };
 
-            string storedProcedure = includeDeleted ? "sp_GetProductsPagedIncludeDeleted" : "sp_GetProductsPaged";
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductsPagedIncludeDeleted"
+                : "sp_GetProductsPaged";
 
             return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
         }
@@ -66,7 +72,11 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products in the check.</param>
         public async Task<bool> ExistsAsync( int productId, bool includeDeleted = false )
         {
-            var parameters = new { ProductId = productId, IncludeDeleted = includeDeleted };
+            var parameters = new
+            {
+                ProductId = productId,
+                IncludeDeleted = includeDeleted
+            };
 
             int count = await sqlDataAccess.ExecuteScalarAsync<int>(
                 "sp_CheckProductExists",
@@ -162,29 +172,40 @@ namespace Storix.DataAccess.Repositories
 
             await sqlDataAccess.CommandAsync("sp_UpdateProduct", parameters);
 
-            return product with { UpdatedDate = DateTime.UtcNow };
+            return product with
+            {
+                UpdatedDate = DateTime.UtcNow
+            };
         }
 
         /// <summary>
         ///     Permanently deletes a product by ID (hard delete).
         /// </summary>
-        public async Task<bool> HardDeleteAsync( int productId )
+        public async Task<DatabaseResult> HardDeleteAsync( int productId )
         {
             try
             {
-                await sqlDataAccess.CommandAsync("sp_HardDeleteProduct", new { ProductId = productId });
-                return true;
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    "sp_HardDeleteProduct",
+                    new
+                    {
+                        ProductId = productId
+                    });
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure("Product not found", DatabaseErrorCode.NotFound);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return DatabaseResult.Failure(ex.Message! ?? "Error deleting product", DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
         ///     Soft deletes a product (sets IsDeleted = true and DeletedAt = current timestamp).
         /// </summary>
-        public async Task<bool> SoftDeleteAsync( int productId )
+        public async Task<DatabaseResult> SoftDeleteAsync( int productId )
         {
             try
             {
@@ -195,19 +216,21 @@ namespace Storix.DataAccess.Repositories
                     UpdatedDate = DateTime.UtcNow
                 };
 
-                await sqlDataAccess.CommandAsync("sp_SoftDeleteProduct", parameters);
-                return true;
+                int affectedRows = await sqlDataAccess.ExecuteAsync("sp_SoftDeleteProduct", parameters);
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure("Product not found", DatabaseErrorCode.NotFound);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return DatabaseResult.Failure(ex.Message! ?? "Error soft deleting product", DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
         ///     Restores a soft-deleted product (sets IsDeleted = false and DeletedAt = null).
         /// </summary>
-        public async Task<bool> RestoreAsync( int productId )
+        public async Task<DatabaseResult> RestoreAsync( int productId )
         {
             try
             {
@@ -217,12 +240,15 @@ namespace Storix.DataAccess.Repositories
                     UpdatedDate = DateTime.UtcNow
                 };
 
-                await sqlDataAccess.CommandAsync("sp_RestoreProduct", parameters);
-                return true;
+                int affectedRows = await sqlDataAccess.ExecuteAsync("sp_RestoreProduct", parameters);
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure("Product not found or not deleted", DatabaseErrorCode.NotFound);
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return DatabaseResult.Failure(ex.Message! ?? "Error restoring product", DatabaseErrorCode.UnexpectedError);
             }
         }
 
@@ -237,8 +263,14 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<Product?> GetByIdAsync( int productId, bool includeDeleted = false )
         {
-            var parameters = new { ProductId = productId, IncludeDeleted = includeDeleted };
-            string storedProcedure = includeDeleted ? "sp_GetProductByIdIncludeDeleted" : "sp_GetProductById";
+            var parameters = new
+            {
+                ProductId = productId,
+                IncludeDeleted = includeDeleted
+            };
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductByIdIncludeDeleted"
+                : "sp_GetProductById";
 
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(storedProcedure, parameters);
         }
@@ -250,8 +282,14 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<Product?> GetBySkuAsync( string sku, bool includeDeleted = false )
         {
-            var parameters = new { SKU = sku, IncludeDeleted = includeDeleted };
-            string storedProcedure = includeDeleted ? "sp_GetProductBySkuIncludeDeleted" : "sp_GetProductBySku";
+            var parameters = new
+            {
+                SKU = sku,
+                IncludeDeleted = includeDeleted
+            };
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductBySkuIncludeDeleted"
+                : "sp_GetProductBySku";
 
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(storedProcedure, parameters);
         }
@@ -262,7 +300,9 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<IEnumerable<Product>> GetAllAsync( bool includeDeleted = false )
         {
-            string storedProcedure = includeDeleted ? "sp_GetAllProductsIncludeDeleted" : "sp_GetAllProducts";
+            string storedProcedure = includeDeleted
+                ? "sp_GetAllProductsIncludeDeleted"
+                : "sp_GetAllProducts";
             return await sqlDataAccess.QueryAsync<Product>(storedProcedure);
         }
 
@@ -283,8 +323,14 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<IEnumerable<Product>> GetByCategoryAsync( int categoryId, bool includeDeleted = false )
         {
-            var parameters = new { CategoryId = categoryId, IncludeDeleted = includeDeleted };
-            string storedProcedure = includeDeleted ? "sp_GetProductsByCategoryIncludeDeleted" : "sp_GetProductsByCategory";
+            var parameters = new
+            {
+                CategoryId = categoryId,
+                IncludeDeleted = includeDeleted
+            };
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductsByCategoryIncludeDeleted"
+                : "sp_GetProductsByCategory";
 
             return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
         }
@@ -296,8 +342,14 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<IEnumerable<Product>> GetBySupplierAsync( int supplierId, bool includeDeleted = false )
         {
-            var parameters = new { SupplierId = supplierId, IncludeDeleted = includeDeleted };
-            string storedProcedure = includeDeleted ? "sp_GetProductsBySupplierIncludeDeleted" : "sp_GetProductsBySupplier";
+            var parameters = new
+            {
+                SupplierId = supplierId,
+                IncludeDeleted = includeDeleted
+            };
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductsBySupplierIncludeDeleted"
+                : "sp_GetProductsBySupplier";
 
             return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
         }
@@ -313,8 +365,13 @@ namespace Storix.DataAccess.Repositories
         /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
         public async Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync( bool includeDeleted = false )
         {
-            var parameters = new { IncludeDeleted = includeDeleted };
-            string storedProcedure = includeDeleted ? "sp_GetProductsWithDetailsIncludeDeleted" : "sp_GetProductsWithDetails";
+            var parameters = new
+            {
+                IncludeDeleted = includeDeleted
+            };
+            string storedProcedure = includeDeleted
+                ? "sp_GetProductsWithDetailsIncludeDeleted"
+                : "sp_GetProductsWithDetails";
 
             return await sqlDataAccess.QueryAsync<ProductWithDetailsDto>(storedProcedure, parameters);
         }
@@ -331,7 +388,9 @@ namespace Storix.DataAccess.Repositories
                 SearchTerm = $"%{searchTerm}%",
                 IncludeDeleted = includeDeleted
             };
-            string storedProcedure = includeDeleted ? "sp_SearchProductsIncludeDeleted" : "sp_SearchProducts";
+            string storedProcedure = includeDeleted
+                ? "sp_SearchProductsIncludeDeleted"
+                : "sp_SearchProducts";
 
             return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
         }
