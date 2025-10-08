@@ -26,11 +26,11 @@ namespace Storix.Application.Services.Products
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync()
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetAllActiveAsync(),
+                productRepository.GetAllActiveAsync,
                 "Retrieving all active products"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation("Successfully retrieved {ActiveProductCount} active products", result.Value.Count());
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
@@ -44,11 +44,11 @@ namespace Storix.Application.Services.Products
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync()
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetLowStockProductsAsync(),
+                productRepository.GetLowStockProductsAsync,
                 "Retrieving low stock products"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation("Successfully retrieved {LowStockProductCount} low stock products", result.Value.Count());
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
@@ -62,7 +62,7 @@ namespace Storix.Application.Services.Products
         public async Task<DatabaseResult<int>> GetActiveProductCountAsync()
         {
             DatabaseResult<int> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetActiveCountAsync(),
+                productRepository.GetActiveCountAsync,
                 "Getting active product count",
                 false
             );
@@ -87,7 +87,7 @@ namespace Storix.Application.Services.Products
             }
 
             logger.LogDebug("Retrieving product with ID {ProductId} from store (includeDeleted: {IncludeDeleted})", productId, includeDeleted);
-            ProductDto? product = productStore.GetById(productId, includeDeleted);
+            ProductDto? product = productStore.GetById(productId);
             return product;
         }
 
@@ -100,7 +100,7 @@ namespace Storix.Application.Services.Products
             }
 
             logger.LogDebug("Retrieving product with SKU {SKU} from store (includeDeleted: {IncludeDeleted})", sku, includeDeleted);
-            return productStore.GetBySKU(sku.Trim(), includeDeleted);
+            return productStore.GetBySKU(sku.Trim());
         }
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false )
@@ -110,7 +110,7 @@ namespace Storix.Application.Services.Products
                 $"Retrieving all products (includeDeleted: {includeDeleted})"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
 

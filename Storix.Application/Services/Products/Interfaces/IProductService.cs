@@ -8,38 +8,39 @@ namespace Storix.Application.Services.Products.Interfaces
 {
     public interface IProductService
     {
-        ProductDto? GetProductById( int productId, bool includeDeleted = false );
+        ProductDto? GetProductById( int productId );
 
-
-        ProductDto? GetProductBySku( string sku, bool includeDeleted = false );
-
+        ProductDto? GetProductBySku( string sku );
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false );
-
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync();
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync();
 
-        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync( int categoryId, bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync(
+            int categoryId,
+            bool includeDeleted = false );
 
-
-        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync( int supplierId, bool includeDeleted = false );
-
+        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(
+            int supplierId,
+            bool includeDeleted = false );
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync();
 
-        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync( bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync(
+            bool includeDeleted = false );
 
+        Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync(
+            string searchTerm,
+            bool includeDeleted = false );
 
-        Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync( string searchTerm, bool includeDeleted = false );
-
-
-        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false );
-
+        Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync(
+            int pageNumber,
+            int pageSize,
+            bool includeDeleted = false );
 
         Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false );
-
 
         Task<DatabaseResult<int>> GetActiveProductCountAsync();
 
@@ -55,12 +56,12 @@ namespace Storix.Application.Services.Products.Interfaces
 
         Task<DatabaseResult> HardDeleteProductAsync( int productId );
 
-        Task<DatabaseResult> DeleteProductAsync( int productId );
-
         Task<DatabaseResult<bool>> ProductExistsAsync( int productId, bool includeDeleted = false );
 
-
-        Task<DatabaseResult<bool>> IsSkuAvailableAsync( string sku, int? excludeProductId = null, bool includeDeleted = false );
+        Task<DatabaseResult<bool>> IsSkuAvailableAsync(
+            string sku,
+            int? excludeProductId = null,
+            bool includeDeleted = false );
 
         Task<DatabaseResult<bool>> IsProductSoftDeleted( int productId );
 
@@ -70,18 +71,65 @@ namespace Storix.Application.Services.Products.Interfaces
 
         Task<DatabaseResult> ValidateForRestore( int productId );
 
-        IEnumerable<ProductDto> SearchProducts( string? searchTerm = null, int? categoryId = null, bool includeDeleted = false );
+        /// <summary>
+        ///     Searches active products in the in-memory cache (fast).
+        ///     Only returns active (non-deleted) products.
+        /// </summary>
+        IEnumerable<ProductDto> SearchProductsInCache( string? searchTerm = null, int? categoryId = null );
 
+        /// <summary>
+        ///     Gets a product by ID from cache (fast).
+        ///     Only returns if product is active (non-deleted).
+        /// </summary>
+        ProductDto? GetProductByIdFromCache( int productId );
 
-        IEnumerable<ProductDto> GetLowStockProducts( bool includeDeleted = false );
+        /// <summary>
+        ///     Gets a product by SKU from cache (fast).
+        ///     Only returns if product is active (non-deleted).
+        /// </summary>
+        ProductDto? GetProductBySkuFromCache( string sku );
 
+        /// <summary>
+        ///     Gets all active products from cache (fast).
+        /// </summary>
+        IEnumerable<ProductDto> GetActiveProductsFromCache();
 
-        IEnumerable<ProductDto> GetDeletedProductsFromStore();
+        /// <summary>
+        ///     Gets active products by category from cache (fast).
+        /// </summary>
+        List<ProductDto> GetProductsByCategoryFromCache( int categoryId );
 
+        /// <summary>
+        ///     Gets active products by supplier from cache (fast).
+        /// </summary>
+        List<ProductDto> GetProductsBySupplierFromCache( int supplierId );
+
+        /// <summary>
+        ///     Checks if a product exists in the active cache (fast).
+        /// </summary>
+        bool ProductExistsInCache( int productId );
+
+        /// <summary>
+        ///     Gets the count of active products in cache (fast).
+        /// </summary>
+        int GetActiveCountFromCache();
+
+        /// <summary>
+        ///     Refreshes the product cache from the database.
+        ///     Loads only active products into memory.
+        /// </summary>
         void RefreshStoreCache();
 
+        /// <summary>
+        ///     Soft deletes multiple products in bulk.
+        ///     Each product is validated and deleted individually.
+        /// </summary>
         Task<DatabaseResult<IEnumerable<ProductDto>>> BulkSoftDeleteAsync( IEnumerable<int> productIds );
 
+        /// <summary>
+        ///     Restores multiple soft-deleted products in bulk.
+        ///     Each product is validated and restored individually.
+        /// </summary>
         Task<DatabaseResult<IEnumerable<ProductDto>>> BulkRestoreAsync( IEnumerable<int> productIds );
     }
 }

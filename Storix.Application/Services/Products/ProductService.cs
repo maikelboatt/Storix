@@ -14,45 +14,53 @@ using Storix.Domain.Models;
 namespace Storix.Application.Services.Products
 {
     /// <summary>
-    ///     Main service for managing product operations with ISoftDeletable support and enhanced error handling.
+    ///     Main facade service for managing product operations with ISoftDeletable support.
+    ///     Combines read, write, and validation services with in-memory cache for performance.
     /// </summary>
     public class ProductService(
         IProductReadService productReadService,
+        IProductCacheReadService productCacheReadService,
         IProductWriteService productWriteService,
         IProductValidationService productValidationService,
-        IProductStore productStore,
         ILogger<ProductService> logger ):IProductService
     {
-        #region Read Operations
+        #region Read Operations (Database Queries)
 
-        public ProductDto? GetProductById( int productId, bool includeDeleted = false ) => productReadService.GetProductById(productId, includeDeleted);
+        public ProductDto? GetProductById( int productId ) => productReadService.GetProductById(productId);
 
-        public ProductDto? GetProductBySku( string sku, bool includeDeleted = false ) => productReadService.GetProductBySku(sku, includeDeleted);
+        public ProductDto? GetProductBySku( string sku ) => productReadService.GetProductBySku(sku);
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false ) => await productReadService.GetAllProductsAsync(includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false ) =>
+            await productReadService.GetAllProductsAsync(includeDeleted);
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync() => await productReadService.GetAllActiveProductsAsync();
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync() => await productReadService.GetAllDeletedProductsAsync();
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync( int categoryId, bool includeDeleted = false ) =>
-            await productReadService.GetProductsByCategoryAsync(categoryId, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync(
+            int categoryId,
+            bool includeDeleted = false ) => await productReadService.GetProductsByCategoryAsync(categoryId, includeDeleted);
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync( int supplierId, bool includeDeleted = false ) =>
-            await productReadService.GetProductsBySupplierAsync(supplierId, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(
+            int supplierId,
+            bool includeDeleted = false ) => await productReadService.GetProductsBySupplierAsync(supplierId, includeDeleted);
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync() => await productReadService.GetLowStockProductsAsync();
 
-        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync( bool includeDeleted = false ) =>
-            await productReadService.GetProductsWithDetailsAsync(includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync(
+            bool includeDeleted = false ) => await productReadService.GetProductsWithDetailsAsync(includeDeleted);
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync( string searchTerm, bool includeDeleted = false ) =>
-            await productReadService.SearchProductsAsync(searchTerm, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync(
+            string searchTerm,
+            bool includeDeleted = false ) => await productReadService.SearchProductsAsync(searchTerm, includeDeleted);
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false ) =>
-            await productReadService.GetProductsPagedAsync(pageNumber, pageSize, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync(
+            int pageNumber,
+            int pageSize,
+            bool includeDeleted = false ) => await productReadService.GetProductsPagedAsync(pageNumber, pageSize, includeDeleted);
 
-        public async Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false ) => await productReadService.GetTotalProductCountAsync(includeDeleted);
+        public async Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false ) =>
+            await productReadService.GetTotalProductCountAsync(includeDeleted);
 
         public async Task<DatabaseResult<int>> GetActiveProductCountAsync() => await productReadService.GetActiveProductCountAsync();
 
@@ -62,19 +70,17 @@ namespace Storix.Application.Services.Products
 
         #region Write Operations
 
-        public async Task<DatabaseResult<ProductDto>> CreateProductAsync( CreateProductDto createProductDto ) => await productWriteService.CreateProductAsync(createProductDto);
+        public async Task<DatabaseResult<ProductDto>> CreateProductAsync( CreateProductDto createProductDto ) =>
+            await productWriteService.CreateProductAsync(createProductDto);
 
-        public async Task<DatabaseResult<ProductDto>> UpdateProductAsync( UpdateProductDto updateProductDto ) => await productWriteService.UpdateProductAsync(updateProductDto);
+        public async Task<DatabaseResult<ProductDto>> UpdateProductAsync( UpdateProductDto updateProductDto ) =>
+            await productWriteService.UpdateProductAsync(updateProductDto);
 
         public async Task<DatabaseResult> SoftDeleteProductAsync( int productId ) => await productWriteService.SoftDeleteProductAsync(productId);
 
         public async Task<DatabaseResult> RestoreProductAsync( int productId ) => await productWriteService.RestoreProductAsync(productId);
 
         public async Task<DatabaseResult> HardDeleteProductAsync( int productId ) => await productWriteService.HardDeleteProductAsync(productId);
-
-        // Legacy method - now uses SoftDeleteProductAsync for backward compatibility
-        [Obsolete("Use SoftDeleteProductAsync instead. This method will be removed in a future version.")]
-        public async Task<DatabaseResult> DeleteProductAsync( int productId ) => await SoftDeleteProductAsync(productId);
 
         #endregion
 
@@ -83,8 +89,10 @@ namespace Storix.Application.Services.Products
         public async Task<DatabaseResult<bool>> ProductExistsAsync( int productId, bool includeDeleted = false ) =>
             await productValidationService.ProductExistsAsync(productId, includeDeleted);
 
-        public async Task<DatabaseResult<bool>> IsSkuAvailableAsync( string sku, int? excludeProductId = null, bool includeDeleted = false ) =>
-            await productValidationService.IsSkuAvailableAsync(sku, excludeProductId, includeDeleted);
+        public async Task<DatabaseResult<bool>> IsSkuAvailableAsync(
+            string sku,
+            int? excludeProductId = null,
+            bool includeDeleted = false ) => await productValidationService.IsSkuAvailableAsync(sku, excludeProductId, includeDeleted);
 
         public async Task<DatabaseResult<bool>> IsProductSoftDeleted( int productId ) => await productValidationService.IsProductSoftDeleted(productId);
 
@@ -96,76 +104,52 @@ namespace Storix.Application.Services.Products
 
         #endregion
 
-        #region Store Operations
+        #region Cache Operations (Fast In-Memory Queries - Active Products Only)
 
-        public IEnumerable<ProductDto> SearchProducts( string? searchTerm = null, int? categoryId = null, bool includeDeleted = false )
-        {
-            logger.LogDebug(
-                "Searching products with term '{SearchTerm}', categoryId {CategoryId}, includeDeleted {IncludeDeleted}",
-                searchTerm,
-                categoryId,
-                includeDeleted);
+        public IEnumerable<ProductDto> SearchProductsInCache( string? searchTerm = null, int? categoryId = null ) =>
+            productCacheReadService.SearchProductsInCache(searchTerm, categoryId);
 
-            IEnumerable<Product> products = productStore.SearchProducts(searchTerm, categoryId, includeDeleted);
-            return products.ToDto();
-        }
+        public ProductDto? GetProductByIdFromCache( int productId ) => productCacheReadService.GetProductByIdFromCache(productId);
 
-        public IEnumerable<ProductDto> GetLowStockProducts( bool includeDeleted = false )
-        {
-            logger.LogDebug("Retrieving low stock products from store (includeDeleted: {IncludeDeleted})", includeDeleted);
-            IEnumerable<Product> products = productStore.GetLowStockProducts(includeDeleted);
-            return products.ToDto();
-        }
+        public ProductDto? GetProductBySkuFromCache( string sku ) => productCacheReadService.GetProductBySkuFromCache(sku);
 
-        public IEnumerable<ProductDto> GetDeletedProductsFromStore()
-        {
-            logger.LogDebug("Retrieving deleted products from store cache");
-            List<ProductDto> products = productStore.GetDeletedProducts();
-            return products;
-        }
+        public IEnumerable<ProductDto> GetActiveProductsFromCache() => productCacheReadService.GetActiveProductsFromCache();
 
-        public void RefreshStoreCache()
-        {
-            logger.LogInformation("Refreshing product store cache");
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    DatabaseResult<IEnumerable<ProductDto>> result = await GetAllProductsAsync();
-                    if (result.IsSuccess && result.Value != null)
-                    {
-                        logger.LogInformation("Product store cache refreshed successfully");
-                    }
-                    else
-                    {
-                        logger.LogWarning("Failed to refresh product store cache: {Error}", result.ErrorMessage);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Exception occurred while refreshing product store cache");
-                }
-            });
-        }
+        public List<ProductDto> GetProductsByCategoryFromCache( int categoryId ) => productCacheReadService.GetProductsByCategoryFromCache(categoryId);
+
+        public List<ProductDto> GetProductsBySupplierFromCache( int supplierId ) => productCacheReadService.GetProductsBySupplierFromCache(supplierId);
+
+        public bool ProductExistsInCache( int productId ) => productCacheReadService.ProductExistsInCache(productId);
+
+        public int GetActiveCountFromCache() => productCacheReadService.GetActiveCountFromCache();
+
+        public void RefreshStoreCache() => productCacheReadService.RefreshStoreCache();
 
         #endregion
 
         #region Bulk Operations
 
+        /// <summary>
+        ///     Soft deletes multiple products in bulk.
+        ///     Each product is validated and deleted individually.
+        /// </summary>
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> BulkSoftDeleteAsync( IEnumerable<int> productIds )
         {
-            logger.LogInformation("Starting bulk soft delete for {Count} products", productIds.Count());
+            List<int> productIdList = productIds.ToList();
+            logger.LogInformation("Starting bulk soft delete for {Count} products", productIdList.Count);
 
-            List<ProductDto> processedProducts = new();
             List<string> errors = new();
 
-            foreach (int productId in productIds)
+            foreach (int productId in productIdList)
             {
                 DatabaseResult result = await SoftDeleteProductAsync(productId);
                 if (!result.IsSuccess)
                 {
                     errors.Add($"Product {productId}: {result.ErrorMessage}");
-                    logger.LogWarning("Failed to soft delete product {ProductId}: {Error}", productId, result.ErrorMessage);
+                    logger.LogWarning(
+                        "Failed to soft delete product {ProductId}: {Error}",
+                        productId,
+                        result.ErrorMessage);
                 }
             }
 
@@ -174,28 +158,47 @@ namespace Storix.Application.Services.Products
                 string combinedErrors = string.Join("; ", errors);
                 logger.LogWarning("Bulk soft delete completed with {ErrorCount} errors", errors.Count);
                 return DatabaseResult<IEnumerable<ProductDto>>.Failure(
-                    $"Bulk soft delete completed with errors: {combinedErrors}",
+                    $"Bulk soft delete completed with {errors.Count} error(s): {combinedErrors}",
                     DatabaseErrorCode.PartialFailure);
             }
 
-            logger.LogInformation("Bulk soft delete completed successfully for {Count} products", productIds.Count());
-            return DatabaseResult<IEnumerable<ProductDto>>.Success(processedProducts);
+            logger.LogInformation(
+                "Bulk soft delete completed successfully for {Count} products",
+                productIdList.Count);
+            return DatabaseResult<IEnumerable<ProductDto>>.Success(Enumerable.Empty<ProductDto>());
         }
 
+        /// <summary>
+        ///     Restores multiple soft-deleted products in bulk.
+        ///     Each product is validated and restored individually.
+        /// </summary>
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> BulkRestoreAsync( IEnumerable<int> productIds )
         {
-            logger.LogInformation("Starting bulk restore for {Count} products", productIds.Count());
+            List<int> productIdList = productIds.ToList();
+            logger.LogInformation("Starting bulk restore for {Count} products", productIdList.Count);
 
-            List<ProductDto> processedProducts = new();
+            List<ProductDto> restored = new();
             List<string> errors = new();
 
-            foreach (int productId in productIds)
+            foreach (int productId in productIdList)
             {
                 DatabaseResult result = await RestoreProductAsync(productId);
                 if (!result.IsSuccess)
                 {
                     errors.Add($"Product {productId}: {result.ErrorMessage}");
-                    logger.LogWarning("Failed to restore product {ProductId}: {Error}", productId, result.ErrorMessage);
+                    logger.LogWarning(
+                        "Failed to restore product {ProductId}: {Error}",
+                        productId,
+                        result.ErrorMessage);
+                }
+                else
+                {
+                    // Get the restored product from cache
+                    ProductDto? restoredProduct = GetProductByIdFromCache(productId);
+                    if (restoredProduct != null)
+                    {
+                        restored.Add(restoredProduct);
+                    }
                 }
             }
 
@@ -204,12 +207,14 @@ namespace Storix.Application.Services.Products
                 string combinedErrors = string.Join("; ", errors);
                 logger.LogWarning("Bulk restore completed with {ErrorCount} errors", errors.Count);
                 return DatabaseResult<IEnumerable<ProductDto>>.Failure(
-                    $"Bulk restore completed with errors: {combinedErrors}",
+                    $"Bulk restore completed with {errors.Count} error(s): {combinedErrors}",
                     DatabaseErrorCode.PartialFailure);
             }
 
-            logger.LogInformation("Bulk restore completed successfully for {Count} products", productIds.Count());
-            return DatabaseResult<IEnumerable<ProductDto>>.Success(processedProducts);
+            logger.LogInformation(
+                "Bulk restore completed successfully for {Count} products",
+                productIdList.Count);
+            return DatabaseResult<IEnumerable<ProductDto>>.Success(restored);
         }
 
         #endregion
