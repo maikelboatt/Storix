@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Storix.Domain.Models;
 
@@ -6,78 +7,78 @@ namespace Storix.Application.DTO.Categories
 {
     public static class CategoryDtoMapper
     {
+        // Domain to DTO - excludes soft delete properties
         public static CategoryDto ToDto( this Category category ) => new()
         {
             CategoryId = category.CategoryId,
             Name = category.Name,
             ParentCategoryId = category.ParentCategoryId,
             Description = category.Description,
-            ImageUrl = category.ImageUrl,
-            IsDeleted = category.IsDeleted,
-            DeletedAt = category.DeletedAt
+            ImageUrl = category.ImageUrl
         };
 
+        // DTO to Domain - sets soft delete properties to defaults
         public static Category ToDomain( this CategoryDto dto ) => new(
             dto.CategoryId,
             dto.Name,
             dto.Description,
             dto.ParentCategoryId,
             dto.ImageUrl,
-            dto.IsDeleted,
-            dto.DeletedAt
+            false,
+            null
         );
 
+        // CategoryDto to CreateCategoryDto
         public static CreateCategoryDto ToCreateDto( this CategoryDto dto ) => new()
         {
             Name = dto.Name,
             Description = dto.Description,
             ParentCategoryId = dto.ParentCategoryId,
-            ImageUrl = dto.ImageUrl,
-            IsDeleted = dto.IsDeleted,
-            DeletedAt = dto.DeletedAt
+            ImageUrl = dto.ImageUrl
         };
 
+        // CategoryDto to UpdateCategoryDto
         public static UpdateCategoryDto ToUpdateDto( this CategoryDto dto ) => new()
         {
             CategoryId = dto.CategoryId,
             Name = dto.Name,
             ParentCategoryId = dto.ParentCategoryId,
             Description = dto.Description,
-            ImageUrl = dto.ImageUrl,
-            IsDeleted = dto.IsDeleted,
-            DeletedAt = dto.DeletedAt
+            ImageUrl = dto.ImageUrl
         };
 
+        // Category to CreateCategoryDto
         public static CreateCategoryDto ToCreateDto( this Category category ) => new()
         {
             Name = category.Name,
             ParentCategoryId = category.ParentCategoryId,
             Description = category.Description,
-            ImageUrl = category.ImageUrl,
-            IsDeleted = category.IsDeleted,
-            DeletedAt = category.DeletedAt
+            ImageUrl = category.ImageUrl
         };
 
-        public static Category ToDomain( this CreateCategoryDto dto ) => new(
-            0,
+        // CreateCategoryDto to Domain - always creates non-deleted categories
+        public static Category ToDomain( this CreateCategoryDto dto, int categoryId = 0 ) => new(
+            categoryId,
             dto.Name,
             dto.Description,
             dto.ParentCategoryId,
             dto.ImageUrl,
-            dto.IsDeleted,
-            dto.DeletedAt
+            false,
+            null
         );
 
-        public static Category ToDomain( this UpdateCategoryDto dto ) => new(
+        // UpdateCategoryDto to Domain - preserves existing soft delete state
+        public static Category ToDomain( this UpdateCategoryDto dto, bool isDeleted = false, DateTime? deletedAt = null ) => new(
             dto.CategoryId,
             dto.Name,
             dto.Description,
             dto.ParentCategoryId,
             dto.ImageUrl,
-            dto.IsDeleted,
-            dto.DeletedAt
+            isDeleted,
+            deletedAt
         );
 
+        // Collection mapping
         public static IEnumerable<CategoryDto> ToDto( this IEnumerable<Category> categories ) => categories.Select(c => c.ToDto());
     }
 }
