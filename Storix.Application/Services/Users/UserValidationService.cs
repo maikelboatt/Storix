@@ -21,12 +21,6 @@ namespace Storix.Application.Services.Users
         {
             if (userId <= 0) return DatabaseResult<bool>.Success(false);
 
-            // Todo: Check the store first and return Success if record is found
-
-            // Not in store and includeDeleted = false means it doesn't exist.
-            if (!includeDeleted) return DatabaseResult<bool>.Success(false);
-
-            //  If not in store but includeDeleted = true, might be deleted - check database.
             DatabaseResult<bool> exists = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => userRepository.ExistsAsync(userId, includeDeleted),
                 $"Checking if user {userId} exists in the database (includeDeleted: {includeDeleted})");
@@ -40,12 +34,6 @@ namespace Storix.Application.Services.Users
         {
             if (string.IsNullOrWhiteSpace(username)) return DatabaseResult<bool>.Success(false);
 
-            // Todo: Check the store first and return based on existence.
-
-            // Not in store and includeDeleted = false means it doesn't exist.
-            if (!includeDeleted) return DatabaseResult<bool>.Success(false);
-
-            // If not in store but included = true, might be deleted - check database.
             DatabaseResult<bool> exists = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => userRepository.UsernameExistsAsync(username, excludedId, includeDeleted),
                 $"Checks if user with Username {username} exists in the database (excluded Id: {excludedId} include deleted: {includeDeleted})");
@@ -59,12 +47,6 @@ namespace Storix.Application.Services.Users
         {
             if (string.IsNullOrWhiteSpace(email)) return DatabaseResult<bool>.Success(false);
 
-            // Todo: Check the store first and return based on existence.
-
-            // Not in store and includeDeleted = false means it doesn't exist.
-            if (!includeDeleted) return DatabaseResult<bool>.Success(false);
-
-            // If not in store but included = true, might be deleted - check database.
             DatabaseResult<bool> exists = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => userRepository.EmailExistsAsync(email, excludedId, includeDeleted),
                 $"Checks if user with Email {email} exists in the database (excluded Id: {excludedId} include deleted: {includeDeleted})");
