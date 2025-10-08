@@ -8,7 +8,5 @@ namespace Storix.Application.DTO.Categories
         public string? Description { get; set; }
         public int? ParentCategoryId { get; set; }
         public string? ImageUrl { get; set; }
-        public bool IsDeleted { get; set; } = false;
-        public DateTime? DeletedAt { get; set; } = null;
     }
 }
