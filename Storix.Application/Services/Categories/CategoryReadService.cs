@@ -29,9 +29,12 @@ namespace Storix.Application.Services.Categories
                 "Retrieving root categories"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
-                logger.LogInformation("Successfully retrieved {RootCategoryCount} root categories includeDeleted: {IncludeDeleted}", result.Value.Count(), includeDeleted);
+                logger.LogInformation(
+                    "Successfully retrieved {RootCategoryCount} root categories includeDeleted: {IncludeDeleted}",
+                    result.Value.Count(),
+                    includeDeleted);
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
@@ -78,7 +81,9 @@ namespace Storix.Application.Services.Categories
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
-                string errorMsg = pageNumber <= 0 ? "Page number must be positive" : "Page size must be positive";
+                string errorMsg = pageNumber <= 0
+                    ? "Page number must be positive"
+                    : "Page size must be positive";
                 logger.LogWarning("Invalid pagination parameters: page {PageNumber}, size {PageSize}", pageNumber, pageSize);
                 return DatabaseResult<IEnumerable<CategoryDto>>.Failure(errorMsg, DatabaseErrorCode.InvalidInput);
             }
@@ -132,7 +137,7 @@ namespace Storix.Application.Services.Categories
             }
 
             logger.LogDebug("Retrieving category with ID {CategoryId} from store", categoryId);
-            CategoryDto? category = categoryStore.GetById(categoryId, includeDeleted);
+            CategoryDto? category = categoryStore.GetById(categoryId);
             return category;
         }
 
@@ -143,7 +148,7 @@ namespace Storix.Application.Services.Categories
                 "Retrieving all categories"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
 

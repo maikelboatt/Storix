@@ -28,24 +28,27 @@ namespace Storix.Application.Services.Categories
             if (categoryId <= 0)
                 return DatabaseResult<bool>.Success(false);
 
-            // Check store first (store only contains active/non-deleted categories)
-            if (!includeDeleted)
+            // Check store first for performance (store properly handles includeDeleted now)
+            CategoryDto? categoryInStore = categoryStore.GetById(categoryId);
+            if (categoryInStore != null)
+                return DatabaseResult<bool>.Success(true);
+
+            // If not in store but includeDeleted=true, might be deleted - check database
+            if (includeDeleted)
             {
-                CategoryDto? categoryInStore = categoryStore.GetById(categoryId);
-                if (categoryInStore != null)
-                    return DatabaseResult<bool>.Success(true);
+                DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    () => categoryRepository.ExistsAsync(categoryId, includeDeleted),
+                    $"Checking if category {categoryId} exists in database (includeDeleted: {includeDeleted})",
+                    enableRetry: false
+                );
+
+                return result.IsSuccess
+                    ? DatabaseResult<bool>.Success(result.Value)
+                    : DatabaseResult<bool>.Failure(result.ErrorMessage!, result.ErrorCode);
             }
 
-            // Check database
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.ExistsAsync(categoryId, includeDeleted),
-                $"Checking if category {categoryId} exists (includeDeleted: {includeDeleted})",
-                false
-            );
-
-            return result.IsSuccess
-                ? DatabaseResult<bool>.Success(result.Value)
-                : DatabaseResult<bool>.Failure(result.ErrorMessage!, result.ErrorCode);
+            // Not in store and includeDeleted=false means it doesn't exist
+            return DatabaseResult<bool>.Success(false);
         }
 
         public async Task<DatabaseResult<bool>> CategoryNameExistsAsync( string name, int? excludeCategoryId = null, bool includeDeleted = false )
@@ -56,7 +59,7 @@ namespace Storix.Application.Services.Categories
             DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => categoryRepository.NameExistsAsync(name, excludeCategoryId, includeDeleted),
                 $"Checking if category name '{name}' exists (excludeCategoryId: {excludeCategoryId}, includeDeleted: {includeDeleted})",
-                false
+                enableRetry: false
             );
 
             return result.IsSuccess
@@ -67,7 +70,7 @@ namespace Storix.Application.Services.Categories
         public async Task<DatabaseResult> ValidateForDeletion( int categoryId )
         {
             // Check existence (only active categories can be deleted)
-            DatabaseResult existenceResult = await ProofOfExistence(categoryId);
+            DatabaseResult existenceResult = await ProofOfExistence(categoryId, false);
             if (!existenceResult.IsSuccess)
                 return existenceResult;
 
@@ -90,7 +93,9 @@ namespace Storix.Application.Services.Categories
             if (!businessRulesResult.IsSuccess)
                 return businessRulesResult;
 
-            logger.LogWarning("Hard deletion validation passed for category {CategoryId} - THIS WILL BE PERMANENT", categoryId);
+            logger.LogWarning(
+                "Hard deletion validation passed for category {CategoryId} - THIS WILL BE PERMANENT",
+                categoryId);
             return DatabaseResult.Success();
         }
 
@@ -109,7 +114,9 @@ namespace Storix.Application.Services.Categories
             if (!isSoftDeletedResult.Value)
             {
                 logger.LogWarning("Attempted to restore active category with ID {CategoryId}", categoryId);
-                return DatabaseResult.Failure($"Category with ID {categoryId} is not deleted and cannot be restored.", DatabaseErrorCode.InvalidInput);
+                return DatabaseResult.Failure(
+                    $"Category with ID {categoryId} is not deleted and cannot be restored.",
+                    DatabaseErrorCode.InvalidInput);
             }
 
             // Check business rules for restoration
@@ -125,7 +132,13 @@ namespace Storix.Application.Services.Categories
             if (categoryId <= 0)
                 return DatabaseResult<bool>.Success(false);
 
-            // If category exists with includeDeleted=true but not with includeDeleted=false, it's soft deleted
+            // Check store first - it manages active vs deleted collections
+            bool existsInStore = categoryStore.Exists(categoryId);
+
+            if (existsInStore)
+                return DatabaseResult<bool>.Success(false);
+
+            // Not in store, check database to be sure
             DatabaseResult<bool> existsIncludingDeleted = await CategoryExistsAsync(categoryId, true);
             if (!existsIncludingDeleted.IsSuccess || !existsIncludingDeleted.Value)
             {
@@ -134,7 +147,7 @@ namespace Storix.Application.Services.Categories
                     : DatabaseResult<bool>.Failure(existsIncludingDeleted.ErrorMessage!, existsIncludingDeleted.ErrorCode);
             }
 
-            DatabaseResult<bool> existsActiveOnly = await CategoryExistsAsync(categoryId);
+            DatabaseResult<bool> existsActiveOnly = await CategoryExistsAsync(categoryId, false);
             if (!existsActiveOnly.IsSuccess)
                 return DatabaseResult<bool>.Failure(existsActiveOnly.ErrorMessage!, existsActiveOnly.ErrorCode);
 
@@ -156,10 +169,16 @@ namespace Storix.Application.Services.Categories
             {
                 string statusMessage = includeDeleted
                     ? ""
-                    : " or already deleted";
-                logger.LogWarning("Attempted operation on non-existent category with ID {CategoryId}{StatusMessage}", categoryId, statusMessage);
-                return DatabaseResult.Failure($"Category with ID {categoryId} not found{statusMessage}.", DatabaseErrorCode.NotFound);
+                    : " or is deleted";
+                logger.LogWarning(
+                    "Attempted operation on non-existent category with ID {CategoryId}{StatusMessage}",
+                    categoryId,
+                    statusMessage);
+                return DatabaseResult.Failure(
+                    $"Category with ID {categoryId} not found{statusMessage}.",
+                    DatabaseErrorCode.NotFound);
             }
+
             return DatabaseResult.Success();
         }
 
@@ -167,9 +186,9 @@ namespace Storix.Application.Services.Categories
         {
             // Check for subcategories (only active subcategories should prevent deletion)
             DatabaseResult<bool> hasSubcategoriesResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                async () => (await categoryRepository.GetSubCategoriesAsync(categoryId)).Any(),
+                async () => (await categoryRepository.GetSubCategoriesAsync(categoryId, false)).Any(),
                 $"Checking for active subcategories of category {categoryId}",
-                false
+                enableRetry: false
             );
 
             if (hasSubcategoriesResult.IsSuccess && hasSubcategoriesResult.Value)
@@ -182,7 +201,8 @@ namespace Storix.Application.Services.Categories
 
             // Check for products (only active products should prevent deletion)
             bool hasProducts = productStore.HasProductsInCategory(categoryId);
-            if (!hasProducts) return DatabaseResult.Success();
+            if (!hasProducts)
+                return DatabaseResult.Success();
 
             logger.LogWarning("Cannot delete category {CategoryId} - it contains active products", categoryId);
             return DatabaseResult.Failure(
@@ -192,28 +212,31 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult> ValidateCategoryHardDeletionBusinessRules( int categoryId )
         {
-            // Hard deletion should be more restrictive - check for ANY subcategories or products
-
             // Check for ANY subcategories (including deleted ones)
             DatabaseResult<bool> hasAnySubcategoriesResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 async () => (await categoryRepository.GetSubCategoriesAsync(categoryId, true)).Any(),
                 $"Checking for any subcategories of category {categoryId}",
-                false
+                enableRetry: false
             );
 
             if (hasAnySubcategoriesResult.IsSuccess && hasAnySubcategoriesResult.Value)
             {
-                logger.LogWarning("Cannot hard delete category {CategoryId} - it has subcategories (including deleted)", categoryId);
+                logger.LogWarning(
+                    "Cannot hard delete category {CategoryId} - it has subcategories (including deleted)",
+                    categoryId);
                 return DatabaseResult.Failure(
                     "Cannot permanently delete category because it has historical subcategories. This would break data integrity.",
                     DatabaseErrorCode.ForeignKeyViolation);
             }
 
             // Check for ANY products (including deleted ones)
-            bool hasAnyProducts = productStore.HasProductsInCategory(categoryId, true);
-            if (!hasAnyProducts) return DatabaseResult.Success();
+            bool hasAnyProducts = productStore.HasProductsInCategory(categoryId);
+            if (!hasAnyProducts)
+                return DatabaseResult.Success();
 
-            logger.LogWarning("Cannot hard delete category {CategoryId} - it contains products (including deleted)", categoryId);
+            logger.LogWarning(
+                "Cannot hard delete category {CategoryId} - it contains products (including deleted)",
+                categoryId);
             return DatabaseResult.Failure(
                 "Cannot permanently delete category because it has historical products. This would break data integrity.",
                 DatabaseErrorCode.ForeignKeyViolation);
@@ -225,16 +248,21 @@ namespace Storix.Application.Services.Categories
             DatabaseResult<Category?> categoryResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => categoryRepository.GetByIdAsync(categoryId, true),
                 $"Retrieving category {categoryId} for restore validation",
-                false
+                enableRetry: false
             );
 
             if (!categoryResult.IsSuccess || categoryResult.Value == null)
-                return DatabaseResult.Failure("Category not found for restoration validation.", DatabaseErrorCode.NotFound);
+                return DatabaseResult.Failure(
+                    "Category not found for restoration validation.",
+                    DatabaseErrorCode.NotFound);
 
             // If category has a parent, ensure parent is still active
             if (categoryResult.Value.ParentCategoryId.HasValue)
             {
-                DatabaseResult<bool> parentExistsResult = await CategoryExistsAsync(categoryResult.Value.ParentCategoryId.Value);
+                DatabaseResult<bool> parentExistsResult = await CategoryExistsAsync(
+                    categoryResult.Value.ParentCategoryId.Value,
+                    false);
+
                 if (!parentExistsResult.IsSuccess)
                     return DatabaseResult.Failure(parentExistsResult.ErrorMessage!, parentExistsResult.ErrorCode);
 
@@ -253,7 +281,8 @@ namespace Storix.Application.Services.Categories
             // Check for name conflicts with active categories
             DatabaseResult<bool> nameConflictResult = await CategoryNameExistsAsync(
                 categoryResult.Value.Name,
-                categoryId);
+                categoryId,
+                false);
 
             if (!nameConflictResult.IsSuccess)
                 return DatabaseResult.Failure(nameConflictResult.ErrorMessage!, nameConflictResult.ErrorCode);

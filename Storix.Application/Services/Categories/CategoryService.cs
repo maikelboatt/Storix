@@ -42,7 +42,8 @@ namespace Storix.Application.Services.Categories
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false ) =>
             await categoryReadService.GetCategoryPagedAsync(pageNumber, pageSize, includeDeleted);
 
-        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false ) => await categoryReadService.GetTotalCategoryCountAsync(includeDeleted);
+        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false ) =>
+            await categoryReadService.GetTotalCategoryCountAsync(includeDeleted);
 
         public async Task<DatabaseResult<int>> GetActiveCategoryCountAsync() => await categoryReadService.GetActiveCategoryCountAsync();
 
@@ -55,9 +56,11 @@ namespace Storix.Application.Services.Categories
 
         #region Write Operations
 
-        public async Task<DatabaseResult<CategoryDto>> CreateCategoryAsync( CreateCategoryDto createCategoryDto ) => await categoryWriteService.CreateCategoryAsync(createCategoryDto);
+        public async Task<DatabaseResult<CategoryDto>> CreateCategoryAsync( CreateCategoryDto createCategoryDto ) =>
+            await categoryWriteService.CreateCategoryAsync(createCategoryDto);
 
-        public async Task<DatabaseResult<CategoryDto>> UpdateCategoryAsync( UpdateCategoryDto updateCategoryDto ) => await categoryWriteService.UpdateCategoryAsync(updateCategoryDto);
+        public async Task<DatabaseResult<CategoryDto>> UpdateCategoryAsync( UpdateCategoryDto updateCategoryDto ) =>
+            await categoryWriteService.UpdateCategoryAsync(updateCategoryDto);
 
         public async Task<DatabaseResult> SoftDeleteCategoryAsync( int categoryId ) => await categoryWriteService.SoftDeleteCategoryAsync(categoryId);
 
@@ -98,7 +101,7 @@ namespace Storix.Application.Services.Categories
                 searchTerm,
                 includeDeleted);
 
-            IEnumerable<Category> categories = categoryStore.SearchCategories(searchTerm, includeDeleted);
+            IEnumerable<Category> categories = categoryStore.SearchCategories(searchTerm);
             return categories.ToDto();
         }
 
@@ -109,12 +112,6 @@ namespace Storix.Application.Services.Categories
             return categories.ToDto();
         }
 
-        public IEnumerable<CategoryDto> GetDeletedCategoriesFromStore()
-        {
-            logger.LogDebug("Retrieving deleted categories from store cache");
-            List<CategoryDto> categories = categoryStore.GetDeletedCategories();
-            return categories;
-        }
 
         public void RefreshStoreCache()
         {
@@ -146,12 +143,13 @@ namespace Storix.Application.Services.Categories
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> BulkSoftDeleteAsync( IEnumerable<int> categoryIds )
         {
-            logger.LogInformation("Starting bulk soft delete for {Count} categories", categoryIds.Count());
+            IEnumerable<int> enumerable = categoryIds.ToList();
+            logger.LogInformation("Starting bulk soft delete for {Count} categories", enumerable.Count());
 
-            List<CategoryDto> processedCategories = new();
+            List<CategoryDto> processedCategories = [];
             List<string> errors = new();
 
-            foreach (int categoryId in categoryIds)
+            foreach (int categoryId in enumerable)
             {
                 DatabaseResult result = await SoftDeleteCategoryAsync(categoryId);
                 if (!result.IsSuccess)
@@ -170,18 +168,19 @@ namespace Storix.Application.Services.Categories
                     DatabaseErrorCode.PartialFailure);
             }
 
-            logger.LogInformation("Bulk soft delete completed successfully for {Count} categories", categoryIds.Count());
+            logger.LogInformation("Bulk soft delete completed successfully for {Count} categories", enumerable.Count());
             return DatabaseResult<IEnumerable<CategoryDto>>.Success(processedCategories);
         }
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> BulkRestoreAsync( IEnumerable<int> categoryIds )
         {
-            logger.LogInformation("Starting bulk restore for {Count} categories", categoryIds.Count());
+            IEnumerable<int> enumerable = categoryIds.ToList();
+            logger.LogInformation("Starting bulk restore for {Count} categories", enumerable.Count());
 
             List<CategoryDto> processedCategories = [];
-            List<string> errors = new();
+            List<string> errors = [];
 
-            foreach (int categoryId in categoryIds)
+            foreach (int categoryId in enumerable)
             {
                 DatabaseResult result = await RestoreCategoryAsync(categoryId);
                 if (!result.IsSuccess)
@@ -200,7 +199,7 @@ namespace Storix.Application.Services.Categories
                     DatabaseErrorCode.PartialFailure);
             }
 
-            logger.LogInformation("Bulk restore completed successfully for {Count} categories", categoryIds.Count());
+            logger.LogInformation("Bulk restore completed successfully for {Count} categories", enumerable.Count());
             return DatabaseResult<IEnumerable<CategoryDto>>.Success(processedCategories);
         }
 

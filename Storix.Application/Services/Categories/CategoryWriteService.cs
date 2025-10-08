@@ -116,14 +116,8 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult<CategoryDto>> PerformCreate( CreateCategoryDto createCategoryDto )
         {
+            // Convert DTO to domain model - always creates non-deleted categories
             Category category = createCategoryDto.ToDomain();
-
-            // Ensure new categories are not marked as deleted
-            category = category with
-            {
-                IsDeleted = false,
-                DeletedAt = null
-            };
 
             DatabaseResult<Category> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => categoryRepository.CreateAsync(category),
@@ -132,29 +126,26 @@ namespace Storix.Application.Services.Categories
 
             if (result is { IsSuccess: true, Value: not null })
             {
-                // Convert to DTO for store operations
-                CategoryDto categoryDto = result.Value.ToDto();
                 int createdCategoryId = result.Value.CategoryId;
 
-                // Add to in-memory store using the database-generated ID
-                CategoryDto? storeResult = categoryStore.Create(createdCategoryId, categoryDto);
+                // Add to in-memory store
+                CategoryDto? storeResult = categoryStore.Create(createdCategoryId, createCategoryDto);
 
                 if (storeResult == null)
                 {
-                    // Log warning but don't fail the operation since database succeeded
                     logger.LogWarning(
                         "Category created in database (ID: {CategoryId}) but failed to add to cache",
-                        result.Value.CategoryId);
+                        createdCategoryId);
                 }
                 else
                 {
                     logger.LogInformation(
-                        "Successfully created category with ID {CategoryId} and name '{CategoryName}' in both database and cache",
-                        result.Value.CategoryId,
+                        "Successfully created category with ID {CategoryId} and name '{CategoryName}'",
+                        createdCategoryId,
                         result.Value.Name);
                 }
 
-                return DatabaseResult<CategoryDto>.Success(categoryDto);
+                return DatabaseResult<CategoryDto>.Success(result.Value.ToDto());
             }
 
             logger.LogWarning("Failed to create category: {ErrorMessage}", result.ErrorMessage);
@@ -163,28 +154,34 @@ namespace Storix.Application.Services.Categories
 
         private async Task<DatabaseResult<CategoryDto>> PerformUpdate( UpdateCategoryDto updateCategoryDto )
         {
-            // Get existing category (including soft-deleted ones for update operations)
+            // Get existing category (only active ones - can't update deleted categories)
             DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId, true),
+                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId, false),
                 $"Retrieving category {updateCategoryDto.CategoryId} for update",
-                false
+                enableRetry: false
             );
 
             if (!getResult.IsSuccess || getResult.Value == null)
             {
+                logger.LogWarning(
+                    "Cannot update category {CategoryId}: {ErrorMessage}",
+                    updateCategoryDto.CategoryId,
+                    getResult.ErrorMessage ?? "Category not found or is deleted");
                 return DatabaseResult<CategoryDto>.Failure(
-                    getResult.ErrorMessage ?? "Category not found",
+                    getResult.ErrorMessage ?? "Category not found or is deleted. Restore the category first if it was deleted.",
                     getResult.ErrorCode);
             }
 
+            Category existingCategory = getResult.Value;
+
             // Update category while preserving ISoftDeletable properties
-            Category updatedCategory = getResult.Value with
+            Category updatedCategory = existingCategory with
             {
                 Name = updateCategoryDto.Name,
                 Description = updateCategoryDto.Description,
                 ParentCategoryId = updateCategoryDto.ParentCategoryId,
                 ImageUrl = updateCategoryDto.ImageUrl
-                // ISoftDeletable properties are preserved from existing category
+                // IsDeleted and DeletedAt are preserved from existingCategory
             };
 
             DatabaseResult<Category> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -192,15 +189,25 @@ namespace Storix.Application.Services.Categories
                 "Updating category"
             );
 
-            if (updateResult.IsSuccess && updateResult.Value != null)
+            if (updateResult is { IsSuccess: true, Value: not null })
             {
-                CategoryDto categoryDto = updateResult.Value.ToDto();
-
                 // Update in-memory store
-                categoryStore.Update(categoryDto);
-                logger.LogInformation("Successfully updated category with ID {CategoryId}", updateCategoryDto.CategoryId);
+                CategoryDto? storeResult = categoryStore.Update(updateCategoryDto);
 
-                return DatabaseResult<CategoryDto>.Success(categoryDto);
+                if (storeResult == null)
+                {
+                    logger.LogWarning(
+                        "Category updated in database (ID: {CategoryId}) but failed to update in cache",
+                        updateCategoryDto.CategoryId);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Successfully updated category with ID {CategoryId}",
+                        updateCategoryDto.CategoryId);
+                }
+
+                return DatabaseResult<CategoryDto>.Success(updateResult.Value.ToDto());
             }
 
             logger.LogWarning(
@@ -214,11 +221,23 @@ namespace Storix.Application.Services.Categories
         {
             DatabaseResult result = await categoryRepository.SoftDeleteAsync(categoryId);
 
-            if (result is { IsSuccess: true })
+            if (result.IsSuccess)
             {
-                // Remove from store cache since it's now soft deleted
-                categoryStore.Delete(categoryId);
-                logger.LogInformation("Successfully soft deleted category with ID {CategoryId}", categoryId);
+                bool storeResult = categoryStore.Delete(categoryId);
+
+                if (!storeResult)
+                {
+                    logger.LogWarning(
+                        "Category soft deleted in database (ID: {CategoryId}) but failed to update cache",
+                        categoryId);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Successfully soft deleted category with ID {CategoryId}",
+                        categoryId);
+                }
+
                 return DatabaseResult.Success();
             }
 
@@ -226,33 +245,51 @@ namespace Storix.Application.Services.Categories
                 "Failed to soft delete category with ID {CategoryId}: {ErrorMessage}",
                 categoryId,
                 result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to soft delete category", result.ErrorCode);
+            return DatabaseResult.Failure(
+                result.ErrorMessage ?? "Failed to soft delete category",
+                result.ErrorCode);
         }
 
         private async Task<DatabaseResult> PerformRestore( int categoryId )
         {
-            DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.RestoreAsync(categoryId),
-                "Restoring category",
-                enableRetry: false
-            );
+            DatabaseResult result = await categoryRepository.RestoreAsync(categoryId);
 
-            if (result.IsSuccess && result.Value)
+            if (result.IsSuccess)
             {
-                // Get the restored category and add it back to the store cache
+                // Fetch the restored category from database
                 DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                    () => categoryRepository.GetByIdAsync(categoryId),
+                    () => categoryRepository.GetByIdAsync(categoryId, false),
                     $"Retrieving restored category {categoryId}",
-                    false
+                    enableRetry: false
                 );
 
-                if (getResult.IsSuccess && getResult.Value != null)
+                if (getResult is { IsSuccess: true, Value: not null })
                 {
-                    CategoryDto categoryDto = getResult.Value.ToDto();
-                    categoryStore.Update(categoryDto);
+                    // Add back to active cache
+                    CreateCategoryDto createDto = new()
+                    {
+                        Name = getResult.Value.Name,
+                        Description = getResult.Value.Description,
+                        ParentCategoryId = getResult.Value.ParentCategoryId,
+                        ImageUrl = getResult.Value.ImageUrl
+                    };
+
+                    CategoryDto? cached = categoryStore.Create(getResult.Value.CategoryId, createDto);
+
+                    if (cached != null)
+                    {
+                        logger.LogInformation(
+                            "Successfully restored category with ID {CategoryId} and added back to cache",
+                            categoryId);
+                    }
+                    else
+                    {
+                        logger.LogWarning(
+                            "Category restored in database (ID: {CategoryId}) but failed to add to cache",
+                            categoryId);
+                    }
                 }
 
-                logger.LogInformation("Successfully restored category with ID {CategoryId}", categoryId);
                 return DatabaseResult.Success();
             }
 
@@ -260,17 +297,30 @@ namespace Storix.Application.Services.Categories
                 "Failed to restore category with ID {CategoryId}: {ErrorMessage}",
                 categoryId,
                 result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to restore category", result.ErrorCode);
+            return DatabaseResult.Failure(
+                result.ErrorMessage ?? "Failed to restore category",
+                result.ErrorCode);
         }
 
         private async Task<DatabaseResult> PerformHardDelete( int categoryId )
         {
             DatabaseResult result = await categoryRepository.HardDeleteAsync(categoryId);
 
-            if (result is { IsSuccess: true })
+            if (result.IsSuccess)
             {
-                categoryStore.Delete(categoryId);
-                logger.LogWarning("Successfully hard deleted category with ID {CategoryId} - THIS IS PERMANENT", categoryId);
+                // Remove from store completely (checks both active and deleted collections)
+                bool storeResult = categoryStore.Delete(categoryId);
+
+                if (!storeResult)
+                {
+                    logger.LogWarning(
+                        "Category hard deleted in database (ID: {CategoryId}) but wasn't found in cache",
+                        categoryId);
+                }
+
+                logger.LogWarning(
+                    "Successfully hard deleted category with ID {CategoryId} - THIS IS PERMANENT",
+                    categoryId);
                 return DatabaseResult.Success();
             }
 
@@ -278,7 +328,9 @@ namespace Storix.Application.Services.Categories
                 "Failed to hard delete category with ID {CategoryId}: {ErrorMessage}",
                 categoryId,
                 result.ErrorMessage);
-            return DatabaseResult.Failure(result.ErrorMessage ?? "Failed to hard delete category", result.ErrorCode);
+            return DatabaseResult.Failure(
+                result.ErrorMessage ?? "Failed to hard delete category",
+                result.ErrorCode);
         }
 
         #endregion
@@ -290,31 +342,66 @@ namespace Storix.Application.Services.Categories
             if (createCategoryDto == null)
             {
                 logger.LogWarning("Null CreateCategoryDto provided");
-                return DatabaseResult<CategoryDto>.Failure("Category data cannot be null.", DatabaseErrorCode.InvalidInput);
+                return DatabaseResult<CategoryDto>.Failure(
+                    "Category data cannot be null.",
+                    DatabaseErrorCode.InvalidInput);
             }
 
-            ValidationResult? validationResult = createValidator.Validate(createCategoryDto);
+            ValidationResult validationResult = createValidator.Validate(createCategoryDto);
 
-            if (validationResult.IsValid) return DatabaseResult<CategoryDto>.Success(null!);
+            if (validationResult.IsValid)
+                return DatabaseResult<CategoryDto>.Success(null!);
 
             string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
             logger.LogWarning("Category creation validation failed: {ValidationErrors}", errors);
-            return DatabaseResult<CategoryDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
+            return DatabaseResult<CategoryDto>.Failure(
+                $"Validation failed: {errors}",
+                DatabaseErrorCode.ValidationFailure);
         }
 
         private async Task<DatabaseResult<CategoryDto>> ValidateCreateBusiness( CreateCategoryDto createCategoryDto )
         {
-            // Check name availability (excluding soft-deleted categories by default)
-            DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(createCategoryDto.Name, includeDeleted: false);
+            // Check name availability (excluding soft-deleted categories)
+            DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(
+                createCategoryDto.Name,
+                includeDeleted: false);
+
             if (!nameExistsResult.IsSuccess)
-                return DatabaseResult<CategoryDto>.Failure(nameExistsResult.ErrorMessage!, nameExistsResult.ErrorCode);
+                return DatabaseResult<CategoryDto>.Failure(
+                    nameExistsResult.ErrorMessage!,
+                    nameExistsResult.ErrorCode);
 
             if (nameExistsResult.Value)
             {
-                logger.LogWarning("Attempted to create category with duplicate name: {CategoryName}", createCategoryDto.Name);
+                logger.LogWarning(
+                    "Attempted to create category with duplicate name: {CategoryName}",
+                    createCategoryDto.Name);
                 return DatabaseResult<CategoryDto>.Failure(
                     $"A category with the name '{createCategoryDto.Name}' already exists.",
                     DatabaseErrorCode.DuplicateKey);
+            }
+
+            // Validate parent category exists and is active if specified
+            if (createCategoryDto.ParentCategoryId.HasValue)
+            {
+                DatabaseResult<bool> parentExistsResult = await categoryValidationService.CategoryExistsAsync(
+                    createCategoryDto.ParentCategoryId.Value,
+                    false);
+
+                if (!parentExistsResult.IsSuccess)
+                    return DatabaseResult<CategoryDto>.Failure(
+                        parentExistsResult.ErrorMessage!,
+                        parentExistsResult.ErrorCode);
+
+                if (!parentExistsResult.Value)
+                {
+                    logger.LogWarning(
+                        "Attempted to create category with non-existent or deleted parent ID: {ParentId}",
+                        createCategoryDto.ParentCategoryId.Value);
+                    return DatabaseResult<CategoryDto>.Failure(
+                        $"Parent category with ID {createCategoryDto.ParentCategoryId.Value} not found or is deleted.",
+                        DatabaseErrorCode.NotFound);
+                }
             }
 
             return DatabaseResult<CategoryDto>.Success(null!);
@@ -325,44 +412,59 @@ namespace Storix.Application.Services.Categories
             if (updateCategoryDto == null)
             {
                 logger.LogWarning("Null UpdateCategoryDto provided");
-                return DatabaseResult<CategoryDto>.Failure("Category data cannot be null.", DatabaseErrorCode.InvalidInput);
+                return DatabaseResult<CategoryDto>.Failure(
+                    "Category data cannot be null.",
+                    DatabaseErrorCode.InvalidInput);
             }
 
-            ValidationResult? validationResult = updateValidator.Validate(updateCategoryDto);
-            if (!validationResult.IsValid)
-            {
-                string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                logger.LogWarning(
-                    "Category update validation failed for ID {CategoryId}: {ValidationErrors}",
-                    updateCategoryDto.CategoryId,
-                    errors);
-                return DatabaseResult<CategoryDto>.Failure($"Validation failed: {errors}", DatabaseErrorCode.ValidationFailure);
-            }
+            ValidationResult validationResult = updateValidator.Validate(updateCategoryDto);
 
-            return DatabaseResult<CategoryDto>.Success(null!);
+            if (validationResult.IsValid)
+                return DatabaseResult<CategoryDto>.Success(null!);
+
+            string errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+            logger.LogWarning(
+                "Category update validation failed for ID {CategoryId}: {ValidationErrors}",
+                updateCategoryDto.CategoryId,
+                errors);
+            return DatabaseResult<CategoryDto>.Failure(
+                $"Validation failed: {errors}",
+                DatabaseErrorCode.ValidationFailure);
         }
 
         private async Task<DatabaseResult<CategoryDto>> ValidateUpdateBusiness( UpdateCategoryDto updateCategoryDto )
         {
-            // Check existence (including soft-deleted categories for updates)
-            DatabaseResult<bool> existsResult = await categoryValidationService.CategoryExistsAsync(updateCategoryDto.CategoryId, true);
+            // Check existence (only active categories can be updated)
+            DatabaseResult<bool> existsResult = await categoryValidationService.CategoryExistsAsync(
+                updateCategoryDto.CategoryId,
+                false);
+
             if (!existsResult.IsSuccess)
-                return DatabaseResult<CategoryDto>.Failure(existsResult.ErrorMessage!, existsResult.ErrorCode);
+                return DatabaseResult<CategoryDto>.Failure(
+                    existsResult.ErrorMessage!,
+                    existsResult.ErrorCode);
 
             if (!existsResult.Value)
             {
-                logger.LogWarning("Attempted to update non-existent category with ID {CategoryId}", updateCategoryDto.CategoryId);
+                logger.LogWarning(
+                    "Attempted to update non-existent or deleted category with ID {CategoryId}",
+                    updateCategoryDto.CategoryId);
                 return DatabaseResult<CategoryDto>.Failure(
-                    $"Category with ID {updateCategoryDto.CategoryId} not found.",
+                    $"Category with ID {updateCategoryDto.CategoryId} not found or is deleted. " +
+                    "Restore the category first if it was deleted.",
                     DatabaseErrorCode.NotFound);
             }
 
-            // Check name availability (excluding soft-deleted categories)
+            // Check name availability (excluding this category and soft-deleted categories)
             DatabaseResult<bool> nameExistsResult = await categoryValidationService.CategoryNameExistsAsync(
                 updateCategoryDto.Name,
-                updateCategoryDto.CategoryId);
+                updateCategoryDto.CategoryId,
+                false);
+
             if (!nameExistsResult.IsSuccess)
-                return DatabaseResult<CategoryDto>.Failure(nameExistsResult.ErrorMessage!, nameExistsResult.ErrorCode);
+                return DatabaseResult<CategoryDto>.Failure(
+                    nameExistsResult.ErrorMessage!,
+                    nameExistsResult.ErrorCode);
 
             if (nameExistsResult.Value)
             {
@@ -373,6 +475,40 @@ namespace Storix.Application.Services.Categories
                 return DatabaseResult<CategoryDto>.Failure(
                     $"A category with the name '{updateCategoryDto.Name}' already exists.",
                     DatabaseErrorCode.DuplicateKey);
+            }
+
+            // Validate parent category exists and is active if specified
+            if (updateCategoryDto.ParentCategoryId.HasValue)
+            {
+                // Can't set itself as parent
+                if (updateCategoryDto.ParentCategoryId.Value == updateCategoryDto.CategoryId)
+                {
+                    logger.LogWarning(
+                        "Attempted to set category {CategoryId} as its own parent",
+                        updateCategoryDto.CategoryId);
+                    return DatabaseResult<CategoryDto>.Failure(
+                        "A category cannot be its own parent.",
+                        DatabaseErrorCode.InvalidInput);
+                }
+
+                DatabaseResult<bool> parentExistsResult = await categoryValidationService.CategoryExistsAsync(
+                    updateCategoryDto.ParentCategoryId.Value,
+                    false);
+
+                if (!parentExistsResult.IsSuccess)
+                    return DatabaseResult<CategoryDto>.Failure(
+                        parentExistsResult.ErrorMessage!,
+                        parentExistsResult.ErrorCode);
+
+                if (!parentExistsResult.Value)
+                {
+                    logger.LogWarning(
+                        "Attempted to update category with non-existent or deleted parent ID: {ParentId}",
+                        updateCategoryDto.ParentCategoryId.Value);
+                    return DatabaseResult<CategoryDto>.Failure(
+                        $"Parent category with ID {updateCategoryDto.ParentCategoryId.Value} not found or is deleted.",
+                        DatabaseErrorCode.NotFound);
+                }
             }
 
             return DatabaseResult<CategoryDto>.Success(null!);
