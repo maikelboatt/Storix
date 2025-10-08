@@ -10,42 +10,34 @@ namespace Storix.Application.Stores.Categories
 
         void Clear();
 
-        CategoryDto? Create( int categoryId, CategoryDto categoryDto );
+        CategoryDto? Create( int categoryId, CreateCategoryDto createDto );
 
-        CategoryDto? Update( CategoryDto categoryDto );
+        CategoryDto? Update( UpdateCategoryDto updateDto );
 
         bool Delete( int categoryId );
 
+        CategoryDto? GetById( int categoryId );
+
+        List<CategoryDto> GetAll(
+            int? parentId = null,
+            string? search = null,
+            int skip = 0,
+            int take = 100 );
+
+        List<CategoryDto> GetChildren( int parentCategoryId );
+
+        List<CategoryDto> GetRootCategories();
+
         IEnumerable<Category> GetActiveCategories();
 
-        CategoryDto? GetById( int categoryId, bool includeDeleted = false );
+        bool Exists( int categoryId );
 
-        bool SoftDelete( int categoryId );
-
-        bool Restore( int categoryId );
-
-        List<CategoryDto> GetAll( int? parentId = null, string? search = null, bool includeDeleted = false, int skip = 0, int take = 100 );
-
-        List<CategoryDto> GetChildren( int parentCategoryId, bool includeDeleted = false );
-
-        List<CategoryDto> GetRootCategories( bool includeDeleted = false );
-
-        List<CategoryDto> GetDeletedCategories();
-
-        bool Exists( int categoryId, bool includeDeleted = false );
-
-        bool IsDeleted( int categoryId );
-
-        int GetCount( int? parentId = null, bool includeDeleted = false );
+        int GetCount( int? parentId = null );
 
         int GetActiveCount();
 
-        int GetDeletedCount();
+        bool HasChildren( int categoryId );
 
-        int GetTotalCount();
-
-        bool HasChildren( int categoryId, bool includeDeleted = false );
-
-        IEnumerable<Category> SearchCategories( string? searchTerm = null, bool includeDeleted = false );
+        IEnumerable<Category> SearchCategories( string? searchTerm = null );
     }
 }
