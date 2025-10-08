@@ -1,4 +1,9 @@
-﻿using Storix.Application.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
+using Dapper;
+using Storix.Application.Common;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;
@@ -13,108 +18,75 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Checks if a category exists by ID.
         /// </summary>
-        /// <param name="categoryId" >Unique identifier</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories in the check</param>
-        /// <returns></returns>
         public async Task<bool> ExistsAsync( int categoryId, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                CategoryId = categoryId,
-                IncludeDeleted = includeDeleted
-            };
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckCategoryExists",
-                parameters
-            );
-            return count > 0;
+            string sql = includeDeleted
+                ? "SELECT COUNT(1) FROM Categories WHERE CategoryId = @CategoryId"
+                : "SELECT COUNT(1) FROM Categories WHERE CategoryId = @CategoryId AND IsDeleted = 0";
+
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    CategoryId = categoryId
+                });
         }
 
         /// <summary>
         ///     Checks if a category name already exists, optionally excluding a specific category ID.
         /// </summary>
-        /// <param name="name" >Name to be checked.</param>
-        /// <param name="excludeCategoryId" >ID of category.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories in the check</param>
-        /// <returns></returns>
         public async Task<bool> NameExistsAsync( string name, int? excludeCategoryId = null, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                Name = name,
-                ExcludeCategoryId = excludeCategoryId,
-                IncludeDeleted = includeDeleted
-            };
+            string sql = includeDeleted
+                ? @"SELECT COUNT(1) FROM Categories 
+                    WHERE Name = @Name 
+                    AND (@ExcludeCategoryId IS NULL OR CategoryId != @ExcludeCategoryId)"
+                : @"SELECT COUNT(1) FROM Categories 
+                    WHERE Name = @Name 
+                    AND IsDeleted = 0 
+                    AND (@ExcludeCategoryId IS NULL OR CategoryId != @ExcludeCategoryId)";
 
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckCategoryNameExists",
-                parameters
-            );
-            return count > 0;
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    Name = name,
+                    ExcludeCategoryId = excludeCategoryId
+                });
         }
 
         #endregion
 
-        #region Pagination
+        #region Count Operations
 
         /// <summary>
-        ///     Gets the total counts of categories.
+        ///     Gets the total count of categories.
         /// </summary>
-        /// <returns>Total count</returns>
         public async Task<int> GetTotalCountAsync( bool includeDeleted = false )
         {
-            string storedProcedure = includeDeleted
-                ? "sp_GetCategoryCountIncludeDeleted"
-                : "sp_GetCategoryCount";
+            string sql = includeDeleted
+                ? "SELECT COUNT(*) FROM Categories"
+                : "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 0";
 
-            return await sqlDataAccess.ExecuteScalarAsync<int>(storedProcedure);
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
         ///     Gets the count of active categories (non-deleted).
         /// </summary>
-        /// <returns></returns>
-        public async Task<int> GetActiveCountAsync() => await sqlDataAccess.ExecuteScalarAsync<int>("sp_GetActiveCategoryCount");
+        public async Task<int> GetActiveCountAsync()
+        {
+            const string sql = "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 0";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+        }
 
         /// <summary>
         ///     Gets the count of soft-deleted categories.
         /// </summary>
-        /// <returns></returns>
-        public async Task<int> GetDeletedCountAsync() => await sqlDataAccess.ExecuteScalarAsync<int>("sp_GetDeletedCategoryCount");
-
-        /// <summary>
-        ///     Gets all active categories(IsActive = true and IsDeleted = false).
-        /// </summary>
-        public async Task<IEnumerable<Category>> GetAllActiveAsync() => await sqlDataAccess.QueryAsync<Category>("sp_GetAllActiveCategories");
-
-        /// <summary>
-        ///     Gets all soft-deleted categories.
-        /// </summary>
-        /// <returns></returns>
-        public async Task<IEnumerable<Category>> GetAllDeletedAsync() => await sqlDataAccess.QueryAsync<Category>("sp_GetAllDeletedCategories");
-
-        /// <summary>
-        ///     Gets a paged list of categories.
-        /// </summary>
-        /// <param name="pageNumber" > Specified page number./</param>
-        /// <param name="pageSize" > Specified page size.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories in the check</param>
-        /// <returns></returns>
-        public async Task<IEnumerable<Category>> GetPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
+        public async Task<int> GetDeletedCountAsync()
         {
-            var parameters = new
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                Offset = (pageNumber - 1) * pageSize,
-                IncludeDeleted = includeDeleted
-            };
-
-            string storedProcedure = includeDeleted
-                ? "sp_GetCategoriesPagedIncludeDeleted"
-                : "sp_GetCategoriesPaged";
-
-            return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
+            const string sql = "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 1";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         #endregion
@@ -124,102 +96,120 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Get a category by its ID.
         /// </summary>
-        /// <param name="categoryId" >Unique Identifier.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories.</param>
-        /// <returns></returns>
         public async Task<Category?> GetByIdAsync( int categoryId, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                CategoryId = categoryId,
-                IncludeDeleted = includeDeleted
-            };
-
-            string storedProcedure = includeDeleted
-                ? "sp_GetCategoryByIdIncludeDeleted"
-                : "sp_GetCategoryById";
+            string sql = includeDeleted
+                ? "SELECT * FROM Categories WHERE CategoryId = @CategoryId"
+                : "SELECT * FROM Categories WHERE CategoryId = @CategoryId AND IsDeleted = 0";
 
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Category>(
-                storedProcedure,
-                parameters);
+                sql,
+                new
+                {
+                    CategoryId = categoryId
+                });
         }
 
         /// <summary>
         ///     Gets all categories.
         /// </summary>
-        /// <returns></returns>
         public async Task<IEnumerable<Category>> GetAllAsync( bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                IncludeDeleted = includeDeleted
-            };
+            string sql = includeDeleted
+                ? "SELECT * FROM Categories ORDER BY Name"
+                : "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name";
 
-            string storedProcedure = includeDeleted
-                ? "sp_GetAllCategoriesIncludeDeleted"
-                : "sp_GetAllCategories";
-            return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
+            return await sqlDataAccess.QueryAsync<Category>(sql);
+        }
+
+        /// <summary>
+        ///     Gets all active categories (non-deleted).
+        /// </summary>
+        public async Task<IEnumerable<Category>> GetAllActiveAsync()
+        {
+            const string sql = "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Category>(sql);
+        }
+
+        /// <summary>
+        ///     Gets all soft-deleted categories.
+        /// </summary>
+        public async Task<IEnumerable<Category>> GetAllDeletedAsync()
+        {
+            const string sql = "SELECT * FROM Categories WHERE IsDeleted = 1 ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Category>(sql);
         }
 
         /// <summary>
         ///     Gets root categories (categories without a parent).
         /// </summary>
-        /// <returns>Enumerable of root categories.</returns>
-        /// <exception cref="NotImplementedException" ></exception>
         public async Task<IEnumerable<Category>> GetRootCategoriesAsync( bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                IncludeDeleted = includeDeleted
-            };
+            string sql = includeDeleted
+                ? "SELECT * FROM Categories WHERE ParentCategoryId IS NULL ORDER BY Name"
+                : "SELECT * FROM Categories WHERE ParentCategoryId IS NULL AND IsDeleted = 0 ORDER BY Name";
 
-            string storedProcedure = includeDeleted
-                ? "sp_GetRootCategoriesIncludeDeleted"
-                : "sp_GetRootCategories";
-            return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
+            return await sqlDataAccess.QueryAsync<Category>(sql);
         }
 
         /// <summary>
         ///     Gets subcategories for a given parent category.
         /// </summary>
-        /// <param name="parentCategoryId" >The ID of the parent category.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories.</param>
-        /// <returns> Enumerable of subcategories</returns>
-        /// <exception cref="NotImplementedException" ></exception>
         public async Task<IEnumerable<Category>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                ParentCategoryId = parentCategoryId,
-                IncludeDeleted = includeDeleted
-            };
+            string sql = includeDeleted
+                ? "SELECT * FROM Categories WHERE ParentCategoryId = @ParentCategoryId ORDER BY Name"
+                : "SELECT * FROM Categories WHERE ParentCategoryId = @ParentCategoryId AND IsDeleted = 0 ORDER BY Name";
 
-            string storedProcedure = includeDeleted
-                ? "sp_GetSubCategoriesIncludeDeleted"
-                : "sp_GetSubCategories";
             return await sqlDataAccess.QueryAsync<Category>(
-                storedProcedure,
-                parameters
-            );
+                sql,
+                new
+                {
+                    ParentCategoryId = parentCategoryId
+                });
+        }
+
+        /// <summary>
+        ///     Gets a paged list of categories.
+        /// </summary>
+        public async Task<IEnumerable<Category>> GetPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
+        {
+            int offset = (pageNumber - 1) * pageSize;
+
+            string sql = includeDeleted
+                ? "SELECT * FROM Categories ORDER BY Name LIMIT @PageSize OFFSET @Offset"
+                : "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name LIMIT @PageSize OFFSET @Offset";
+
+            return await sqlDataAccess.QueryAsync<Category>(
+                sql,
+                new
+                {
+                    PageSize = pageSize,
+                    Offset = offset
+                });
         }
 
         /// <summary>
         ///     Searches categories by name or description.
         /// </summary>
-        /// <param name="searchTerm" >The search term.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted categories.</param>
         public async Task<IEnumerable<Category>> SearchAsync( string searchTerm, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                SearchTerm = $"%{searchTerm}%",
-                IncludeDeleted = includeDeleted
-            };
+            string sql = includeDeleted
+                ? @"SELECT * FROM Categories 
+                    WHERE Name LIKE @SearchTerm 
+                    OR Description LIKE @SearchTerm 
+                    ORDER BY Name"
+                : @"SELECT * FROM Categories 
+                    WHERE IsDeleted = 0 
+                    AND (Name LIKE @SearchTerm OR Description LIKE @SearchTerm) 
+                    ORDER BY Name";
 
-            string storedProcedure = includeDeleted
-                ? "sp_SearchCategoriesIncludeDeleted"
-                : "sp_SearchCategories";
-            return await sqlDataAccess.QueryAsync<Category>(storedProcedure, parameters);
+            return await sqlDataAccess.QueryAsync<Category>(
+                sql,
+                new
+                {
+                    SearchTerm = $"%{searchTerm}%"
+                });
         }
 
         #endregion
@@ -229,23 +219,22 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Creates a new category and returns it with the assigned CategoryId.
         /// </summary>
-        /// <param name="category" ></param>
-        /// <returns></returns>
         public async Task<Category> CreateAsync( Category category )
         {
-            var parameters = new
-            {
-                category.Name,
-                category.Description,
-                category.ParentCategoryId,
-                category.ImageUrl,
-                IsDeleted = false,
-                DeletedAt = (DateTime?)null
-            };
+            const string sql = @"
+                INSERT INTO Categories (Name, Description, ParentCategoryId, ImageUrl, IsDeleted, DeletedAt)
+                VALUES (@Name, @Description, @ParentCategoryId, @ImageUrl, 0, NULL);
+                SELECT last_insert_rowid();";
 
             int newCategoryId = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CreateCategory",
-                parameters);
+                sql,
+                new
+                {
+                    category.Name,
+                    category.Description,
+                    category.ParentCategoryId,
+                    category.ImageUrl
+                });
 
             return category with
             {
@@ -258,100 +247,116 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Updates an existing category.
         /// </summary>
-        /// <param name="category" >New category record</param>
-        /// <returns></returns>
         public async Task<Category> UpdateAsync( Category category )
         {
-            var parameters = new
-            {
-                category.CategoryId,
-                category.Name,
-                category.Description,
-                category.ParentCategoryId,
-                category.ImageUrl,
-                category.IsDeleted,
-                category.DeletedAt
-            };
+            const string sql = @"
+                UPDATE Categories 
+                SET Name = @Name,
+                    Description = @Description,
+                    ParentCategoryId = @ParentCategoryId,
+                    ImageUrl = @ImageUrl,
+                    IsDeleted = @IsDeleted,
+                    DeletedAt = @DeletedAt
+                WHERE CategoryId = @CategoryId";
 
-            await sqlDataAccess.CommandAsync("sp_UpdateCategory", parameters);
+            await sqlDataAccess.ExecuteAsync(sql, category);
             return category;
         }
 
-
         /// <summary>
-        ///     Permanently deletes a category by its ID.
+        ///     Soft deletes a category (sets IsDeleted = true and DeletedAt = current timestamp).
         /// </summary>
-        /// <param name="categoryId" >Unique identifier</param>
-        /// <returns></returns>
-        public async Task<DatabaseResult> HardDeleteAsync( int categoryId )
-        {
-            try
-            {
-                int affectedRow = await sqlDataAccess.ExecuteAsync(
-                    "sp_HardDeleteCategory",
-                    new
-                    {
-                        CategoryId = categoryId
-                    });
-
-                return affectedRow > 0
-                    ? DatabaseResult.Success()
-                    : DatabaseResult.Failure($"Category with ID {categoryId} not found", DatabaseErrorCode.NotFound);
-            }
-            catch (Exception ex)
-            {
-                return DatabaseResult.Failure($"Error deleting category with ID {categoryId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
-            }
-        }
-
-        /// <summary>
-        ///     Soft deletes a category (sets IsDeleted = true and DeletedAt = current timestamp.
-        /// </summary>
-        /// <param name="categoryId" >Unique identifier</param>
-        /// <returns></returns>
         public async Task<DatabaseResult> SoftDeleteAsync( int categoryId )
         {
             try
             {
-                var parameters = new
-                {
-                    CategoryId = categoryId,
-                    DeletedAt = DateTime.UtcNow
-                };
+                const string sql = @"
+                    UPDATE Categories 
+                    SET IsDeleted = 1, DeletedAt = @DeletedAt 
+                    WHERE CategoryId = @CategoryId AND IsDeleted = 0";
 
-                int affectedRow = await sqlDataAccess.ExecuteAsync(
-                    "sp_SoftDeleteCategory",
-                    parameters);
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        CategoryId = categoryId,
+                        DeletedAt = DateTime.UtcNow
+                    });
 
-                return affectedRow > 0
+                return affectedRows > 0
                     ? DatabaseResult.Success()
-                    : DatabaseResult.Failure($"Category with ID {categoryId} not found", DatabaseErrorCode.NotFound);
+                    : DatabaseResult.Failure(
+                        $"Category with ID {categoryId} not found or already deleted",
+                        DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure($"Error soft deleting category with ID {categoryId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error soft deleting category with ID {categoryId}: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
-
-
         }
 
         /// <summary>
         ///     Restores a soft-deleted category (sets IsDeleted = false and DeletedAt = null).
         /// </summary>
-        /// <param name="categoryId" ></param>
-        /// <returns></returns>
-        public async Task<bool> RestoreAsync( int categoryId )
+        public async Task<DatabaseResult> RestoreAsync( int categoryId )
         {
-            var parameters = new
+            try
             {
-                CategoryId = categoryId
-            };
+                const string sql = @"
+                    UPDATE Categories 
+                    SET IsDeleted = 0, DeletedAt = NULL 
+                    WHERE CategoryId = @CategoryId AND IsDeleted = 1";
 
-            int affectedRow = await sqlDataAccess.ExecuteAsync(
-                "sp_RestoreCategory",
-                parameters);
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        CategoryId = categoryId
+                    });
 
-            return affectedRow > 0;
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Category with ID {categoryId} cannot be restored because it doesn't exist or has not been soft-deleted",
+                        DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure(
+                    $"Error restoring category with ID {categoryId}: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
+            }
+        }
+
+        /// <summary>
+        ///     Permanently deletes a category by its ID.
+        /// </summary>
+        public async Task<DatabaseResult> HardDeleteAsync( int categoryId )
+        {
+            try
+            {
+                const string sql = "DELETE FROM Categories WHERE CategoryId = @CategoryId";
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        CategoryId = categoryId
+                    });
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Category with ID {categoryId} not found",
+                        DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure(
+                    $"Error permanently deleting category with ID {categoryId}: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
+            }
         }
 
         #endregion

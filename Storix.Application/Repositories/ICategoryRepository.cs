@@ -132,6 +132,6 @@ namespace Storix.Application.Repositories
         /// </summary>
         /// <param name="categoryId" ></param>
         /// <returns></returns>
-        Task<bool> RestoreAsync( int categoryId );
+        Task<DatabaseResult> RestoreAsync( int categoryId );
     }
 }
