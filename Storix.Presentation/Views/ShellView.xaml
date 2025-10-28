@@ -3,144 +3,324 @@
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:modalDialogControl="clr-namespace:ModalDialogControl;assembly=ModalDialogControl"
                   xmlns:viewModels="clr-namespace:Storix.Core.ViewModels;assembly=Storix.Core"
                   xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
                   x:Name="Home"
                   d:DataContext="{d:DesignInstance Type=viewModels:ShellViewModel}"
-                  d:DesignHeight="auto"
-                  d:DesignWidth="auto"
+                  d:DesignHeight="700"
+                  d:DesignWidth="1100"
                   Loaded="ShellView_OnLoaded"
                   mc:Ignorable="d">
-    <DockPanel>
-        <!--  Sidebar  -->
-        <StackPanel Width="220"
-                    Background="#2C3E50"
-                    DockPanel.Dock="Left">
-            <TextBlock Margin="20,30"
-                       FontSize="20"
-                       FontWeight="Bold"
-                       Foreground="White"
-                       Text="STORIX" />
 
-            <ListBox Background="Transparent"
-                     BorderThickness="0"
-                     FontSize="14"
-                     Foreground="White"
-                     SelectedIndex="0">
-                <ListBoxItem Content="Dashboard" />
-                <ListBoxItem Content="Products" />
-                <ListBoxItem Content="Orders" />
-                <ListBoxItem Content="Suppliers" />
-                <ListBoxItem Content="Reports" />
-            </ListBox>
-        </StackPanel>
+    <Border UseLayoutRounding="True">
+        <Grid>
+            <Grid.OpacityMask>
+                <VisualBrush Visual="{Binding ElementName=Border}" />
+            </Grid.OpacityMask>
 
-        <!--  Main Content  -->
-        <Grid Background="#ECF0F1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+            <modalDialogControl:ModalDialog Panel.ZIndex="1"
+                                            IsOpen="{Binding IsModalOpen, UpdateSourceTrigger=PropertyChanged}"
+                                            TheBackground="{DynamicResource TertiaryBackgroundColor}"
+                                            TheShadow="{DynamicResource SecondaryWhiteColor}">
+                <ContentControl Margin="30,15" Content="{Binding CurrentModalViewModel}" />
+            </modalDialogControl:ModalDialog>
 
-            <!--  Top Bar  -->
-            <DockPanel Grid.Row="0"
-                       Height="60"
-                       Margin="0,0,0,1"
-                       VerticalAlignment="Center"
-                       Background="White">
-                <TextBox Width="250"
-                         Height="30"
-                         Margin="10"
-                         VerticalAlignment="Center" />
-                <Button Margin="10"
-                        Padding="15,5"
-                        HorizontalAlignment="Right"
-                        Background="#27AE60"
-                        Content="Add Product"
-                        Foreground="White" />
-            </DockPanel>
+            <Border x:Name="Border"
+                    Background="{DynamicResource PrimaryBackgroundColor}"
+                    CornerRadius="10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="NavColumn" Width="250" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
 
-            <!--  Main Grid: List + Details  -->
-            <Grid Grid.Row="1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" />
-                    <ColumnDefinition Width="3*" />
-                </Grid.ColumnDefinitions>
+                    <!--  Start Navigation-Pane  -->
+                    <Border Grid.Column="0"
+                            Padding="10"
+                            Background="{DynamicResource SecondaryBackgroundColor}"
+                            CornerRadius="10 0 0 10">
 
-                <!--  Product List  -->
-                <DataGrid Grid.Column="0"
-                          Margin="10"
-                          AutoGenerateColumns="False"
-                          CanUserAddRows="False"
-                          ItemsSource="{Binding Products}"
-                          SelectedItem="{Binding SelectedProduct, Mode=TwoWay}">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Binding="{Binding SKU}" Header="SKU" />
-                        <DataGridTextColumn Binding="{Binding Name}" Header="Name" />
-                        <DataGridTextColumn Binding="{Binding CategoryName}" Header="Category" />
-                        <DataGridTextColumn Binding="{Binding Price, StringFormat=C}" Header="Price" />
-                        <DataGridTextColumn Binding="{Binding StockLevel}" Header="Stock" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                        <Grid x:Name="GridMenu">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="60" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="80" />
+                            </Grid.RowDefinitions>
 
-                <!--  Product Detail / Edit Form  -->
-                <Border Grid.Column="1"
-                        Margin="10"
-                        Padding="20"
-                        Background="White"
-                        BorderBrush="#BDC3C7"
-                        BorderThickness="1"
-                        CornerRadius="8">
-                    <StackPanel>
-                        <TextBlock Margin="0,0,0,20"
-                                   FontSize="18"
-                                   FontWeight="Bold"
-                                   Text="Product Details" />
+                            <!--  Logo + Toggle Button  -->
+                            <DockPanel Grid.Row="0"
+                                       VerticalAlignment="Center"
+                                       LastChildFill="False">
+                                <Button x:Name="ToggleNavButton"
+                                        Width="36"
+                                        Height="36"
+                                        Margin="0,0,5,0"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        Click="ToggleNavButton_Click"
+                                        Content="☰"
+                                        Cursor="Hand"
+                                        FontSize="20"
+                                        Foreground="{DynamicResource SecondaryBlueColor}" />
 
-                        <StackPanel Margin="0,5" Orientation="Vertical">
-                            <TextBlock Text="Name" />
-                            <TextBox Text="{Binding Input.Name, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
+                                <StackPanel x:Name="LogoPanel"
+                                            DockPanel.Dock="Right"
+                                            Orientation="Horizontal">
+                                    <Image Width="36"
+                                           Height="36"
+                                           Margin="10,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Source="/Assets/Icons/logo.png"
+                                           Stretch="Fill" />
 
-                        <StackPanel Margin="0,5" Orientation="Vertical">
-                            <TextBlock Text="SKU" />
-                            <TextBox Text="{Binding Input.SKU, UpdateSourceTrigger=PropertyChanged}" />
-                        </StackPanel>
+                                    <Label Margin="5,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Content="Storix"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource SecondaryBlueColor}" />
+                                </StackPanel>
+                            </DockPanel>
 
-                        <StackPanel Margin="0,5" Orientation="Vertical">
-                            <TextBlock Text="Price" />
-                            <TextBox Text="{Binding Input.Price}" />
-                        </StackPanel>
+                            <!--  Start Navigation Buttons  -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="NavButtonsPanel">
+                                    <!--  Dashboard  -->
+                                    <RadioButton Margin="0,30,0,0"
+                                                 Command="{Binding NavigateToAnalytics}"
+                                                 Content="Dashboard"
+                                                 IsChecked="True"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Dashboard}" />
 
-                        <StackPanel Margin="0,5" Orientation="Vertical">
-                            <TextBlock Text="Cost" />
-                            <TextBox Text="{Binding Input.Cost}" />
-                        </StackPanel>
+                                    <!--  Inventory (Expandable)  -->
+                                    <StackPanel Margin="0,1,0,0">
+                                        <ToggleButton x:Name="InventoryExpander"
+                                                      Style="{DynamicResource MenuToggleButtonStyle}"
+                                                      Tag="{DynamicResource Inventory}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
 
-                        <StackPanel Margin="0,5" Orientation="Vertical">
-                            <TextBlock Text="Stock Level" />
-                            <TextBox Text="{Binding Input.MinStockLevel}" />
-                        </StackPanel>
+                                                <Path Grid.Column="0"
+                                                      Width="18"
+                                                      Height="18"
+                                                      Margin="10,0,15,0"
+                                                      Data="{DynamicResource Inventory}"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                                      Stretch="Uniform" />
 
-                        <StackPanel Margin="0,20,0,0"
+                                                <TextBlock Grid.Column="1"
+                                                           VerticalAlignment="Center"
+                                                           Text="Inventory" />
+
+                                                <Path Grid.Column="2"
+                                                      Width="10"
+                                                      Height="10"
+                                                      Margin="0,0,10,0"
+                                                      Data="M7 10L12 15L17 10H7Z"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                                      RenderTransformOrigin="0.5,0.5"
+                                                      Stretch="Uniform">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform x:Name="InventoryArrow" Angle="0" />
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Grid>
+                                        </ToggleButton>
+
+                                        <!--  Inventory Sub-items  -->
+                                        <StackPanel x:Name="InventorySubItems"
+                                                    Margin="20,0,0,0"
+                                                    Visibility="Collapsed">
+                                            <RadioButton Margin="0,5,0,0"
+                                                         Command="{Binding NavigateToProducts}"
+                                                         Content="Products"
+                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
+                                                         Tag="{DynamicResource Products}" />
+
+                                            <RadioButton Margin="0,5,0,5"
+                                                         Command="{Binding NavigateToCategories}"
+                                                         Content="Categories"
+                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
+                                                         Tag="{DynamicResource Categories}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!--  Orders (Expandable)  -->
+                                    <StackPanel Margin="0,1,0,0">
+                                        <ToggleButton x:Name="OrdersExpander"
+                                                      Style="{DynamicResource MenuToggleButtonStyle}"
+                                                      Tag="{DynamicResource Orders}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <Path Grid.Column="0"
+                                                      Width="18"
+                                                      Height="18"
+                                                      Margin="10,0,15,0"
+                                                      Data="{DynamicResource Orders}"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                                      Stretch="Uniform" />
+
+                                                <TextBlock Grid.Column="1"
+                                                           VerticalAlignment="Center"
+                                                           Text="Orders" />
+
+                                                <Path Grid.Column="2"
+                                                      Width="10"
+                                                      Height="10"
+                                                      Margin="0,0,10,0"
+                                                      Data="M7 10L12 15L17 10H7Z"
+                                                      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
+                                                      RenderTransformOrigin="0.5,0.5"
+                                                      Stretch="Uniform">
+                                                    <Path.RenderTransform>
+                                                        <RotateTransform x:Name="OrdersArrow" Angle="0" />
+                                                    </Path.RenderTransform>
+                                                </Path>
+                                            </Grid>
+                                        </ToggleButton>
+
+                                        <!--  Orders Sub-items  -->
+                                        <StackPanel x:Name="OrdersSubItems"
+                                                    Margin="20,0,0,0"
+                                                    Visibility="Collapsed">
+                                            <RadioButton Margin="0,5,0,0"
+                                                         Command="{Binding NavigateToSalesOrders}"
+                                                         Content="Sales Orders"
+                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
+                                                         Tag="{DynamicResource SalesOrders}" />
+
+                                            <RadioButton Margin="0,5,0,5"
+                                                         Command="{Binding NavigateToPurchaseOrders}"
+                                                         Content="Purchase Orders"
+                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
+                                                         Tag="{DynamicResource PurchaseOrders}" />
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!--  Suppliers  -->
+                                    <RadioButton Margin="0,1,0,1"
+                                                 Command="{Binding NavigateToSuppliers}"
+                                                 Content="Suppliers"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Suppliers}" />
+
+                                    <!--  Customers  -->
+                                    <RadioButton Margin="0,1,0,1"
+                                                 Command="{Binding NavigateToCustomers}"
+                                                 Content="Customers"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Customers}" />
+
+                                    <!--  Locations  -->
+                                    <RadioButton Margin="0,1,0,1"
+                                                 Command="{Binding NavigateToLocations}"
+                                                 Content="Locations"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Locations}" />
+
+                                    <!--  Reports  -->
+                                    <RadioButton Margin="0,1,0,1"
+                                                 Command="{Binding NavigateToReports}"
+                                                 Content="Reports"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Reports}" />
+
+                                    <Separator Margin="20,20" Background="{DynamicResource TertiaryBackgroundColor}" />
+
+                                    <!--  Settings  -->
+                                    <RadioButton Margin="0,1,0,1"
+                                                 Command="{Binding NavigateToSettings}"
+                                                 Content="Settings"
+                                                 Style="{DynamicResource MenuRadioButtonStyle}"
+                                                 Tag="{DynamicResource Settings}" />
+                                </StackPanel>
+                            </ScrollViewer>
+                            <!--  End Navigation Buttons  -->
+
+                            <!--  Start Theme Switcher  -->
+                            <Border Grid.Row="2"
+                                    Width="110"
+                                    Height="35"
+                                    Margin="0,0,20,0"
                                     HorizontalAlignment="Right"
+                                    Background="{DynamicResource TertiaryBackgroundColor}"
+                                    CornerRadius="18">
+                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                    <Path Width="16"
+                                          Height="16"
+                                          VerticalAlignment="Center"
+                                          Data="{DynamicResource Sun}"
+                                          Fill="{DynamicResource PrimaryYellowColor}"
+                                          Stretch="UniformToFill" />
+                                    <ToggleButton x:Name="Themes"
+                                                  Margin="10,0,10,0"
+                                                  HorizontalAlignment="Right"
+                                                  Click="Themes_Click"
+                                                  IsChecked="False"
+                                                  Style="{DynamicResource ToggleButtonStyle}" />
+                                    <Path Width="16"
+                                          Height="16"
+                                          VerticalAlignment="Center"
+                                          Data="{DynamicResource Moon}"
+                                          Fill="{DynamicResource PrimaryWhiteColor}"
+                                          Stretch="Fill" />
+                                </StackPanel>
+                            </Border>
+                            <!--  End Theme Switcher  -->
+                        </Grid>
+                    </Border>
+                    <!--  End Navigation-Pane  -->
+
+                    <!--  Start Main-Content  -->
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="60" />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <!--  Window Buttons  -->
+                        <StackPanel Grid.Row="0"
+                                    Height="30"
+                                    Margin="0,5,10,0"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top"
+                                    FlowDirection="RightToLeft"
                                     Orientation="Horizontal">
-                            <Button Margin="5"
-                                    Padding="15,5"
-                                    Background="#2980B9"
-                                    Command="{Binding SaveCommand}"
-                                    Content="Save"
-                                    Foreground="White" />
-                            <Button Margin="5"
-                                    Padding="15,5"
-                                    Background="#95A5A6"
-                                    Command="{Binding CancelCommand}"
-                                    Content="Cancel"
-                                    Foreground="White" />
+                            <Button x:Name="CloseButton"
+                                    Click="CloseButton_OnClick"
+                                    Content="{DynamicResource Close}"
+                                    Style="{StaticResource IconButtonsStyle}" />
+                            <Button x:Name="RestoreButton"
+                                    Margin="5,0"
+                                    Click="RestoreButton_OnClick"
+                                    Content="{DynamicResource Maximize}"
+                                    Style="{StaticResource IconButtonsStyle}" />
+                            <Button x:Name="MinimizeButton"
+                                    Click="MinimizeButton_OnClick"
+                                    Content="{DynamicResource Minimize}"
+                                    Style="{StaticResource IconButtonsStyle}" />
                         </StackPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
+
+                        <ContentControl Grid.Row="1"
+                                        Margin="10"
+                                        Content="{Binding CurrentViewModel}" />
+                    </Grid>
+                    <!--  End Main-Content  -->
+                </Grid>
+            </Border>
         </Grid>
-    </DockPanel>
+    </Border>
 </views:MvxWpfView>
