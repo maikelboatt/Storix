@@ -132,11 +132,8 @@ namespace Storix.Presentation.Views
 
                 foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
                 {
-                    if (child.Content is string label)
-                    {
-                        child.ToolTip = child.Tag; // Add tooltip when collapsed
-                        child.Content = null;      // Hide label text
-                    }
+                    child.ToolTip = child.Tag; // show tag as tooltip
+                    child.Content = null;      // hide text label
                 }
             }
             else
@@ -145,28 +142,62 @@ namespace Storix.Presentation.Views
                 AnimateNavWidth(70, 250);
                 LogoPanel.Visibility = Visibility.Visible;
 
-                List<RadioButton> buttons = NavButtonsPanel
-                                            .Children.OfType<RadioButton>()
-                                            .ToList();
-                string[] labels =
+                foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
                 {
-                    "Analytics",
-                    "Home",
-                    "Inventory",
-                    "Orders",
-                    "Reminders",
-                    "Notifications"
-                };
-
-                for (int i = 0; i < Math.Min(buttons.Count, labels.Length); i++)
-                {
-                    buttons[i].Content = labels[i];
-                    buttons[i].ToolTip = null; // Remove tooltip when expanded
+                    child.Content = child.Tag; // restore label text
+                    child.ToolTip = null;      // remove tooltip
                 }
             }
 
             _isNavExpanded = !_isNavExpanded;
         }
+
+
+        // private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
+        // {
+        //     if (_isNavExpanded)
+        //     {
+        //         // Collapse NavBar
+        //         AnimateNavWidth(250, 70);
+        //         LogoPanel.Visibility = Visibility.Collapsed;
+        //
+        //         foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
+        //         {
+        //             if (child.Content is string label)
+        //             {
+        //                 child.ToolTip = child.Tag; // Add tooltip when collapsed
+        //                 child.Content = null;      // Hide label text
+        //             }
+        //         }
+        //     }
+        //     else
+        //     {
+        //         // Expand NavBar
+        //         AnimateNavWidth(70, 250);
+        //         LogoPanel.Visibility = Visibility.Visible;
+        //
+        //         List<RadioButton> buttons = NavButtonsPanel
+        //                                     .Children.OfType<RadioButton>()
+        //                                     .ToList();
+        //         string[] labels =
+        //         {
+        //             "Analytics",
+        //             "Home",
+        //             "Inventory",
+        //             "Orders",
+        //             "Reminders",
+        //             "Notifications"
+        //         };
+        //
+        //         for (int i = 0; i < Math.Min(buttons.Count, labels.Length); i++)
+        //         {
+        //             buttons[i].Content = labels[i];
+        //             buttons[i].ToolTip = null; // Remove tooltip when expanded
+        //         }
+        //     }
+        //
+        //     _isNavExpanded = !_isNavExpanded;
+        // }
 
         private void AnimateNavWidth( double from, double to )
         {
