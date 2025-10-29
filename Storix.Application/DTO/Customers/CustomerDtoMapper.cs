@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Storix.Domain.Models;
 
@@ -12,9 +13,7 @@ namespace Storix.Application.DTO.Customers
             Name = customer.Name,
             Email = customer.Email,
             Phone = customer.Phone,
-            Address = customer.Address,
-            IsDeleted = customer.IsDeleted,
-            DeletedAt = customer.DeletedAt
+            Address = customer.Address
         };
 
         public static CreateCustomerDto ToCreateDto( this CustomerDto dto ) => new()
@@ -22,9 +21,7 @@ namespace Storix.Application.DTO.Customers
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
-            Address = dto.Address,
-            IsDeleted = dto.IsDeleted,
-            DeletedAt = dto.DeletedAt
+            Address = dto.Address
         };
 
         public static UpdateCustomerDto ToUpdateDto( this CustomerDto dto ) => new()
@@ -33,9 +30,7 @@ namespace Storix.Application.DTO.Customers
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
-            Address = dto.Address,
-            IsDeleted = dto.IsDeleted,
-            DeletedAt = dto.DeletedAt
+            Address = dto.Address
         };
 
         public static Customer ToDomain( this CustomerDto dto ) => new(
@@ -44,8 +39,8 @@ namespace Storix.Application.DTO.Customers
             dto.Email,
             dto.Phone,
             dto.Address,
-            dto.IsDeleted,
-            dto.DeletedAt);
+            false,
+            null);
 
         public static Customer ToDomain( this CreateCustomerDto dto ) => new(
             0,
@@ -53,17 +48,17 @@ namespace Storix.Application.DTO.Customers
             dto.Email,
             dto.Phone,
             dto.Address,
-            dto.IsDeleted,
-            dto.DeletedAt);
+            false,
+            null);
 
-        public static Customer ToDomain( this UpdateCustomerDto dto ) => new(
+        public static Customer ToDomain( this UpdateCustomerDto dto, bool isDeleted = false, DateTime? deletedAt = null ) => new(
             dto.CustomerId,
             dto.Name,
             dto.Email,
             dto.Phone,
             dto.Address,
-            dto.IsDeleted,
-            dto.DeletedAt);
+            isDeleted,
+            deletedAt);
 
         public static IEnumerable<CustomerDto> ToDto( this IEnumerable<Customer> customers ) => customers.Select(ToDto);
     }

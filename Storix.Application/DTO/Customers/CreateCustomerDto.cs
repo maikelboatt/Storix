@@ -8,8 +8,5 @@ namespace Storix.Application.DTO.Customers
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
-        public bool IsDeleted { get; set; } = false;
-
-        public DateTime? DeletedAt { get; set; } = null;
     }
 }
