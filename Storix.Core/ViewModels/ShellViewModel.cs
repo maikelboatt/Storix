@@ -130,7 +130,7 @@ namespace Storix.Core.ViewModels
 
         private void ExecuteNavigateToReports()
         {
-            ReportPaneViewModel? reportPaneViewModel = _viewModelFactory.CreateViewModel<ReportPaneViewModel>();
+            ReportsPaneViewModel? reportPaneViewModel = _viewModelFactory.CreateViewModel<ReportsPaneViewModel>();
             CurrentMainContent = reportPaneViewModel;
             reportPaneViewModel?.Initialize();
         }

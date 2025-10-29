@@ -1,6 +1,22 @@
 ﻿<views:MvxApplication x:Class="Storix.Presentation.App"
                       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                      xmlns:resources="clr-namespace:Storix.Presentation.Resources"
                       xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf">
-    <views:MvxApplication.Resources />
+    <views:MvxApplication.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!--  Default theme of application  -->
+                <ResourceDictionary Source="Themes/LightTheme.xaml" />
+
+                <ResourceDictionary Source="Assets/Icons/Icons.xaml" />
+                <ResourceDictionary Source="Styles/ButtonStyle.xaml" />
+                <ResourceDictionary Source="Styles/RadioButtonStyle.xaml" />
+                <ResourceDictionary Source="Styles/DataGridStyles.xaml" />
+                <ResourceDictionary Source="Styles/CommonCtrls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
+            <resources:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+        </ResourceDictionary>
+    </views:MvxApplication.Resources>
 </views:MvxApplication>

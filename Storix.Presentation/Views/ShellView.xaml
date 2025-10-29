@@ -47,7 +47,7 @@
             <local:LocationPane />
         </DataTemplate>
 
-        <DataTemplate DataType="{x:Type viewModels:ReportPaneViewModel}">
+        <DataTemplate DataType="{x:Type viewModels:ReportsPaneViewModel}">
             <local:ReportsPane />
         </DataTemplate>
 

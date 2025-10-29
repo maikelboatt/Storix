@@ -122,37 +122,6 @@ namespace Storix.Presentation.Views
             _parentWindow.DragMove();
         }
 
-        private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
-        {
-            if (_isNavExpanded)
-            {
-                // Collapse NavBar
-                AnimateNavWidth(250, 70);
-                LogoPanel.Visibility = Visibility.Collapsed;
-
-                foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
-                {
-                    child.ToolTip = child.Tag; // show tag as tooltip
-                    child.Content = null;      // hide text label
-                }
-            }
-            else
-            {
-                // Expand NavBar
-                AnimateNavWidth(70, 250);
-                LogoPanel.Visibility = Visibility.Visible;
-
-                foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
-                {
-                    child.Content = child.Tag; // restore label text
-                    child.ToolTip = null;      // remove tooltip
-                }
-            }
-
-            _isNavExpanded = !_isNavExpanded;
-        }
-
-
         // private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
         // {
         //     if (_isNavExpanded)
@@ -246,45 +215,45 @@ namespace Storix.Presentation.Views
             clock.Controller?.Begin();
         }
 
-        // private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
-        // {
-        //     if (_isNavExpanded)
-        //     {
-        //         // AnimateNavWidth(250, 70);
-        //         // Collapse
-        //         NavColumn.Width = new GridLength(70);
-        //         LogoPanel.Visibility = Visibility.Collapsed;
-        //
-        //         foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
-        //         {
-        //             if (child.Content is string)
-        //                 child.Content = null; // Hide labels
-        //         }
-        //     }
-        //     else
-        //     {
-        //         // AnimateNavWidth(70, 250);
-        //         // Expand
-        //         NavColumn.Width = new GridLength(250);
-        //         LogoPanel.Visibility = Visibility.Visible;
-        //
-        //         // Restore labels (match your XAML order)
-        //         List<RadioButton> buttons = NavButtonsPanel
-        //                                     .Children.OfType<RadioButton>()
-        //                                     .ToList();
-        //
-        //         if (buttons.Count >= 6)
-        //         {
-        //             buttons[0].Content = "Analytics";
-        //             buttons[1].Content = "Home";
-        //             buttons[2].Content = "Inventory";
-        //             buttons[3].Content = "Orders";
-        //             buttons[4].Content = "Reminders";
-        //             buttons[5].Content = "Notifications";
-        //         }
-        //     }
-        //
-        //     _isNavExpanded = !_isNavExpanded;
-        // }
+        private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
+        {
+            if (_isNavExpanded)
+            {
+                // AnimateNavWidth(250, 70);
+                // Collapse
+                NavColumn.Width = new GridLength(70);
+                LogoPanel.Visibility = Visibility.Collapsed;
+
+                foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
+                {
+                    if (child.Content is string)
+                        child.Content = null; // Hide labels
+                }
+            }
+            else
+            {
+                // AnimateNavWidth(70, 250);
+                // Expand
+                NavColumn.Width = new GridLength(250);
+                LogoPanel.Visibility = Visibility.Visible;
+
+                // Restore labels (match your XAML order)
+                List<RadioButton> buttons = NavButtonsPanel
+                                            .Children.OfType<RadioButton>()
+                                            .ToList();
+
+                if (buttons.Count >= 6)
+                {
+                    buttons[0].Content = "Analytics";
+                    buttons[1].Content = "Home";
+                    buttons[2].Content = "Inventory";
+                    buttons[3].Content = "Orders";
+                    buttons[4].Content = "Reminders";
+                    buttons[5].Content = "Notifications";
+                }
+            }
+
+            _isNavExpanded = !_isNavExpanded;
+        }
     }
 }
