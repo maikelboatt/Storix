@@ -1,4 +1,4 @@
-﻿namespace Storix.Application.DTO.User
+﻿namespace Storix.Application.DTO.Users
 {
     public class ChangePasswordDto
     {

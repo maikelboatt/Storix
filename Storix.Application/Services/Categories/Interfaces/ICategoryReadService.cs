@@ -7,17 +7,17 @@ namespace Storix.Application.Services.Categories.Interfaces
 {
     public interface ICategoryReadService
     {
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync( bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync();
 
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId );
 
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize );
 
-        Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false );
+        Task<DatabaseResult<int>> GetTotalCategoryCountAsync();
 
-        CategoryDto? GetCategoryById( int categoryId, bool includeDeleted = false );
+        CategoryDto? GetCategoryById( int categoryId );
 
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync( bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync();
 
         Task<DatabaseResult<int>> GetActiveCategoryCountAsync();
 
@@ -27,6 +27,6 @@ namespace Storix.Application.Services.Categories.Interfaces
 
         Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync();
 
-        Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm, bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm );
     }
 }

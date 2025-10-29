@@ -1,4 +1,6 @@
-﻿namespace Storix.Application.DTO.User
+﻿using System;
+
+namespace Storix.Application.DTO.Users
 {
     public class CreateUserDto
     {

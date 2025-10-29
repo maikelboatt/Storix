@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading.Tasks;
-using Dapper;
 using Storix.Application.Common;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
@@ -11,18 +9,28 @@ using Storix.Domain.Models;
 
 namespace Storix.DataAccess.Repositories
 {
+    /// <summary>
+    ///Repository implementation for <see cref="Category"/> entity operations.
+    /// 
+    ///     Provides direct data access for category data
+    ///     All Get methods return complete data (active + deleted records).
+    ///     Service layer is responsible for filtering.
+    ///     Use CategoryStore for fast active-only access.
+    /// </summary>
     public class CategoryRepository( ISqlDataAccess sqlDataAccess ):ICategoryRepository
     {
-        #region Validation
+        #region Validation (Only methods with includeDeleted parameter)
 
         /// <summary>
         ///     Checks if a category exists by ID.
         /// </summary>
         public async Task<bool> ExistsAsync( int categoryId, bool includeDeleted = false )
         {
+            // language=tsql
             string sql = includeDeleted
-                ? "SELECT COUNT(1) FROM Categories WHERE CategoryId = @CategoryId"
-                : "SELECT COUNT(1) FROM Categories WHERE CategoryId = @CategoryId AND IsDeleted = 0";
+                ? "SELECT COUNT(1) FROM Category WHERE CategoryId = @CategoryId"
+                // language=tsql
+                : "SELECT COUNT(1) FROM Category WHERE CategoryId = @CategoryId AND IsDeleted = 0";
 
             return await sqlDataAccess.ExecuteScalarAsync<bool>(
                 sql,
@@ -37,11 +45,13 @@ namespace Storix.DataAccess.Repositories
         /// </summary>
         public async Task<bool> NameExistsAsync( string name, int? excludeCategoryId = null, bool includeDeleted = false )
         {
+            // language=tsql
             string sql = includeDeleted
-                ? @"SELECT COUNT(1) FROM Categories 
+                ? @"SELECT COUNT(1) FROM Category 
                     WHERE Name = @Name 
                     AND (@ExcludeCategoryId IS NULL OR CategoryId != @ExcludeCategoryId)"
-                : @"SELECT COUNT(1) FROM Categories 
+                // language=tsql
+                : @"SELECT COUNT(1) FROM Category 
                     WHERE Name = @Name 
                     AND IsDeleted = 0 
                     AND (@ExcludeCategoryId IS NULL OR CategoryId != @ExcludeCategoryId)";
@@ -57,51 +67,50 @@ namespace Storix.DataAccess.Repositories
 
         #endregion
 
-        #region Count Operations
+        #region Count Operations (Explicit methods for different counts)
 
         /// <summary>
-        ///     Gets the total count of categories.
+        ///     Gets the total count of all categories (active + deleted).
         /// </summary>
-        public async Task<int> GetTotalCountAsync( bool includeDeleted = false )
+        public async Task<int> GetTotalCountAsync()
         {
-            string sql = includeDeleted
-                ? "SELECT COUNT(*) FROM Categories"
-                : "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 0";
-
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Category";
             return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
-        ///     Gets the count of active categories (non-deleted).
+        ///     Gets the count of active categories only.
         /// </summary>
         public async Task<int> GetActiveCountAsync()
         {
-            const string sql = "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 0";
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Category WHERE IsDeleted = 0";
             return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
-        ///     Gets the count of soft-deleted categories.
+        ///     Gets the count of soft-deleted categories only.
         /// </summary>
         public async Task<int> GetDeletedCountAsync()
         {
-            const string sql = "SELECT COUNT(*) FROM Categories WHERE IsDeleted = 1";
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Category WHERE IsDeleted = 1";
             return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         #endregion
 
-        #region Read Operations
+        #region Read Operations (Always returns ALL records - active + deleted)
 
         /// <summary>
-        ///     Get a category by its ID.
+        ///     Gets a category by its ID (returns active or deleted).
+        ///     Use CategoryStore.GetById() for fast active-only access.
         /// </summary>
-        public async Task<Category?> GetByIdAsync( int categoryId, bool includeDeleted = false )
+        public async Task<Category?> GetByIdAsync( int categoryId )
         {
-            string sql = includeDeleted
-                ? "SELECT * FROM Categories WHERE CategoryId = @CategoryId"
-                : "SELECT * FROM Categories WHERE CategoryId = @CategoryId AND IsDeleted = 0";
-
+            // language=tsql
+            const string sql = "SELECT * FROM Category WHERE CategoryId = @CategoryId";
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Category>(
                 sql,
                 new
@@ -111,56 +120,38 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        ///     Gets all categories.
+        ///     Gets all categories (active + deleted).
+        ///     Service layer filters for active/deleted. Use CategoryStore.GetAll() for fast active-only access.
         /// </summary>
-        public async Task<IEnumerable<Category>> GetAllAsync( bool includeDeleted = false )
+        public async Task<IEnumerable<Category>> GetAllAsync()
         {
-            string sql = includeDeleted
-                ? "SELECT * FROM Categories ORDER BY Name"
-                : "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name";
-
+            // language=tsql
+            const string sql = "SELECT * FROM Category ORDER BY Name";
             return await sqlDataAccess.QueryAsync<Category>(sql);
         }
 
         /// <summary>
-        ///     Gets all active categories (non-deleted).
+        ///     Gets root categories (active + deleted).
+        ///     Service layer filters if needed. Use CategoryStore.GetRootCategories() for fast active-only access.
         /// </summary>
-        public async Task<IEnumerable<Category>> GetAllActiveAsync()
+        public async Task<IEnumerable<Category>> GetRootCategoriesAsync()
         {
-            const string sql = "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name";
+            // language=tsql
+            const string sql = "SELECT * FROM Category WHERE ParentCategoryId IS NULL ORDER BY Name";
             return await sqlDataAccess.QueryAsync<Category>(sql);
         }
 
         /// <summary>
-        ///     Gets all soft-deleted categories.
+        ///     Gets subcategories for a given parent (active + deleted).
+        ///     Service layer filters if needed.
         /// </summary>
-        public async Task<IEnumerable<Category>> GetAllDeletedAsync()
+        public async Task<IEnumerable<Category>> GetSubCategoriesAsync( int parentCategoryId )
         {
-            const string sql = "SELECT * FROM Categories WHERE IsDeleted = 1 ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Category>(sql);
-        }
-
-        /// <summary>
-        ///     Gets root categories (categories without a parent).
-        /// </summary>
-        public async Task<IEnumerable<Category>> GetRootCategoriesAsync( bool includeDeleted = false )
-        {
-            string sql = includeDeleted
-                ? "SELECT * FROM Categories WHERE ParentCategoryId IS NULL ORDER BY Name"
-                : "SELECT * FROM Categories WHERE ParentCategoryId IS NULL AND IsDeleted = 0 ORDER BY Name";
-
-            return await sqlDataAccess.QueryAsync<Category>(sql);
-        }
-
-        /// <summary>
-        ///     Gets subcategories for a given parent category.
-        /// </summary>
-        public async Task<IEnumerable<Category>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false )
-        {
-            string sql = includeDeleted
-                ? "SELECT * FROM Categories WHERE ParentCategoryId = @ParentCategoryId ORDER BY Name"
-                : "SELECT * FROM Categories WHERE ParentCategoryId = @ParentCategoryId AND IsDeleted = 0 ORDER BY Name";
-
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM Category 
+                WHERE ParentCategoryId = @ParentCategoryId 
+                ORDER BY Name";
             return await sqlDataAccess.QueryAsync<Category>(
                 sql,
                 new
@@ -170,15 +161,19 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        ///     Gets a paged list of categories.
+        ///     Gets a paged list of categories (active + deleted).
+        ///     Uses SQL Server OFFSET-FETCH syntax.
         /// </summary>
-        public async Task<IEnumerable<Category>> GetPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
+        public async Task<IEnumerable<Category>> GetPagedAsync( int pageNumber, int pageSize )
         {
             int offset = (pageNumber - 1) * pageSize;
 
-            string sql = includeDeleted
-                ? "SELECT * FROM Categories ORDER BY Name LIMIT @PageSize OFFSET @Offset"
-                : "SELECT * FROM Categories WHERE IsDeleted = 0 ORDER BY Name LIMIT @PageSize OFFSET @Offset";
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM Category 
+                ORDER BY Name 
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
 
             return await sqlDataAccess.QueryAsync<Category>(
                 sql,
@@ -190,20 +185,16 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        ///     Searches categories by name or description.
+        ///     Searches categories by name or description (active + deleted).
+        ///     Service layer filters if needed.
         /// </summary>
-        public async Task<IEnumerable<Category>> SearchAsync( string searchTerm, bool includeDeleted = false )
+        public async Task<IEnumerable<Category>> SearchAsync( string searchTerm )
         {
-            string sql = includeDeleted
-                ? @"SELECT * FROM Categories 
-                    WHERE Name LIKE @SearchTerm 
-                    OR Description LIKE @SearchTerm 
-                    ORDER BY Name"
-                : @"SELECT * FROM Categories 
-                    WHERE IsDeleted = 0 
-                    AND (Name LIKE @SearchTerm OR Description LIKE @SearchTerm) 
-                    ORDER BY Name";
-
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM Category 
+                WHERE Name LIKE @SearchTerm OR Description LIKE @SearchTerm 
+                ORDER BY Name";
             return await sqlDataAccess.QueryAsync<Category>(
                 sql,
                 new
@@ -218,13 +209,16 @@ namespace Storix.DataAccess.Repositories
 
         /// <summary>
         ///     Creates a new category and returns it with the assigned CategoryId.
+        ///     Uses SQL Server SCOPE_IDENTITY() to retrieve the newly inserted ID.
         /// </summary>
         public async Task<Category> CreateAsync( Category category )
         {
+            // language=tsql
             const string sql = @"
-                INSERT INTO Categories (Name, Description, ParentCategoryId, ImageUrl, IsDeleted, DeletedAt)
+                INSERT INTO Category (Name, Description, ParentCategoryId, ImageUrl, IsDeleted, DeletedAt)
                 VALUES (@Name, @Description, @ParentCategoryId, @ImageUrl, 0, NULL);
-                SELECT last_insert_rowid();";
+                
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
             int newCategoryId = await sqlDataAccess.ExecuteScalarAsync<int>(
                 sql,
@@ -249,8 +243,9 @@ namespace Storix.DataAccess.Repositories
         /// </summary>
         public async Task<Category> UpdateAsync( Category category )
         {
+            // language=tsql
             const string sql = @"
-                UPDATE Categories 
+                UPDATE Category 
                 SET Name = @Name,
                     Description = @Description,
                     ParentCategoryId = @ParentCategoryId,
@@ -270,8 +265,9 @@ namespace Storix.DataAccess.Repositories
         {
             try
             {
+                // language=tsql
                 const string sql = @"
-                    UPDATE Categories 
+                    UPDATE Category 
                     SET IsDeleted = 1, DeletedAt = @DeletedAt 
                     WHERE CategoryId = @CategoryId AND IsDeleted = 0";
 
@@ -304,8 +300,9 @@ namespace Storix.DataAccess.Repositories
         {
             try
             {
+                // language=tsql
                 const string sql = @"
-                    UPDATE Categories 
+                    UPDATE Category 
                     SET IsDeleted = 0, DeletedAt = NULL 
                     WHERE CategoryId = @CategoryId AND IsDeleted = 1";
 
@@ -337,7 +334,8 @@ namespace Storix.DataAccess.Repositories
         {
             try
             {
-                const string sql = "DELETE FROM Categories WHERE CategoryId = @CategoryId";
+                // language=tsql
+                const string sql = "DELETE FROM Category WHERE CategoryId = @CategoryId";
                 int affectedRows = await sqlDataAccess.ExecuteAsync(
                     sql,
                     new

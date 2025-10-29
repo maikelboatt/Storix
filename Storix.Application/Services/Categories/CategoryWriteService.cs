@@ -156,7 +156,7 @@ namespace Storix.Application.Services.Categories
         {
             // Get existing category (only active ones - can't update deleted categories)
             DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId, false),
+                () => categoryRepository.GetByIdAsync(updateCategoryDto.CategoryId),
                 $"Retrieving category {updateCategoryDto.CategoryId} for update",
                 enableRetry: false
             );
@@ -258,7 +258,7 @@ namespace Storix.Application.Services.Categories
             {
                 // Fetch the restored category from database
                 DatabaseResult<Category?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                    () => categoryRepository.GetByIdAsync(categoryId, false),
+                    () => categoryRepository.GetByIdAsync(categoryId),
                     $"Retrieving restored category {categoryId}",
                     enableRetry: false
                 );

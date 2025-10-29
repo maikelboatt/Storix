@@ -17,40 +17,41 @@ namespace Storix.Application.Services.Categories
     /// </summary>
     public class CategoryService(
         ICategoryReadService categoryReadService,
+        ICategoryCacheReadService categoryCacheReadService,
         ICategoryWriteService categoryWriteService,
         ICategoryValidationService categoryValidationService,
-        ICategoryStore categoryStore,
         ILogger<CategoryService> logger ):ICategoryService
     {
-        #region Read Operations
+        #region Read Operations (Database Queries)
 
-        public CategoryDto? GetCategoryById( int categoryId, bool includeDeleted = false ) => categoryReadService.GetCategoryById(categoryId, includeDeleted);
+        public CategoryDto? GetCategoryById( int categoryId )
+        {
+            CategoryDto? cached = categoryCacheReadService.GetCategoryByIdInCache(categoryId);
+            return cached ?? categoryReadService.GetCategoryById(categoryId);
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync( bool includeDeleted = false ) =>
-            await categoryReadService.GetAllCategoriesAsync(includeDeleted);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync() => await categoryReadService.GetAllCategoriesAsync();
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync() => await categoryReadService.GetAllActiveCategoriesAsync();
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllDeletedCategoriesAsync() => await categoryReadService.GetAllDeletedCategoriesAsync();
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync( bool includeDeleted = false ) =>
-            await categoryReadService.GetRootCategoriesAsync(includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync() => await categoryReadService.GetRootCategoriesAsync();
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false ) =>
-            await categoryReadService.GetSubCategoriesAsync(parentCategoryId, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId ) =>
+            await categoryReadService.GetSubCategoriesAsync(parentCategoryId);
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false ) =>
-            await categoryReadService.GetCategoryPagedAsync(pageNumber, pageSize, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize ) =>
+            await categoryReadService.GetCategoryPagedAsync(pageNumber, pageSize);
 
-        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false ) =>
-            await categoryReadService.GetTotalCategoryCountAsync(includeDeleted);
+        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync() => await categoryReadService.GetTotalCategoryCountAsync();
 
         public async Task<DatabaseResult<int>> GetActiveCategoryCountAsync() => await categoryReadService.GetActiveCategoryCountAsync();
 
         public async Task<DatabaseResult<int>> GetDeletedCategoryCountAsync() => await categoryReadService.GetDeletedCategoryCountAsync();
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm, bool includeDeleted = false ) =>
-            await categoryReadService.SearchAsync(searchTerm, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm ) => await categoryReadService.SearchAsync(searchTerm);
 
         #endregion
 
@@ -94,48 +95,26 @@ namespace Storix.Application.Services.Categories
 
         #region Store Operations
 
-        public IEnumerable<CategoryDto> SearchCategories( string? searchTerm = null, bool includeDeleted = false )
-        {
-            logger.LogDebug(
-                "Searching categories with term '{SearchTerm}', includeDeleted {IncludeDeleted}",
-                searchTerm,
-                includeDeleted);
+        public IEnumerable<CategoryDto> SearchCategoriesInCache( string? searchTerm ) => categoryCacheReadService
+            .SearchCategoryInCache(searchTerm);
 
-            IEnumerable<Category> categories = categoryStore.SearchCategories(searchTerm);
-            return categories.ToDto();
-        }
+        public CategoryDto? GetCategoryByIdInCache( int categoryId ) => categoryCacheReadService.GetCategoryByIdInCache(categoryId);
 
-        public IEnumerable<CategoryDto> GetActiveCategoriesFromStore()
-        {
-            logger.LogDebug("Retrieving active categories from store");
-            IEnumerable<Category> categories = categoryStore.GetActiveCategories();
-            return categories.ToDto();
-        }
+        public IEnumerable<CategoryDto> GetSubCategoriesInCache( int parentCategoryId ) => categoryCacheReadService.GetSubCategoriesInCache(parentCategoryId);
+
+        public IEnumerable<CategoryDto> GetRootCategoriesInCache() => categoryCacheReadService.GetRootCategoriesInCache();
+
+        public IEnumerable<CategoryDto> GetAllActiveCategoriesInCache() => categoryCacheReadService
+            .GetAllActiveCategoriesInCache();
+
+        public bool CategoryExistsInCache( int categoryId ) => categoryCacheReadService.CategoryExistsInCache(categoryId);
+
+        public int GetCategoryActiveCountInCache() => categoryCacheReadService.GetCategoryActiveCountInCache();
+
+        public bool CategoryHasSubCategoriesInCache( int categoryId ) => categoryCacheReadService.CategoryHasSubCategoriesInCache(categoryId);
 
 
-        public void RefreshStoreCache()
-        {
-            logger.LogInformation("Refreshing category store cache");
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    DatabaseResult<IEnumerable<CategoryDto>> result = await GetAllCategoriesAsync();
-                    if (result.IsSuccess && result.Value != null)
-                    {
-                        logger.LogInformation("Category store cache refreshed successfully");
-                    }
-                    else
-                    {
-                        logger.LogWarning("Failed to refresh category store cache: {Error}", result.ErrorMessage);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Exception occurred while refreshing category store cache");
-                }
-            });
-        }
+        public void RefreshStoreCache() => categoryCacheReadService.RefreshStoreCache();
 
         #endregion
 

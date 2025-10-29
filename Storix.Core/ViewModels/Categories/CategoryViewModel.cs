@@ -10,7 +10,6 @@ namespace Storix.Core.ViewModels.Categories
     public class CategoryViewModel:MvxViewModel<int>, ICategoryViewModel
     {
         private readonly ICategoryService _categoryService;
-
         private int _categoryId;
         private CategoryInputModel _categoryInputModel;
         private bool _isEditMode;
@@ -163,8 +162,13 @@ namespace Storix.Core.ViewModels.Categories
             set => SetProperty(ref _isLoading, value, () => ResetCommand.RaiseCanExecuteChanged());
         }
 
-        public string Title => IsEditMode ? "Edit Category" : "Create Category";
-        public string SaveButtonText => IsEditMode ? "Update" : "Create";
+        public string Title => IsEditMode
+            ? "Edit Category"
+            : "Create Category";
+
+        public string SaveButtonText => IsEditMode
+            ? "Update"
+            : "Create";
 
         // Validation state
         public bool IsValid => _categoryInputModel?.IsValid ?? false;
@@ -180,19 +184,19 @@ namespace Storix.Core.ViewModels.Categories
 
         private void SubscribeToInputModelEvents()
         {
-            if (_categoryInputModel == null) return;
-            _categoryInputModel.PropertyChanged += OnInputModelPropertyChanged;
-            _categoryInputModel.ErrorsChanged += OnInputModelErrorsChanged;
+            if (_categoryInputModel == null!) return;
+            _categoryInputModel!.PropertyChanged += OnInputModelPropertyChanged;
+            _categoryInputModel!.ErrorsChanged += OnInputModelErrorsChanged;
         }
 
         private void UnsubscribeFromInputModelEvents()
         {
-            if (_categoryInputModel == null) return;
-            _categoryInputModel.PropertyChanged -= OnInputModelPropertyChanged;
-            _categoryInputModel.ErrorsChanged -= OnInputModelErrorsChanged;
+            if (_categoryInputModel == null!) return;
+            _categoryInputModel!.PropertyChanged -= OnInputModelPropertyChanged;
+            _categoryInputModel!.ErrorsChanged -= OnInputModelErrorsChanged;
         }
 
-        private void OnInputModelPropertyChanged( object sender, PropertyChangedEventArgs e )
+        private void OnInputModelPropertyChanged( object? sender, PropertyChangedEventArgs e )
         {
             RaisePropertyChanged(() => IsValid);
             RaisePropertyChanged(() => HasErrors);
@@ -202,7 +206,7 @@ namespace Storix.Core.ViewModels.Categories
             SaveCommand.RaiseCanExecuteChanged();
         }
 
-        private void OnInputModelErrorsChanged( object sender, DataErrorsChangedEventArgs e )
+        private void OnInputModelErrorsChanged( object? sender, DataErrorsChangedEventArgs e )
         {
             RaisePropertyChanged(() => IsValid);
             RaisePropertyChanged(() => HasErrors);

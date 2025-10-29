@@ -22,19 +22,18 @@ namespace Storix.Application.Services.Categories
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<CategoryReadService> logger ):ICategoryReadService
     {
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync( bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync()
         {
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetRootCategoriesAsync(includeDeleted),
+                categoryRepository.GetRootCategoriesAsync,
                 "Retrieving root categories"
             );
 
             if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved {RootCategoryCount} root categories includeDeleted: {IncludeDeleted}",
-                    result.Value.Count(),
-                    includeDeleted);
+                    "Successfully retrieved {RootCategoryCount} root categories.",
+                    result.Value.Count());
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
@@ -43,28 +42,27 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetSubCategoriesAsync( int parentCategoryId )
         {
             if (parentCategoryId <= 0)
             {
-                logger.LogWarning("Invalid parent category ID {ParentCategoryId} provided, includeDeleted: {IncludeDeleted}", parentCategoryId, includeDeleted);
+                logger.LogWarning("Invalid parent category ID {ParentCategoryId} provided.", parentCategoryId);
                 return DatabaseResult<IEnumerable<CategoryDto>>.Failure(
                     "Parent category ID must be a positive integer.",
                     DatabaseErrorCode.InvalidInput);
             }
 
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetSubCategoriesAsync(parentCategoryId, includeDeleted),
-                $"Retrieving subcategories for parent category {parentCategoryId} with includeDeleted: {includeDeleted}"
+                () => categoryRepository.GetSubCategoriesAsync(parentCategoryId),
+                $"Retrieving subcategories for parent category {parentCategoryId}."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved {SubCategoryCount} subcategories for parent {ParentCategoryId}, includeDeleted: {IncludeDeleted}",
+                    "Successfully retrieved {SubCategoryCount} subcategories for parent {ParentCategoryId}.",
                     result.Value.Count(),
-                    parentCategoryId,
-                    includeDeleted);
+                    parentCategoryId);
 
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
@@ -77,7 +75,7 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetCategoryPagedAsync( int pageNumber, int pageSize )
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
@@ -89,17 +87,16 @@ namespace Storix.Application.Services.Categories
             }
 
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetPagedAsync(pageNumber, pageSize, includeDeleted),
-                $"Getting categories page {pageNumber} with size {pageSize} (includeDeleted: {includeDeleted})"
+                () => categoryRepository.GetPagedAsync(pageNumber, pageSize),
+                $"Getting categories page {pageNumber} with size {pageSize}.)"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved page {PageNumber} of categories ({CategoryCount} items, includeDeleted: {IncludeDeleted})",
+                    "Successfully retrieved page {PageNumber} of categories ({CategoryCount} items.)",
                     pageNumber,
-                    result.Value.Count(),
-                    includeDeleted);
+                    result.Value.Count());
 
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
@@ -112,23 +109,23 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync( bool includeDeleted = false )
+        public async Task<DatabaseResult<int>> GetTotalCategoryCountAsync()
         {
             DatabaseResult<int> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetTotalCountAsync(includeDeleted),
-                $"Getting total category count (includeDeleted: {includeDeleted})",
+                categoryRepository.GetTotalCountAsync,
+                $"Getting total category count.",
                 false
             );
 
             if (result.IsSuccess)
-                logger.LogInformation("Total category count: {CategoryCount} (includeDeleted: {IncludeDeleted})", result.Value, includeDeleted);
+                logger.LogInformation("Total category count: {CategoryCount}.)", result.Value);
 
             return result.IsSuccess
                 ? DatabaseResult<int>.Success(result.Value)
                 : DatabaseResult<int>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public CategoryDto? GetCategoryById( int categoryId, bool includeDeleted = false )
+        public CategoryDto? GetCategoryById( int categoryId )
         {
             if (categoryId <= 0)
             {
@@ -141,10 +138,10 @@ namespace Storix.Application.Services.Categories
             return category;
         }
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync( bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync()
         {
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.GetAllAsync(includeDeleted),
+                categoryRepository.GetAllAsync,
                 "Retrieving all categories"
             );
 
@@ -152,10 +149,8 @@ namespace Storix.Application.Services.Categories
             {
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
 
-                if (!includeDeleted)
-                    categoryStore.Initialize(result.Value.ToList());
 
-                logger.LogInformation("Successfully loaded {CategoryCount} categories (includeDeleted: {IncludeDeleted}", result.Value.Count(), includeDeleted);
+                logger.LogInformation("Successfully loaded {CategoryCount} categories.", result.Value.Count());
 
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
@@ -164,27 +159,6 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        // public async Task<DatabaseResult<bool>> CategoryExistsAsync( int categoryId, bool includeDeleted = false )
-        // {
-        //     if (categoryId <= 0)
-        //     {
-        //         logger.LogWarning("Invalid category ID {CategoryId} provided", categoryId);
-        //         return DatabaseResult<bool>.Failure("Category ID must be a positive integer.", DatabaseErrorCode.InvalidInput);
-        //     }
-        //
-        //     DatabaseResult<bool> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-        //         () => categoryRepository.ExistsAsync(categoryId, includeDeleted),
-        //         $"Checking existence of category {categoryId} (includeDeleted: {includeDeleted})",
-        //         false
-        //     );
-        //
-        //     if (result.IsSuccess)
-        //         logger.LogInformation("Category {CategoryId} exists: {Exists} (includeDeleted: {IncludeDeleted})", categoryId, result.Value, includeDeleted);
-        //
-        //     return result.IsSuccess
-        //         ? DatabaseResult<bool>.Success(result.Value)
-        //         : DatabaseResult<bool>.Failure(result.ErrorMessage!, result.ErrorCode);
-        // }
 
         public async Task<DatabaseResult<int>> GetActiveCategoryCountAsync()
         {
@@ -220,15 +194,18 @@ namespace Storix.Application.Services.Categories
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllDeletedCategoriesAsync()
         {
-            DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                categoryRepository.GetAllDeletedAsync,
-                "Retrieving all deleted categories"
-            );
+            DatabaseResult<IEnumerable<CategoryDto>> result = await GetAllCategoriesAsync();
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
-                logger.LogInformation("Successfully retrieved {DeletedCategoryCount} deleted categories", result.Value.Count());
-                IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
+                IEnumerable<Category> enumerable = result.Value.Select(c => c.ToDomain());
+                IEnumerable<Category> deleted = enumerable
+                                                .Where(c => c.IsDeleted)
+                                                .ToList();
+
+                logger.LogInformation("Successfully retrieved {DeletedCategoryCount} deleted categories", deleted.Count());
+                IEnumerable<CategoryDto> categoryDtos = deleted.ToDto();
+
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
 
@@ -238,15 +215,19 @@ namespace Storix.Application.Services.Categories
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync()
         {
-            DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                categoryRepository.GetAllActiveAsync,
-                "Retrieving all active categories"
-            );
+            DatabaseResult<IEnumerable<CategoryDto>> result = await GetAllCategoriesAsync();
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
+                IEnumerable<Category> enumerable = result.Value.Select(c => c.ToDomain());
+                List<Category> active = enumerable
+                                        .Where(c => !c.IsDeleted)
+                                        .ToList();
+
                 logger.LogInformation("Successfully retrieved {ActiveCategoryCount} active categories", result.Value.Count());
-                IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
+
+                categoryStore.Initialize(active);
+                IEnumerable<CategoryDto> categoryDtos = active.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
 
@@ -254,7 +235,7 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm )
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -263,17 +244,16 @@ namespace Storix.Application.Services.Categories
             }
 
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => categoryRepository.SearchAsync(searchTerm.Trim(), includeDeleted),
-                $"Searching products with term '{searchTerm}' (includeDeleted: {includeDeleted})"
+                () => categoryRepository.SearchAsync(searchTerm.Trim()),
+                $"Searching products with term '{searchTerm}'."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Search for '{SearchTerm}' returned {CategoryCount} categories (includeDeleted: {IncludeDeleted})",
+                    "Search for '{SearchTerm}' returned {CategoryCount} categories.",
                     searchTerm,
-                    result.Value.Count(),
-                    includeDeleted);
+                    result.Value.Count());
                 IEnumerable<CategoryDto> categoryDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }

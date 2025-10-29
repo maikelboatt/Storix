@@ -44,6 +44,8 @@ namespace Storix.Application.Stores.Categories
             _categories.Clear();
         }
 
+        #region Write Operations
+
         public CategoryDto? Create( int categoryId, CreateCategoryDto createDto )
         {
             if (string.IsNullOrWhiteSpace(createDto.Name))
@@ -114,6 +116,10 @@ namespace Storix.Application.Stores.Categories
             // Remove from active cache (soft delete removes from cache, hard delete calls this too)
             _categories.Remove(categoryId);
 
+        #endregion
+
+        #region Read Operations
+
         public CategoryDto? GetById( int categoryId ) =>
             // Only searches active categories
             _categories.TryGetValue(categoryId, out Category? category)
@@ -172,6 +178,8 @@ namespace Storix.Application.Stores.Categories
                    .OrderBy(c => c.Name)
                    .ToList();
         }
+
+        #endregion
 
         public bool Exists( int categoryId ) =>
             // Only checks active categories
