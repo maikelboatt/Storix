@@ -9,7 +9,5 @@ namespace Storix.Application.DTO.Suppliers
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-        public bool IsDeleted { get; set; } = false;
-        public DateTime? DeletedAt { get; set; } = null;
     }
 }
