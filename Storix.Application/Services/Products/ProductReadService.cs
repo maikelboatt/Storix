@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
@@ -23,24 +24,6 @@ namespace Storix.Application.Services.Products
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<ProductReadService> logger ):IProductReadService
     {
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync()
-        {
-            DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                productRepository.GetAllActiveAsync,
-                "Retrieving all active products"
-            );
-
-            if (result is { IsSuccess: true, Value: not null })
-            {
-                logger.LogInformation("Successfully retrieved {ActiveProductCount} active products", result.Value.Count());
-                IEnumerable<ProductDto> productDtos = result.Value.ToDto();
-                return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
-            }
-
-            logger.LogWarning("Failed to retrieve active products: {ErrorMessage}", result.ErrorMessage);
-            return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
-        }
-
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync()
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -78,52 +61,78 @@ namespace Storix.Application.Services.Products
         }
 
 
-        public ProductDto? GetProductById( int productId, bool includeDeleted = false )
+        public async Task<DatabaseResult<ProductDto>> GetProductById( int productId )
         {
             if (productId <= 0)
             {
                 logger.LogWarning("Invalid product ID {ProductId} provided", productId);
-                return null;
+                return DatabaseResult<ProductDto>.Failure("Product ID must be a positive integer", DatabaseErrorCode.InvalidInput);
             }
 
-            logger.LogDebug("Retrieving product with ID {ProductId} from store (includeDeleted: {IncludeDeleted})", productId, includeDeleted);
-            ProductDto? product = productStore.GetById(productId);
-            return product;
+            DatabaseResult<Product?> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.GetByIdAsync(productId),
+                $"Retrieving product {productId}");
+
+            if (!result.IsSuccess)
+            {
+                logger.LogWarning("Failed to retrieve product {ProductId}: {ErrorMessage}", productId, result.ErrorMessage);
+                return DatabaseResult<ProductDto>.Failure(result.ErrorMessage!, result.ErrorCode);
+            }
+
+            if (result.Value == null)
+            {
+                logger.LogWarning("Product with ID {ProductId} not found", productId);
+                return DatabaseResult<ProductDto>.Failure("Product not found", DatabaseErrorCode.NotFound);
+            }
+
+            logger.LogInformation("Successfully retrieved product with ID {CustomerId}", productId);
+            return DatabaseResult<ProductDto>.Success(result.Value.ToDto());
         }
 
-        public ProductDto? GetProductBySku( string sku, bool includeDeleted = false )
+
+        public async Task<DatabaseResult<ProductDto>> GetProductBySku( string sku )
         {
             if (string.IsNullOrWhiteSpace(sku))
             {
-                logger.LogWarning("Invalid SKU provided");
-                return null;
+                logger.LogWarning("Null or empty sku provided");
+                return DatabaseResult<ProductDto>.Failure("Sku cannot be null or empty", DatabaseErrorCode.InvalidInput);
             }
 
-            logger.LogDebug("Retrieving product with SKU {SKU} from store (includeDeleted: {IncludeDeleted})", sku, includeDeleted);
-            return productStore.GetBySKU(sku.Trim());
+            DatabaseResult<Product?> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => productRepository.GetBySkuAsync(sku),
+                $"Retrieving product {sku}");
+
+            if (!result.IsSuccess)
+            {
+                logger.LogWarning("Failed to retrieve product {Sku}: {ErrorMessage}", sku, result.ErrorMessage);
+                return DatabaseResult<ProductDto>.Failure(result.ErrorMessage!, result.ErrorCode);
+            }
+
+            if (result.Value == null)
+            {
+                logger.LogWarning("Product with Sku {Sku} not found", sku);
+                return DatabaseResult<ProductDto>.Failure("Product not found", DatabaseErrorCode.NotFound);
+            }
+
+            logger.LogInformation("Successfully retrieved product with Sku {CustomerId}", sku);
+            return DatabaseResult<ProductDto>.Success(result.Value.ToDto());
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false )
+
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync()
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetAllAsync(includeDeleted),
-                $"Retrieving all products (includeDeleted: {includeDeleted})"
+                productRepository.GetAllAsync,
+                $"Retrieving all products."
             );
 
             if (result is { IsSuccess: true, Value: not null })
             {
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
 
-                // Only initialize store with non-deleted products for caching
-                if (!includeDeleted)
-                {
-                    productStore.Initialize(result.Value.ToList());
-                }
-
                 logger.LogInformation(
-                    "Successfully loaded {ProductCount} products (includeDeleted: {IncludeDeleted})",
-                    result.Value.Count(),
-                    includeDeleted);
+                    "Successfully loaded {ProductCount} products.)",
+                    result.Value.Count());
 
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
@@ -132,10 +141,31 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        public async Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync()
+        {
+            DatabaseResult<IEnumerable<ProductDto>> result = await GetAllProductsAsync();
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                IEnumerable<Product> enumerable = result.Value.Select(p => p.ToDomain());
+                List<Product> active = enumerable
+                                       .Where(p => !p.IsDeleted)
+                                       .ToList();
+
+                logger.LogInformation("Successfully retrieved {ActiveProductCount} active products", result.Value.Count());
+                productStore.Initialize(active);
+
+                return DatabaseResult<IEnumerable<Product>>.Success(active);
+            }
+
+            logger.LogWarning("Failed to retrieve active products: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<Product>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync()
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetAllDeletedAsync(),
+                productRepository.GetAllDeletedAsync,
                 "Retrieving all deleted products"
             );
 
@@ -150,7 +180,7 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync( int categoryId, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync( int categoryId )
         {
             if (categoryId <= 0)
             {
@@ -161,17 +191,16 @@ namespace Storix.Application.Services.Products
             }
 
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByCategoryAsync(categoryId, includeDeleted),
-                $"Retrieving products for category {categoryId} (includeDeleted: {includeDeleted})"
+                () => productRepository.GetByCategoryAsync(categoryId),
+                $"Retrieving products for category {categoryId}."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved {ProductCount} products for category {CategoryId} (includeDeleted: {IncludeDeleted})",
+                    "Successfully retrieved {ProductCount} products for category {CategoryId}.",
                     result.Value.Count(),
-                    categoryId,
-                    includeDeleted);
+                    categoryId);
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
@@ -183,7 +212,7 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync( int supplierId, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync( int supplierId )
         {
             if (supplierId <= 0)
             {
@@ -194,17 +223,16 @@ namespace Storix.Application.Services.Products
             }
 
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetBySupplierAsync(supplierId, includeDeleted),
-                $"Retrieving products for supplier {supplierId} (includeDeleted: {includeDeleted})"
+                () => productRepository.GetBySupplierAsync(supplierId),
+                $"Retrieving products for supplier {supplierId}."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved {ProductCount} products for supplier {SupplierId} (includeDeleted: {IncludeDeleted})",
+                    "Successfully retrieved {ProductCount} products for supplier {SupplierId}.",
                     result.Value.Count(),
-                    supplierId,
-                    includeDeleted);
+                    supplierId);
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
@@ -216,19 +244,18 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync( bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync()
         {
             DatabaseResult<IEnumerable<ProductWithDetailsDto>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetProductsWithDetailsAsync(includeDeleted),
-                $"Retrieving products with details (includeDeleted: {includeDeleted})"
+                productRepository.GetProductsWithDetailsAsync,
+                $"Retrieving products with details."
             );
 
             if (result.IsSuccess && result.Value != null)
             {
                 logger.LogInformation(
-                    "Successfully retrieved {ProductWithDetailsCount} products with details (includeDeleted: {IncludeDeleted})",
-                    result.Value.Count(),
-                    includeDeleted);
+                    "Successfully retrieved {ProductWithDetailsCount} products with details.",
+                    result.Value.Count());
                 return DatabaseResult<IEnumerable<ProductWithDetailsDto>>.Success(result.Value);
             }
 
@@ -236,7 +263,7 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductWithDetailsDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync( string searchTerm, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync( string searchTerm )
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -245,17 +272,16 @@ namespace Storix.Application.Services.Products
             }
 
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.SearchAsync(searchTerm.Trim(), includeDeleted),
-                $"Searching products with term '{searchTerm}' (includeDeleted: {includeDeleted})"
+                () => productRepository.SearchAsync(searchTerm.Trim()),
+                $"Searching products with term '{searchTerm}'."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully found {SearchResultCount} products for search term '{SearchTerm}' (includeDeleted: {IncludeDeleted})",
+                    "Successfully found {SearchResultCount} products for search term '{SearchTerm}'.",
                     result.Value.Count(),
-                    searchTerm,
-                    includeDeleted);
+                    searchTerm);
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
@@ -267,7 +293,7 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync( int pageNumber, int pageSize )
         {
             if (pageNumber <= 0 || pageSize <= 0)
             {
@@ -279,17 +305,16 @@ namespace Storix.Application.Services.Products
             }
 
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetPagedAsync(pageNumber, pageSize, includeDeleted),
-                $"Getting products page {pageNumber} with size {pageSize} (includeDeleted: {includeDeleted})"
+                () => productRepository.GetPagedAsync(pageNumber, pageSize),
+                $"Getting products page {pageNumber} with size {pageSize}."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
-                    "Successfully retrieved page {PageNumber} of products ({ProductCount} items, includeDeleted: {IncludeDeleted})",
+                    "Successfully retrieved page {PageNumber} of products ({ProductCount} items.",
                     pageNumber,
-                    result.Value.Count(),
-                    includeDeleted);
+                    result.Value.Count());
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();
                 return DatabaseResult<IEnumerable<ProductDto>>.Success(productDtos);
             }
@@ -301,17 +326,17 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false )
+        public async Task<DatabaseResult<int>> GetTotalProductCountAsync()
         {
             DatabaseResult<int> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetTotalCountAsync(includeDeleted),
-                $"Getting total product count (includeDeleted: {includeDeleted})",
+                productRepository.GetTotalCountAsync,
+                $"Getting total product count.",
                 false
             );
 
             if (result.IsSuccess)
             {
-                logger.LogInformation("Total product count: {Count} (includeDeleted: {IncludeDeleted})", result.Value, includeDeleted);
+                logger.LogInformation("Total product count: {Count}.", result.Value);
             }
 
             return result.IsSuccess

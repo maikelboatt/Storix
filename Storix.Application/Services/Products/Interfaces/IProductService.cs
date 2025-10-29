@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Storix.Application.Common;
 using Storix.Application.DTO;
 using Storix.Application.DTO.Products;
+using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Products.Interfaces
 {
@@ -12,35 +13,30 @@ namespace Storix.Application.Services.Products.Interfaces
 
         ProductDto? GetProductBySku( string sku );
 
-        Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync();
 
-        Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync();
+        Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync();
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync();
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync(
-            int categoryId,
-            bool includeDeleted = false );
+            int categoryId );
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(
-            int supplierId,
-            bool includeDeleted = false );
+            int supplierId );
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync();
 
-        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync(
-            bool includeDeleted = false );
+        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync();
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync(
-            string searchTerm,
-            bool includeDeleted = false );
+            string searchTerm );
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync(
             int pageNumber,
-            int pageSize,
-            bool includeDeleted = false );
+            int pageSize );
 
-        Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false );
+        Task<DatabaseResult<int>> GetTotalProductCountAsync();
 
         Task<DatabaseResult<int>> GetActiveProductCountAsync();
 

@@ -22,45 +22,67 @@ namespace Storix.Application.Services.Products
         IProductCacheReadService productCacheReadService,
         IProductWriteService productWriteService,
         IProductValidationService productValidationService,
-        ILogger<ProductService> logger ):IProductService
+        ILogger<ProductService> logger )
     {
-        #region Read Operations (Database Queries)
+        #region Read Operations
 
-        public ProductDto? GetProductById( int productId ) => productReadService.GetProductById(productId);
+        public async Task<DatabaseResult<ProductDto>> GetProductById( int productId )
+        {
+            ProductDto? cached = productCacheReadService.GetProductByIdFromCache(productId);
+            if (cached != null)
+                return DatabaseResult<ProductDto>.Success(cached);
 
-        public ProductDto? GetProductBySku( string sku ) => productReadService.GetProductBySku(sku);
+            return await productReadService.GetProductById(productId);
+        }
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync( bool includeDeleted = false ) =>
-            await productReadService.GetAllProductsAsync(includeDeleted);
+        public async Task<DatabaseResult<ProductDto>> GetProductBySku( string sku )
+        {
+            ProductDto? cached = productCacheReadService.GetProductBySkuFromCache(sku);
+            if (cached != null)
+                return DatabaseResult<ProductDto>.Success(cached);
 
-        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllActiveProductsAsync() => await productReadService.GetAllActiveProductsAsync();
+            return await productReadService.GetProductBySku(sku);
+        }
+
+
+        public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync() => await productReadService.GetAllProductsAsync();
+
+        public async Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync() => await productReadService.GetAllActiveProductsAsync();
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync() => await productReadService.GetAllDeletedProductsAsync();
 
+        // public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(int supplierId)
+        // {
+        //     IEnumerable<ProductDto>? cached = productCacheReadService.GetProductsBySupplierFromCache(supplierId);
+        //     if (cached != null)
+        //         return DatabaseResult<IEnumerable<ProductDto>>.Success(cached);
+        //
+        //     var result = await productReadService.GetProductsBySupplierAsync(supplierId);
+        //
+        //     if (result.IsSuccess && result.Value != null)
+        //         productCacheReadService.SetProductsBySupplierInCache(supplierId, result.Data);
+        //
+        //     return result;
+        // }
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync(
-            int categoryId,
-            bool includeDeleted = false ) => await productReadService.GetProductsByCategoryAsync(categoryId, includeDeleted);
+            int categoryId ) => await productReadService.GetProductsByCategoryAsync(categoryId);
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(
-            int supplierId,
-            bool includeDeleted = false ) => await productReadService.GetProductsBySupplierAsync(supplierId, includeDeleted);
+            int supplierId ) => await productReadService.GetProductsBySupplierAsync(supplierId);
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync() => await productReadService.GetLowStockProductsAsync();
 
-        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync(
-            bool includeDeleted = false ) => await productReadService.GetProductsWithDetailsAsync(includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync() =>
+            await productReadService.GetProductsWithDetailsAsync();
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync(
-            string searchTerm,
-            bool includeDeleted = false ) => await productReadService.SearchProductsAsync(searchTerm, includeDeleted);
+            string searchTerm ) => await productReadService.SearchProductsAsync(searchTerm);
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsPagedAsync(
             int pageNumber,
-            int pageSize,
-            bool includeDeleted = false ) => await productReadService.GetProductsPagedAsync(pageNumber, pageSize, includeDeleted);
+            int pageSize ) => await productReadService.GetProductsPagedAsync(pageNumber, pageSize);
 
-        public async Task<DatabaseResult<int>> GetTotalProductCountAsync( bool includeDeleted = false ) =>
-            await productReadService.GetTotalProductCountAsync(includeDeleted);
+        public async Task<DatabaseResult<int>> GetTotalProductCountAsync() => await productReadService.GetTotalProductCountAsync();
 
         public async Task<DatabaseResult<int>> GetActiveProductCountAsync() => await productReadService.GetActiveProductCountAsync();
 
@@ -106,24 +128,13 @@ namespace Storix.Application.Services.Products
 
         #region Cache Operations (Fast In-Memory Queries - Active Products Only)
 
-        public IEnumerable<ProductDto> SearchProductsInCache( string? searchTerm = null, int? categoryId = null ) =>
-            productCacheReadService.SearchProductsInCache(searchTerm, categoryId);
-
         public ProductDto? GetProductByIdFromCache( int productId ) => productCacheReadService.GetProductByIdFromCache(productId);
 
         public ProductDto? GetProductBySkuFromCache( string sku ) => productCacheReadService.GetProductBySkuFromCache(sku);
 
-        public IEnumerable<ProductDto> GetActiveProductsFromCache() => productCacheReadService.GetActiveProductsFromCache();
-
         public List<ProductDto> GetProductsByCategoryFromCache( int categoryId ) => productCacheReadService.GetProductsByCategoryFromCache(categoryId);
 
         public List<ProductDto> GetProductsBySupplierFromCache( int supplierId ) => productCacheReadService.GetProductsBySupplierFromCache(supplierId);
-
-        public bool ProductExistsInCache( int productId ) => productCacheReadService.ProductExistsInCache(productId);
-
-        public int GetActiveCountFromCache() => productCacheReadService.GetActiveCountFromCache();
-
-        public void RefreshStoreCache() => productCacheReadService.RefreshStoreCache();
 
         #endregion
 

@@ -11,8 +11,7 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets the total count of products.
         /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products in the count.</param>
-        Task<int> GetTotalCountAsync( bool includeDeleted = false );
+        Task<int> GetTotalCountAsync();
 
         /// <summary>
         ///     Gets the count of active products (non-deleted and IsActive = true).
@@ -29,8 +28,7 @@ namespace Storix.Application.Repositories
         /// </summary>
         /// <param name="pageNumber" >The page number (1-based).</param>
         /// <param name="pageSize" >The number of items per page.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<Product>> GetPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false );
+        Task<IEnumerable<Product>> GetPagedAsync( int pageNumber, int pageSize );
 
         /// <summary>
         ///     Checks if a product exists by ID.
@@ -76,21 +74,18 @@ namespace Storix.Application.Repositories
         ///     Gets a product by its ID.
         /// </summary>
         /// <param name="productId" >The product ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<Product?> GetByIdAsync( int productId, bool includeDeleted = false );
+        Task<Product?> GetByIdAsync( int productId );
 
         /// <summary>
         ///     Gets a product by its SKU.
         /// </summary>
         /// <param name="sku" >The product SKU.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<Product?> GetBySkuAsync( string sku, bool includeDeleted = false );
+        Task<Product?> GetBySkuAsync( string sku );
 
         /// <summary>
         ///     Gets all products.
         /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<Product>> GetAllAsync( bool includeDeleted = false );
+        Task<IEnumerable<Product>> GetAllAsync();
 
         /// <summary>
         ///     Gets all active products (IsActive = true and IsDeleted = false).
@@ -106,15 +101,13 @@ namespace Storix.Application.Repositories
         ///     Gets products by category ID.
         /// </summary>
         /// <param name="categoryId" >The category ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<Product>> GetByCategoryAsync( int categoryId, bool includeDeleted = false );
+        Task<IEnumerable<Product>> GetByCategoryAsync( int categoryId );
 
         /// <summary>
         ///     Gets products by supplier ID.
         /// </summary>
         /// <param name="supplierId" >The supplier ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<Product>> GetBySupplierAsync( int supplierId, bool includeDeleted = false );
+        Task<IEnumerable<Product>> GetBySupplierAsync( int supplierId );
 
         /// <summary>
         ///     Gets products that are below their minimum stock level (active products only).
@@ -124,14 +117,12 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets products with extended details (joins supplier, category, stock info).
         /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync( bool includeDeleted = false );
+        Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync();
 
         /// <summary>
         ///     Searches products by name, SKU, or description.
         /// </summary>
         /// <param name="searchTerm" >The search term.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        Task<IEnumerable<Product>> SearchAsync( string searchTerm, bool includeDeleted = false );
+        Task<IEnumerable<Product>> SearchAsync( string searchTerm );
     }
 }

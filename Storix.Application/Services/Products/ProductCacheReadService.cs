@@ -100,7 +100,7 @@ namespace Storix.Application.Services.Products
                 try
                 {
                     // Get only active products from database
-                    DatabaseResult<IEnumerable<ProductDto>> result = await productReadService.GetAllActiveProductsAsync();
+                    DatabaseResult<IEnumerable<Product>> result = await productReadService.GetAllActiveProductsAsync();
 
                     if (result.IsSuccess && result.Value != null)
                     {

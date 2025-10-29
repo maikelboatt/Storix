@@ -96,8 +96,8 @@ namespace Storix.Application.DTO.Products
             dto.MaxStockLevel,
             dto.SupplierId,
             dto.CategoryId,
-            DateTime.MinValue,
             DateTime.UtcNow,
+            DateTime.MinValue,
             false,
             null
         );

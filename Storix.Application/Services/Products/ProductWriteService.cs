@@ -154,7 +154,7 @@ namespace Storix.Application.Services.Products
         {
             // Get existing active product
             DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByIdAsync(updateProductDto.ProductId, false),
+                () => productRepository.GetByIdAsync(updateProductDto.ProductId),
                 $"Retrieving product {updateProductDto.ProductId} for update",
                 false
             );
@@ -266,7 +266,7 @@ namespace Storix.Application.Services.Products
             {
                 // Fetch the restored product from database
                 DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                    () => productRepository.GetByIdAsync(productId, false),
+                    () => productRepository.GetByIdAsync(productId),
                     $"Retrieving restored product {productId}",
                     enableRetry: false
                 );
@@ -479,7 +479,7 @@ namespace Storix.Application.Services.Products
         {
             // Check if product exists and is soft deleted
             DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByIdAsync(productId, true),
+                () => productRepository.GetByIdAsync(productId),
                 $"Retrieving product {productId} for restore validation",
                 false
             );

@@ -1,4 +1,8 @@
-﻿using Storix.Application.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Dapper;
+using Storix.Application.Common;
 using Storix.Application.DTO;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
@@ -8,103 +12,302 @@ using Storix.Domain.Models;
 namespace Storix.DataAccess.Repositories
 {
     /// <summary>
-    ///     Repository implementation for Product operations using Dapper and stored procedures.
-    ///     Updated to support ISoftDeletable interface with IsDeleted and DeletedAt properties.
+    /// Repository implementation for <see cref="Product"/> entity operations.
+    /// 
+    /// This class provides database access logic for reading, creating, updating,
+    /// and deleting product records using <see cref="ISqlDataAccess"/> (Dapper abstraction).
+    /// 
+    /// The repository reflects the full database state — all queries include both active
+    /// and soft-deleted records unless explicitly filtered by validation logic.
+    /// Filtering for active-only records is handled in the service layer.
     /// </summary>
-    /// <param name="sqlDataAccess" >The SQL data access instance.</param>
-    public class ProductRepository( ISqlDataAccess sqlDataAccess ):IProductRepository
+    public class ProductRepository:IProductRepository
     {
-        #region Pagination
+        private readonly ISqlDataAccess sqlDataAccess;
 
         /// <summary>
-        ///     Gets the total count of products.
+        /// Initializes a new instance of the <see cref="ProductRepository"/> class.
         /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products in the count.</param>
-        public async Task<int> GetTotalCountAsync( bool includeDeleted = false )
+        /// <param name="sqlDataAccess">The SQL data access abstraction for executing queries and commands.</param>
+        public ProductRepository( ISqlDataAccess sqlDataAccess )
         {
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductCountIncludeDeleted"
-                : "sp_GetProductCount";
-            return await sqlDataAccess.ExecuteScalarAsync<int>(storedProcedure);
+            this.sqlDataAccess = sqlDataAccess;
         }
-
-        /// <summary>
-        ///     Gets the count of active products (non-deleted and IsActive = true).
-        /// </summary>
-        public async Task<int> GetActiveCountAsync() => await sqlDataAccess.ExecuteScalarAsync<int>("sp_GetActiveProductCount");
-
-        /// <summary>
-        ///     Gets the count of soft-deleted products.
-        /// </summary>
-        public async Task<int> GetDeletedCountAsync() => await sqlDataAccess.ExecuteScalarAsync<int>("sp_GetDeletedProductCount");
-
-        /// <summary>
-        ///     Gets a paged list of products.
-        /// </summary>
-        /// <param name="pageNumber" >The page number (1-based).</param>
-        /// <param name="pageSize" >The number of items per page.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<Product>> GetPagedAsync( int pageNumber, int pageSize, bool includeDeleted = false )
-        {
-            var parameters = new
-            {
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                Offset = (pageNumber - 1) * pageSize,
-                IncludeDeleted = includeDeleted
-            };
-
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductsPagedIncludeDeleted"
-                : "sp_GetProductsPaged";
-
-            return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
-        }
-
-        #endregion
 
         #region Validation
 
         /// <summary>
-        ///     Checks if a product exists by ID.
+        /// Checks whether a product with the specified ID exists.
+        /// Optionally includes soft-deleted records based on <paramref name="includeDeleted"/>.
         /// </summary>
-        /// <param name="productId" >The product ID to check.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products in the check.</param>
+        /// <param name="productId">The unique identifier of the product to check.</param>
+        /// <param name="includeDeleted">Whether to include soft-deleted records in the check.</param>
+        /// <returns><c>true</c> if the product exists; otherwise, <c>false</c>.</returns>
         public async Task<bool> ExistsAsync( int productId, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                ProductId = productId,
-                IncludeDeleted = includeDeleted
-            };
+            // language=tsql
+            string sql = includeDeleted
+                ? "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId"
+                : "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId AND IsDeleted = 0";
 
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckProductExists",
-                parameters);
-
-            return count > 0;
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    ProductId = productId
+                });
         }
 
         /// <summary>
-        ///     Checks if a SKU already exists (optionally excluding a specific product ID).
+        /// Checks whether a SKU already exists in the database.
+        /// Optionally excludes a specific product ID (for update operations) and
+        /// includes soft-deleted records if requested.
         /// </summary>
-        /// <param name="sku" >The SKU to check.</param>
-        /// <param name="excludeProductId" >Product ID to exclude from the check (for updates).</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products in the check.</param>
+        /// <param name="sku">The product SKU to check for uniqueness.</param>
+        /// <param name="excludeProductId">An optional product ID to exclude from the check.</param>
+        /// <param name="includeDeleted">Whether to include soft-deleted records in the check.</param>
+        /// <returns><c>true</c> if the SKU exists; otherwise, <c>false</c>.</returns>
         public async Task<bool> SkuExistsAsync( string sku, int? excludeProductId = null, bool includeDeleted = false )
         {
-            var parameters = new
-            {
-                SKU = sku,
-                ExcludeProductId = excludeProductId,
-                IncludeDeleted = includeDeleted
-            };
+            // language=tsql
+            string sql = includeDeleted
+                ? @"SELECT COUNT(1) FROM Product 
+                    WHERE SKU = @SKU 
+                    AND (@ExcludeProductId IS NULL OR ProductId != @ExcludeProductId)"
+                : @"SELECT COUNT(1) FROM Product 
+                    WHERE SKU = @SKU 
+                    AND IsDeleted = 0 
+                    AND (@ExcludeProductId IS NULL OR ProductId != @ExcludeProductId)";
 
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckSkuExists",
-                parameters);
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    SKU = sku,
+                    ExcludeProductId = excludeProductId
+                });
+        }
 
-            return count > 0;
+        #endregion
+
+        #region Count Operations
+
+        /// <summary>
+        /// Retrieves the total number of product records (active + soft-deleted).
+        /// </summary>
+        public async Task<int> GetTotalCountAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Product";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves the number of active (non-deleted) product records.
+        /// </summary>
+        public async Task<int> GetActiveCountAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Product WHERE IsDeleted = 0";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves the number of soft-deleted product records.
+        /// </summary>
+        public async Task<int> GetDeletedCountAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM Product WHERE IsDeleted = 1";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+        }
+
+        #endregion
+
+        #region Read Operations
+
+        /// <summary>
+        /// Retrieves a product by its unique identifier (includes both active and deleted).
+        /// </summary>
+        public async Task<Product?> GetByIdAsync( int productId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE ProductId = @ProductId";
+            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
+                sql,
+                new
+                {
+                    ProductId = productId
+                });
+        }
+
+        /// <summary>
+        /// Retrieves a product by its SKU (includes both active and deleted).
+        /// </summary>
+        public async Task<Product?> GetBySkuAsync( string sku )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE SKU = @SKU";
+            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
+                sql,
+                new
+                {
+                    SKU = sku
+                });
+        }
+
+        /// <summary>
+        /// Retrieves all products (active and soft-deleted), ordered by name.
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetAllAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Product>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves all active (non-deleted) products.
+        /// This method is typically used to initialize the in-memory store or cache.
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetAllActiveAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE IsDeleted = 0 ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Product>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves all soft-deleted products.
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetAllDeletedAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE IsDeleted = 1 ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Product>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves products by their category ID (active + deleted).
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetByCategoryAsync( int categoryId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE CategoryId = @CategoryId ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Product>(
+                sql,
+                new
+                {
+                    CategoryId = categoryId
+                });
+        }
+
+        /// <summary>
+        /// Retrieves products by their supplier ID (active + deleted).
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetBySupplierAsync( int supplierId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM Product WHERE SupplierId = @SupplierId ORDER BY Name";
+            return await sqlDataAccess.QueryAsync<Product>(
+                sql,
+                new
+                {
+                    SupplierId = supplierId
+                });
+        }
+
+        /// <summary>
+        /// Retrieves all active products with stock below the minimum threshold.
+        /// Uses ISNULL for SQL Server NULL handling.
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetLowStockProductsAsync()
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT p.* 
+                FROM Product p
+                LEFT JOIN (
+                    SELECT ProductId, SUM(CurrentStock) AS TotalStock
+                    FROM Inventory
+                    GROUP BY ProductId
+                ) s ON p.ProductId = s.ProductId
+                WHERE p.IsDeleted = 0
+                AND ISNULL(s.TotalStock, 0) < p.MinStockLevel
+                ORDER BY p.Name";
+
+            return await sqlDataAccess.QueryAsync<Product>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves products along with category, supplier, and stock details.
+        /// Uses ISNULL for SQL Server NULL handling.
+        /// </summary>
+        public async Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync()
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT 
+                    p.*,
+                    c.Name AS CategoryName,
+                    s.Name AS SupplierName,
+                    ISNULL(st.TotalStock, 0) AS CurrentStock
+                FROM Product p
+                LEFT JOIN Category c ON p.CategoryId = c.CategoryId
+                LEFT JOIN Supplier s ON p.SupplierId = s.SupplierId
+                LEFT JOIN (
+                    SELECT ProductId, SUM(CurrentStock) AS TotalStock
+                    FROM Inventory
+                    GROUP BY ProductId
+                ) st ON p.ProductId = st.ProductId
+                ORDER BY p.Name";
+
+            return await sqlDataAccess.QueryAsync<ProductWithDetailsDto>(sql);
+        }
+
+        /// <summary>
+        /// Retrieves a paginated list of products.
+        /// Uses SQL Server OFFSET-FETCH syntax.
+        /// </summary>
+        public async Task<IEnumerable<Product>> GetPagedAsync( int pageNumber, int pageSize )
+        {
+            int offset = (pageNumber - 1) * pageSize;
+
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM Product 
+                ORDER BY Name 
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
+
+            return await sqlDataAccess.QueryAsync<Product>(
+                sql,
+                new
+                {
+                    PageSize = pageSize,
+                    Offset = offset
+                });
+        }
+
+        /// <summary>
+        /// Searches for products by name, SKU, or description (active + deleted).
+        /// </summary>
+        public async Task<IEnumerable<Product>> SearchAsync( string searchTerm )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM Product 
+                WHERE Name LIKE @SearchTerm 
+                      OR SKU LIKE @SearchTerm 
+                      OR Description LIKE @SearchTerm 
+                ORDER BY Name";
+
+            return await sqlDataAccess.QueryAsync<Product>(
+                sql,
+                new
+                {
+                    SearchTerm = $"%{searchTerm}%"
+                });
         }
 
         #endregion
@@ -112,32 +315,26 @@ namespace Storix.DataAccess.Repositories
         #region Write Operations
 
         /// <summary>
-        ///     Creates a new product and returns it with its generated ID.
+        /// Creates a new product record and returns the created entity.
+        /// Uses SQL Server SCOPE_IDENTITY() to retrieve the newly inserted ID.
         /// </summary>
         public async Task<Product> CreateAsync( Product product )
         {
-            var parameters = new
-            {
-                product.Name,
-                product.SKU,
-                product.Description,
-                product.Barcode,
-                product.Price,
-                product.Cost,
-                product.MinStockLevel,
-                product.MaxStockLevel,
-                product.SupplierId,
-                product.CategoryId,
-                product.CreatedDate,
-                // ISoftDeletable properties - ensure new products are not deleted
-                IsDeleted = false,
-                DeletedAt = (DateTime?)null
-            };
+            // language=tsql
+            const string sql = @"
+                INSERT INTO Product (
+                    Name, SKU, Description, Barcode, Price, Cost, 
+                    MinStockLevel, MaxStockLevel, SupplierId, CategoryId, 
+                    CreatedDate, IsDeleted, DeletedAt
+                )
+                VALUES (
+                    @Name, @SKU, @Description, @Barcode, @Price, @Cost,
+                    @MinStockLevel, @MaxStockLevel, @SupplierId, @CategoryId,
+                    @CreatedDate, 0, NULL
+                );
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            int newProductId = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CreateProduct",
-                parameters);
-
+            int newProductId = await sqlDataAccess.ExecuteScalarAsync<int>(sql, product);
             return product with
             {
                 ProductId = newProductId,
@@ -147,252 +344,127 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        ///     Updates an existing product and returns it with the updated timestamp.
+        /// Updates an existing product record.
         /// </summary>
         public async Task<Product> UpdateAsync( Product product )
         {
-            var parameters = new
-            {
-                product.ProductId,
-                product.Name,
-                product.SKU,
-                product.Description,
-                product.Barcode,
-                product.Price,
-                product.Cost,
-                product.MinStockLevel,
-                product.MaxStockLevel,
-                product.SupplierId,
-                product.CategoryId,
-                UpdatedDate = DateTime.UtcNow,
-                // ISoftDeletable properties
-                product.IsDeleted,
-                product.DeletedAt
-            };
+            // language=tsql
+            const string sql = @"
+                UPDATE Product 
+                SET Name = @Name,
+                    SKU = @SKU,
+                    Description = @Description,
+                    Barcode = @Barcode,
+                    Price = @Price,
+                    Cost = @Cost,
+                    MinStockLevel = @MinStockLevel,
+                    MaxStockLevel = @MaxStockLevel,
+                    SupplierId = @SupplierId,
+                    CategoryId = @CategoryId,
+                    UpdatedDate = @UpdatedDate,
+                    IsDeleted = @IsDeleted,
+                    DeletedAt = @DeletedAt
+                WHERE ProductId = @ProductId";
 
-            await sqlDataAccess.CommandAsync("sp_UpdateProduct", parameters);
-
-            return product with
+            Product updated = product with
             {
                 UpdatedDate = DateTime.UtcNow
             };
+            await sqlDataAccess.ExecuteAsync(sql, updated);
+            return updated;
         }
 
         /// <summary>
-        ///     Permanently deletes a product by ID (hard delete).
-        /// </summary>
-        public async Task<DatabaseResult> HardDeleteAsync( int productId )
-        {
-            try
-            {
-                int affectedRows = await sqlDataAccess.ExecuteAsync(
-                    "sp_HardDeleteProduct",
-                    new
-                    {
-                        ProductId = productId
-                    });
-
-                return affectedRows > 0
-                    ? DatabaseResult.Success()
-                    : DatabaseResult.Failure("Product not found", DatabaseErrorCode.NotFound);
-            }
-            catch (Exception ex)
-            {
-                return DatabaseResult.Failure(ex.Message! ?? "Error deleting product", DatabaseErrorCode.UnexpectedError);
-            }
-        }
-
-        /// <summary>
-        ///     Soft deletes a product (sets IsDeleted = true and DeletedAt = current timestamp).
+        /// Soft deletes a product by marking it as deleted instead of removing it permanently.
         /// </summary>
         public async Task<DatabaseResult> SoftDeleteAsync( int productId )
         {
             try
             {
-                var parameters = new
-                {
-                    ProductId = productId,
-                    DeletedAt = DateTime.UtcNow,
-                    UpdatedDate = DateTime.UtcNow
-                };
+                // language=tsql
+                const string sql = @"
+                    UPDATE Product 
+                    SET IsDeleted = 1, 
+                        DeletedAt = @DeletedAt,
+                        UpdatedDate = @UpdatedDate
+                    WHERE ProductId = @ProductId AND IsDeleted = 0";
 
-                int affectedRows = await sqlDataAccess.ExecuteAsync("sp_SoftDeleteProduct", parameters);
-                return affectedRows > 0
+                int affected = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        ProductId = productId,
+                        DeletedAt = DateTime.UtcNow,
+                        UpdatedDate = DateTime.UtcNow
+                    });
+
+                return affected > 0
                     ? DatabaseResult.Success()
-                    : DatabaseResult.Failure("Product not found", DatabaseErrorCode.NotFound);
+                    : DatabaseResult.Failure($"Product with ID {productId} not found or already deleted", DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure(ex.Message! ?? "Error soft deleting product", DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure($"Error soft deleting product {productId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
-        ///     Restores a soft-deleted product (sets IsDeleted = false and DeletedAt = null).
+        /// Restores a soft-deleted product record by marking it as active again.
         /// </summary>
         public async Task<DatabaseResult> RestoreAsync( int productId )
         {
             try
             {
-                var parameters = new
-                {
-                    ProductId = productId,
-                    UpdatedDate = DateTime.UtcNow
-                };
+                // language=tsql
+                const string sql = @"
+                    UPDATE Product 
+                    SET IsDeleted = 0, 
+                        DeletedAt = NULL,
+                        UpdatedDate = @UpdatedDate
+                    WHERE ProductId = @ProductId AND IsDeleted = 1";
 
-                int affectedRows = await sqlDataAccess.ExecuteAsync("sp_RestoreProduct", parameters);
+                int affected = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        ProductId = productId,
+                        UpdatedDate = DateTime.UtcNow
+                    });
 
-                return affectedRows > 0
+                return affected > 0
                     ? DatabaseResult.Success()
-                    : DatabaseResult.Failure("Product not found or not deleted", DatabaseErrorCode.NotFound);
+                    : DatabaseResult.Failure($"Product with ID {productId} cannot be restored", DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure(ex.Message! ?? "Error restoring product", DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure($"Error restoring product {productId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
             }
         }
 
-        #endregion
-
-        #region Read Operations
-
         /// <summary>
-        ///     Gets a product by its ID.
+        /// Permanently deletes a product record from the database.
         /// </summary>
-        /// <param name="productId" >The product ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<Product?> GetByIdAsync( int productId, bool includeDeleted = false )
+        public async Task<DatabaseResult> HardDeleteAsync( int productId )
         {
-            var parameters = new
+            try
             {
-                ProductId = productId,
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductByIdIncludeDeleted"
-                : "sp_GetProductById";
+                // language=tsql
+                const string sql = "DELETE FROM Product WHERE ProductId = @ProductId";
+                int affected = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        ProductId = productId
+                    });
 
-            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(storedProcedure, parameters);
-        }
-
-        /// <summary>
-        ///     Gets a product by its SKU.
-        /// </summary>
-        /// <param name="sku" >The product SKU.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<Product?> GetBySkuAsync( string sku, bool includeDeleted = false )
-        {
-            var parameters = new
+                return affected > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure($"Product with ID {productId} not found", DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
             {
-                SKU = sku,
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductBySkuIncludeDeleted"
-                : "sp_GetProductBySku";
-
-            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(storedProcedure, parameters);
-        }
-
-        /// <summary>
-        ///     Gets all products.
-        /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<Product>> GetAllAsync( bool includeDeleted = false )
-        {
-            string storedProcedure = includeDeleted
-                ? "sp_GetAllProductsIncludeDeleted"
-                : "sp_GetAllProducts";
-            return await sqlDataAccess.QueryAsync<Product>(storedProcedure);
-        }
-
-        /// <summary>
-        ///     Gets all active products (IsActive = true and IsDeleted = false).
-        /// </summary>
-        public async Task<IEnumerable<Product>> GetAllActiveAsync() => await sqlDataAccess.QueryAsync<Product>("sp_GetAllActiveProducts");
-
-        /// <summary>
-        ///     Gets all soft-deleted products.
-        /// </summary>
-        public async Task<IEnumerable<Product>> GetAllDeletedAsync() => await sqlDataAccess.QueryAsync<Product>("sp_GetAllDeletedProducts");
-
-        /// <summary>
-        ///     Gets products by category ID.
-        /// </summary>
-        /// <param name="categoryId" >The category ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<Product>> GetByCategoryAsync( int categoryId, bool includeDeleted = false )
-        {
-            var parameters = new
-            {
-                CategoryId = categoryId,
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductsByCategoryIncludeDeleted"
-                : "sp_GetProductsByCategory";
-
-            return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
-        }
-
-        /// <summary>
-        ///     Gets products by supplier ID.
-        /// </summary>
-        /// <param name="supplierId" >The supplier ID.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<Product>> GetBySupplierAsync( int supplierId, bool includeDeleted = false )
-        {
-            var parameters = new
-            {
-                SupplierId = supplierId,
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductsBySupplierIncludeDeleted"
-                : "sp_GetProductsBySupplier";
-
-            return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
-        }
-
-        /// <summary>
-        ///     Gets products that are below their minimum stock level (active products only).
-        /// </summary>
-        public async Task<IEnumerable<Product>> GetLowStockProductsAsync() => await sqlDataAccess.QueryAsync<Product>("sp_GetLowStockProducts");
-
-        /// <summary>
-        ///     Gets products with extended details (joins supplier, category, stock info).
-        /// </summary>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync( bool includeDeleted = false )
-        {
-            var parameters = new
-            {
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_GetProductsWithDetailsIncludeDeleted"
-                : "sp_GetProductsWithDetails";
-
-            return await sqlDataAccess.QueryAsync<ProductWithDetailsDto>(storedProcedure, parameters);
-        }
-
-        /// <summary>
-        ///     Searches products by name, SKU, or description.
-        /// </summary>
-        /// <param name="searchTerm" >The search term.</param>
-        /// <param name="includeDeleted" >Whether to include soft-deleted products.</param>
-        public async Task<IEnumerable<Product>> SearchAsync( string searchTerm, bool includeDeleted = false )
-        {
-            var parameters = new
-            {
-                SearchTerm = $"%{searchTerm}%",
-                IncludeDeleted = includeDeleted
-            };
-            string storedProcedure = includeDeleted
-                ? "sp_SearchProductsIncludeDeleted"
-                : "sp_SearchProducts";
-
-            return await sqlDataAccess.QueryAsync<Product>(storedProcedure, parameters);
+                return DatabaseResult.Failure($"Error permanently deleting product {productId}: {ex.Message}", DatabaseErrorCode.UnexpectedError);
+            }
         }
 
         #endregion

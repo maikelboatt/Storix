@@ -43,6 +43,9 @@ namespace Storix.Application.Stores.Products
             _products.Clear();
         }
 
+
+        #region Write Operations
+
         public ProductDto? Create( int productId, CreateProductDto createDto )
         {
             // Simple validation
@@ -138,6 +141,8 @@ namespace Storix.Application.Stores.Products
         public bool Delete( int productId ) =>
             // Remove from active cache (soft delete removes from cache, hard delete calls this too)
             _products.Remove(productId);
+
+        #endregion
 
         public ProductDto? GetById( int productId ) =>
             // Only searches active products
