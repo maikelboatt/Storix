@@ -1,0 +1,43 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Resources.CustomTextBox"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  x:Name="Root"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="auto"
+                  mc:Ignorable="d">
+    <StackPanel Margin="20,10">
+        <StackPanel.Resources>
+            <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
+        </StackPanel.Resources>
+        <TextBlock FontSize="12"
+                   Foreground="{DynamicResource SecondaryTextColor}"
+                   Text="{Binding ElementName=Root, Path=Description}" />
+
+        <Grid>
+            <TextBlock x:Name="TextBlock"
+                       Margin="13,0"
+                       VerticalAlignment="Center"
+                       Panel.ZIndex="1"
+                       FontSize="12"
+                       IsHitTestVisible="False"
+                       Text="{Binding ElementName=Root, Path=Placeholder}"
+                       Visibility="{Binding ElementName=TextBox, Path=Text.IsEmpty, Converter={StaticResource ToVisibilityConverter}}" />
+
+            <TextBox x:Name="TextBox" Text="{Binding ElementName=Root, Path=Data, UpdateSourceTrigger=PropertyChanged, ValidatesOnNotifyDataErrors=True}">
+
+                <TextBox.Style>
+                    <Style BasedOn="{StaticResource TextBoxStyle}" TargetType="TextBox">
+                        <Style.Triggers>
+                            <Trigger Property="Validation.HasError" Value="True">
+                                <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=(Validation.Errors)[0].ErrorContent}" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+        </Grid>
+    </StackPanel>
+</views:MvxWpfView>

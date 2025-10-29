@@ -1,0 +1,69 @@
+﻿<UserControl x:Class="Storix.Presentation.Resources.CustomCards"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             d:DesignHeight="180"
+             d:DesignWidth="320"
+             mc:Ignorable="d">
+
+    <Border Width="260"
+            Height="160"
+            Margin="10"
+            Padding="16"
+            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            BorderBrush="{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=UserControl}}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Effect="{DynamicResource CardShadowEffect}">
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!--  Card Icon  -->
+            <Border Width="64"
+                    Height="64"
+                    Margin="0,0,15,0"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Background="{Binding IconBackground, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    CornerRadius="32">
+                <Image Width="32"
+                       Height="32"
+                       Source="{Binding CardImage, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                       Stretch="Uniform" />
+            </Border>
+
+            <!--  Card Text  -->
+            <StackPanel Grid.Column="1"
+                        Margin="0,5,0,5"
+                        VerticalAlignment="Center">
+
+                <TextBlock FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextColor}"
+                           Text="{Binding CardTitle, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+
+                <TextBlock Margin="0,5,0,5"
+                           FontSize="28"
+                           FontWeight="Bold"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           Text="{Binding CardValue, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+
+                <Border Padding="4,2"
+                        HorizontalAlignment="Left"
+                        Background="#E6F4EA"
+                        CornerRadius="4">
+                    <TextBlock FontSize="12"
+                               FontStyle="Italic"
+                               FontWeight="Medium"
+                               Foreground="{Binding PercentageColor, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               Text="{Binding ChangePercentage, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
