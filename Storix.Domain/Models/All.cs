@@ -1,251 +1,144 @@
-﻿// namespace Storix.Domain.Models
+﻿// using Storix.Domain.Enums;
+// using Storix.Domain.Interfaces;
+//
+// namespace Storix.Domain.Models
 // {
-//     /// <summary>
-//     ///     Represents a product in the inventory.
-//     /// </summary>
-//     public class Product(
-//         int productId,
-//         string name,
-//         string sku,
-//         string description,
-//         string? barcode,
-//         decimal price,
-//         decimal cost,
-//         int minStockLevel,
-//         int maxStockLevel,
-//         int supplierId,
-//         int categoryId,
-//         bool isActive,
-//         DateTime createdDate,
-//         DateTime? updatedDate )
+//     public record Product(
+//         int ProductId,
+//         string Name,
+//         string SKU,
+//         string Description,
+//         string? Barcode,
+//         decimal Price,
+//         decimal Cost,
+//         int MinStockLevel,
+//         int MaxStockLevel,
+//         int SupplierId,
+//         int CategoryId,
+//         DateTime CreatedDate,
+//         DateTime? UpdatedDate = null,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null
+//     ):ISoftDeletable
 //     {
-//         public int ProductId { get; init; } = productId;
-//         public string Name { get; init; } = name;
-//         public string SKU { get; init; } = sku;
-//         public string Description { get; init; } = description;
-//         public string? Barcode { get; init; } = barcode;
-//         public decimal Price { get; init; } = price;
-//         public decimal Cost { get; init; } = cost;
-//         public int MinStockLevel { get; init; } = minStockLevel;
-//         public int MaxStockLevel { get; init; } = maxStockLevel;
-//         public int SupplierId { get; init; } = supplierId;
-//         public int CategoryId { get; init; } = categoryId;
-//         public bool IsActive { get; init; } = isActive;
-//         public DateTime CreatedDate { get; init; } = createdDate;
-//         public DateTime? UpdatedDate { get; init; } = updatedDate;
+//         public decimal ProfitMargin => Price - Cost;
+//
+//
+//         // You can still add business logic methods if needed
+//         public bool IsLowStock( int currentStock ) => currentStock <= MinStockLevel;
 //     }
 //
-//     public class Category(
-//         int categoryId,
-//         string name,
-//         string? description,
-//         int? parentCategoryId )
+//     public record Category(
+//         int CategoryId,
+//         string Name,
+//         string? Description,
+//         int? ParentCategoryId,
+//         string? ImageUrl,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null ):ISoftDeletable;
+//
+//     public record Order(
+//         int OrderId,
+//         OrderType Type,
+//         OrderStatus Status,
+//         int? SupplierId,
+//         int? CustomerId,
+//         DateTime OrderDate,
+//         DateTime? DeliveryDate,
+//         string? Notes,
+//         int CreatedBy )
 //     {
-//         public int CategoryId { get; init; } = categoryId;
-//         public string Name { get; init; } = name;
-//         public string? Description { get; init; } = description;
-//         public int? ParentCategoryId { get; init; } = parentCategoryId;
+//         // You can add computed properties
+//         public bool IsOverdue => DeliveryDate.HasValue && DeliveryDate < DateTime.UtcNow;
 //     }
 //
-//     public class Order(
-//         int orderId,
-//         OrderType type,
-//         OrderStatus status,
-//         int? supplierId,
-//         int? customerId,
-//         DateTime orderDate,
-//         DateTime? deliveryDate,
-//         string? notes,
-//         int createdBy )
+//     public record OrderItem(
+//         int OrderItemId,
+//         int OrderId,
+//         int ProductId,
+//         int Quantity,
+//         decimal UnitPrice,
+//         decimal TotalPrice )
 //     {
-//         public int OrderId { get; init; } = orderId;
-//         public OrderType Type { get; init; } = type;
-//         public OrderStatus Status { get; init; } = status;
-//         public int? SupplierId { get; init; } = supplierId;
-//         public int? CustomerId { get; init; } = customerId;
-//         public DateTime OrderDate { get; init; } = orderDate;
-//         public DateTime? DeliveryDate { get; init; } = deliveryDate;
-//         public string? Notes { get; init; } = notes;
-//         public int CreatedBy { get; init; } = createdBy;
+//         // Business logic for validation
+//         public bool IsValidTotal => TotalPrice == UnitPrice * Quantity;
 //     }
 //
-//     public class OrderItem(
-//         int orderItemId,
-//         int orderId,
-//         int productId,
-//         int quantity,
-//         decimal unitPrice,
-//         decimal totalPrice )
+//     public record Inventory(
+//         int InventoryId,
+//         int ProductId,
+//         int LocationId,
+//         int CurrentStock,
+//         int ReservedStock,
+//         DateTime LastUpdated )
 //     {
-//         public int OrderItemId { get; init; } = orderItemId;
-//         public int OrderId { get; init; } = orderId;
-//         public int ProductId { get; init; } = productId;
-//         public int Quantity { get; init; } = quantity;
-//         public decimal UnitPrice { get; init; } = unitPrice;
-//         public decimal TotalPrice { get; init; } = totalPrice; // Fixed bug
+//         public int AvailableStock => CurrentStock - ReservedStock;
+//         public bool IsInStock => AvailableStock > 0;
 //     }
 //
-//     public class Inventory(
-//         int inventoryId,
-//         int productId,
-//         int locationId,
-//         int currentStock,
-//         int reservedStock,
-//         DateTime lastUpdated )
-//     {
-//         public int InventoryId { get; init; } = inventoryId;
-//         public int ProductId { get; init; } = productId;
-//         public int LocationId { get; init; } = locationId;
-//         public int CurrentStock { get; init; } = currentStock;
-//         public int ReservedStock { get; init; } = reservedStock;
-//         public DateTime LastUpdated { get; init; } = lastUpdated;
-//     }
+//     public record InventoryMovement(
+//         int MovementId,
+//         int ProductId,
+//         int FromLocationId,
+//         int ToLocationId,
+//         int Quantity,
+//         string? Notes,
+//         int CreatedBy,
+//         DateTime CreatedDate );
 //
-//     public class Supplier(
-//         int supplierId,
-//         string name,
-//         string email,
-//         string phone,
-//         string address )
-//     {
-//         public int SupplierId { get; init; } = supplierId;
-//         public string Name { get; init; } = name;
-//         public string Email { get; init; } = email;
-//         public string Phone { get; init; } = phone;
-//         public string Address { get; init; } = address;
-//     }
+//     public record InventoryTransaction(
+//         int TransactionId,
+//         int ProductId,
+//         int LocationId,
+//         TransactionType Type,
+//         int Quantity,
+//         decimal? UnitCost,
+//         string? Reference,
+//         string? Notes,
+//         int CreatedBy,
+//         DateTime CreatedDate );
 //
-//     public class Location(
-//         int locationId,
-//         string name,
-//         string? description,
-//         LocationType type,
-//         string? address )
-//     {
-//         public int LocationId { get; init; } = locationId;
-//         public string Name { get; init; } = name;
-//         public string? Description { get; init; } = description;
-//         public LocationType Type { get; init; } = type;
-//         public string? Address { get; init; } = address;
-//     }
+//     public record Location(
+//         int LocationId,
+//         string Name,
+//         string? Description,
+//         LocationType Type,
+//         string? Address,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null ):ISoftDeletable;
 //
-//     public class Customer(
-//         int customerId,
-//         string name,
-//         string? email,
-//         string? phone,
-//         string? address,
-//         bool isActive )
-//     {
-//         public int CustomerId { get; init; } = customerId;
-//         public string Name { get; init; } = name;
-//         public string? Email { get; init; } = email;
-//         public string? Phone { get; init; } = phone;
-//         public string? Address { get; init; } = address;
-//         public bool IsActive { get; init; } = isActive;
-//     }
+//     public record Supplier(
+//         int SupplierId,
+//         string Name,
+//         string Email,
+//         string Phone,
+//         string Address,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null ):ISoftDeletable;
 //
-//     public class User(
-//         int userId,
-//         string username,
-//         string passwordHash,
-//         string role,
-//         string? fullName,
-//         string? email,
-//         bool isActive )
-//     {
-//         public int UserId { get; init; } = userId;
-//         public string Username { get; init; } = username;
-//         public string PasswordHash { get; init; } = passwordHash;
-//         public string Role { get; init; } = role;
-//         public string? FullName { get; init; } = fullName;
-//         public string? Email { get; init; } = email;
-//         public bool IsActive { get; init; } = isActive;
-//     }
-//
-//     public class InventoryTransaction(
-//         int transactionId,
-//         int productId,
-//         int locationId,
-//         TransactionType type,
-//         int quantity,
-//         decimal? unitCost,
-//         string? reference,
-//         string? notes,
-//         int createdBy,
-//         DateTime createdDate )
-//     {
-//         public int TransactionId { get; init; } = transactionId;
-//         public int ProductId { get; init; } = productId;
-//         public int LocationId { get; init; } = locationId;
-//         public TransactionType Type { get; init; } = type;
-//         public int Quantity { get; init; } = quantity;
-//         public decimal? UnitCost { get; init; } = unitCost;
-//         public string? Reference { get; init; } = reference;
-//         public string? Notes { get; init; } = notes;
-//         public int CreatedBy { get; init; } = createdBy;
-//         public DateTime CreatedDate { get; init; } = createdDate;
-//     }
-//
-//     public class InventoryMovement(
-//         int movementId,
-//         int productId,
-//         int fromLocationId,
-//         int toLocationId,
-//         int quantity,
-//         string? notes,
-//         int createdBy,
-//         DateTime createdDate )
-//     {
-//         public int MovementId { get; init; } = movementId;
-//         public int ProductId { get; init; } = productId;
-//         public int FromLocationId { get; init; } = fromLocationId;
-//         public int ToLocationId { get; init; } = toLocationId;
-//         public int Quantity { get; init; } = quantity;
-//         public string? Notes { get; init; } = notes;
-//         public int CreatedBy { get; init; } = createdBy;
-//         public DateTime CreatedDate { get; init; } = createdDate;
-//     }
-//
-//     Enums
-//     public enum OrderType
-//     {
-//         Purchase,
-//         Sale,
-//         Transfer,
-//         Return
-//     }
-//
-//     public enum OrderStatus
-//     {
-//         Draft,
-//         Pending,
-//         Confirmed,
-//         Processing,
-//         Shipped,
-//         Delivered,
-//         Cancelled,
-//         Returned
-//     }
-//
-//     public enum LocationType
-//     {
-//         Warehouse,
-//         Store,
-//         Transit,
-//         Virtual
-//     }
-//
-//     public enum TransactionType
-//     {
-//         StockIn,
-//         StockOut,
-//         Adjustment,
-//         Transfer,
-//         Return,
-//         Damaged,
-//         Lost
-//     }
+//     public record Customer(
+//         int CustomerId,
+//         string Name,
+//         string? Email,
+//         string? Phone,
+//         string? Address,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null ):ISoftDeletable;
+//     
+//     public record User(
+//         int UserId,
+//         string Username,
+//         string Password,
+//         string Role,
+//         string? FullName,
+//         string? Email,
+//         bool IsActive,
+//         bool IsDeleted = false,
+//         DateTime? DeletedAt = null ):ISoftDeletable;
 // }
+//
+//
+//
+//
 
 

@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0"/>
         <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc6.1"/>
         <PackageReference Include="LoadingSpinner.WPF" Version="1.0.0"/>
         <PackageReference Include="MahApps.Metro.IconPacks" Version="6.1.0"/>
@@ -26,6 +27,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\ModalDialogControl\ModalDialogControl.csproj"/>
         <ProjectReference Include="..\Storix.Core\Storix.Core.csproj"/>
         <ProjectReference Include="..\Storix.Infrastructure\Storix.Infrastructure.csproj"/>
     </ItemGroup>
@@ -40,6 +42,17 @@
         <None Update="appsettings.json">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Assets\Icons\Storix.png"/>
+        <Resource Include="Assets\Icons\Storix.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\StorixBG.png"/>
+        <Resource Include="Assets\Icons\StorixBG.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
     </ItemGroup>
 
 </Project>

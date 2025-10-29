@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.Core", "Storix.Core\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Storix.Infrastructure", "Storix.Infrastructure\Storix.Infrastructure.csproj", "{DAABC736-F7BF-40AE-A62F-E058CF24D35F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModalDialogControl", "ModalDialogControl\ModalDialogControl.csproj", "{2A7A7F76-1CF3-41FA-99DF-C3201A77632F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +44,9 @@ Global
 		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DAABC736-F7BF-40AE-A62F-E058CF24D35F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A7A7F76-1CF3-41FA-99DF-C3201A77632F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A7A7F76-1CF3-41FA-99DF-C3201A77632F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A7A7F76-1CF3-41FA-99DF-C3201A77632F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A7A7F76-1CF3-41FA-99DF-C3201A77632F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
