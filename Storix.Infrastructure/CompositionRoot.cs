@@ -5,7 +5,9 @@ using MvvmCross.Exceptions;
 using MvvmCross.IoC;
 using MvvmCross.ViewModels;
 using Storix.Application.Services.Products.Interfaces;
+using Storix.Application.Stores;
 using Storix.Core;
+using Storix.Core.Factory;
 using Storix.DataAccess.DBAccess;
 using Storix.DataAccess.Repositories;
 
@@ -47,7 +49,7 @@ namespace Storix.Infrastructure
             iocProvider.LazyConstructAndRegisterSingleton<ISqlDataAccess>(() =>
             {
                 ILogger<SqlDataAccess>? logger = iocProvider.Resolve<ILogger<SqlDataAccess>>();
-                return new SqlDataAccess(configurationRoot.GetConnectionString("DefaultConnection"), logger);
+                return new SqlDataAccess(configurationRoot.GetConnectionString("StorixDB"), logger);
             });
         }
 
@@ -63,47 +65,52 @@ namespace Storix.Infrastructure
             foreach (Assembly assembly in assembliesToScan)
             {
                 // Register Services
-                assembly.CreatableTypes()
-                        .EndingWith("Service")
-                        .AsInterfaces()
-                        .RegisterAsLazySingleton();
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Service")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
 
                 // Register Stores
-                assembly.CreatableTypes()
-                        .EndingWith("Store")
-                        .AsInterfaces()
-                        .RegisterAsLazySingleton();
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Store")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
 
                 // Register Validation Classes
-                assembly.CreatableTypes()
-                        .EndingWith("Validation")
-                        .AsInterfaces()
-                        .RegisterAsLazySingleton();
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Validation")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
 
                 // Register Repositories
-                assembly.CreatableTypes()
-                        .EndingWith("Repository")
-                        .AsInterfaces()
-                        .RegisterAsLazySingleton();
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Repository")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
 
                 // Register ViewModels
-                assembly.CreatableTypes()
-                        .EndingWith("ViewModel")
-                        .AsInterfaces()
-                        .RegisterAsDynamic();
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("ViewModel")
+                    .AsTypes()
+                    .RegisterAsDynamic();
             }
         }
 
         private static void RegisterCustomServices( IMvxIoCProvider iocProvider )
         {
             // Register ModalNavigationStore
-            // iocProvider.RegisterSingleton(new ModalNavigationStore());
+            iocProvider.RegisterSingleton(new ModalNavigationStore());
             //
             // // Register ModalNavigationControl
             // iocProvider.RegisterType<IModalNavigationControl, ModalNavigationControl>();
             //
-            // // Register ViewModelFactory
-            // iocProvider.RegisterSingleton<IViewModelFactory>(new ViewModelFactory());
+            // Register ViewModelFactory
+            iocProvider.RegisterSingleton<IViewModelFactory>(new ViewModelFactory());
         }
 
         private static void RegisterViewModelFactory( IMvxIoCProvider iocProvider )
@@ -116,8 +123,19 @@ namespace Storix.Infrastructure
                                                         ?? throw new MvxIoCResolveException($"Failed to resolve ViewModel of type: {viewModelType.FullName}"));
 
                 // Invoke the "Prepare" method on the ViewModel if it exists
-                viewModelType.GetMethod("Prepare", new[] { parameter.GetType() })
-                             ?.Invoke(viewModel, new[] { parameter });
+                viewModelType
+                    .GetMethod(
+                        "Prepare",
+                        new[]
+                        {
+                            parameter.GetType()
+                        })
+                    ?.Invoke(
+                        viewModel,
+                        new[]
+                        {
+                            parameter
+                        });
 
                 // Initialize the ViewModel
                 viewModel.Initialize();
