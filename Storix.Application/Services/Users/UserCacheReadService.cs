@@ -7,6 +7,7 @@ using Storix.Application.Common;
 using Storix.Application.DTO.Users;
 using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Users;
+using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users
 {
@@ -106,7 +107,7 @@ namespace Storix.Application.Services.Users
                 try
                 {
                     // Get only active users from database
-                    DatabaseResult<IEnumerable<UserDto>> result = await userReadService.GetAllActiveAsync();
+                    DatabaseResult<IEnumerable<User>> result = await userReadService.GetAllActiveUsersAsync();
 
                     if (result.IsSuccess && result.Value != null)
                     {

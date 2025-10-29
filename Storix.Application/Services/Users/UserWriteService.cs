@@ -11,6 +11,7 @@ using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Users;
+using Storix.DataAccess.Repositories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users
@@ -175,7 +176,7 @@ namespace Storix.Application.Services.Users
         {
             // Get existing user (only active ones - can't update deleted users)
             DatabaseResult<User?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => userRepository.GetByIdAsync(updateUserDto.UserId, false),
+                () => userRepository.GetByIdAsync(updateUserDto.UserId),
                 $"Retrieving user {updateUserDto.UserId} for update",
                 enableRetry: false
             );
@@ -232,7 +233,7 @@ namespace Storix.Application.Services.Users
         {
             // Get existing user
             DatabaseResult<User?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => userRepository.GetByIdAsync(changePasswordDto.UserId, false),
+                () => userRepository.GetByIdAsync(changePasswordDto.UserId),
                 $"Retrieving user {changePasswordDto.UserId} for password change",
                 enableRetry: false
             );
@@ -317,7 +318,7 @@ namespace Storix.Application.Services.Users
             {
                 // Fetch the restored user from database
                 DatabaseResult<User?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                    () => userRepository.GetByIdAsync(userId, false),
+                    () => userRepository.GetByIdAsync(userId),
                     $"Retrieving restored user {userId}");
 
                 if (getResult is { IsSuccess: true, Value: not null })

@@ -8,6 +8,7 @@ using Storix.Application.DTO.Users;
 using Storix.Application.Enums;
 using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Users;
+using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users
 {
@@ -24,40 +25,35 @@ namespace Storix.Application.Services.Users
     {
         #region Read Operations (Database Queries)
 
-        public async Task<DatabaseResult<UserDto?>> GetByIdAsync( int userId, bool includeDeleted = false ) =>
-            await userReadService.GetByIdAsync(userId, includeDeleted);
+        public async Task<DatabaseResult<UserDto?>> GetByIdAsync( int userId ) => await userReadService.GetByIdAsync(userId);
 
-        public async Task<DatabaseResult<UserDto?>> GetByUsernameAsync( string username, bool includeDeleted = false ) =>
-            await userReadService.GetByUsernameAsync(username, includeDeleted);
+        public async Task<DatabaseResult<UserDto?>> GetByUsernameAsync( string username ) => await userReadService.GetByUsernameAsync(username);
 
         public async Task<DatabaseResult<UserDto?>> GetByEmailAsync( string email, bool includeDeleted = false ) =>
-            await userReadService.GetByEmailAsync(email, includeDeleted);
+            await userReadService.GetByEmailAsync(email);
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync( bool includeDeleted = false ) => await userReadService.GetAllAsync(includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync() => await userReadService.GetAllAsync();
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllActiveAsync() => await userReadService.GetAllActiveAsync();
+        public async Task<DatabaseResult<IEnumerable<User>>> GetAllActiveAsync() => await userReadService.GetAllActiveUsersAsync();
 
         public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllDeletedAsync() => await userReadService.GetAllDeletedAsync();
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetByRoleAsync( string role, bool includeDeleted = false ) =>
-            await userReadService.GetByRoleAsync(role, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetByRoleAsync( string role ) => await userReadService.GetByRoleAsync(role);
 
         public async Task<DatabaseResult<IEnumerable<UserDto>>> GetPagedAsync(
             int pageNumber,
-            int pageSize,
-            bool includeDeleted = false ) => await userReadService.GetPagedAsync(pageNumber, pageSize, includeDeleted);
+            int pageSize
+        ) => await userReadService.GetPagedAsync(pageNumber, pageSize);
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> SearchAsync( string searchTerm, bool includeDeleted = false ) =>
-            await userReadService.SearchAsync(searchTerm, includeDeleted);
+        public async Task<DatabaseResult<IEnumerable<UserDto>>> SearchAsync( string searchTerm ) => await userReadService.SearchAsync(searchTerm);
 
-        public async Task<DatabaseResult<int>> GetTotalCountAsync( bool includeDeleted = false ) => await userReadService.GetTotalCountAsync(includeDeleted);
+        public async Task<DatabaseResult<int>> GetTotalCountAsync() => await userReadService.GetTotalCountAsync();
 
         public async Task<DatabaseResult<int>> GetActiveCountAsync() => await userReadService.GetActiveCountAsync();
 
         public async Task<DatabaseResult<int>> GetDeletedCountAsync() => await userReadService.GetDeletedCountAsync();
 
-        public async Task<DatabaseResult<int>> GetCountByRoleAsync( string role, bool includeDeleted = false ) =>
-            await userReadService.GetCountByRoleAsync(role, includeDeleted);
+        public async Task<DatabaseResult<int>> GetCountByRoleAsync( string role ) => await userReadService.GetCountByRoleAsync(role);
 
         #endregion
 
@@ -86,12 +82,14 @@ namespace Storix.Application.Services.Users
         public async Task<DatabaseResult<bool>> UsernameExistsAsync(
             string username,
             int? excludeUserId = null,
-            bool includeDeleted = false ) => await userValidationService.UsernameExistsAsync(username, excludeUserId, includeDeleted);
+            bool includeDeleted = false
+        ) => await userValidationService.UsernameExistsAsync(username, excludeUserId, includeDeleted);
 
         public async Task<DatabaseResult<bool>> EmailExistsAsync(
             string email,
             int? excludeUserId = null,
-            bool includeDeleted = false ) => await userValidationService.EmailExistsAsync(email, excludeUserId, includeDeleted);
+            bool includeDeleted = false
+        ) => await userValidationService.EmailExistsAsync(email, excludeUserId, includeDeleted);
 
         public async Task<DatabaseResult> ValidateForDeletion( int userId ) => await userValidationService.ValidateForDeletion(userId);
 

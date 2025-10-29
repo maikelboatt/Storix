@@ -5,7 +5,7 @@ namespace Storix.Domain.Models
     public record User(
         int UserId,
         string Username,
-        string PasswordHash,
+        string Password,
         string Role,
         string? FullName,
         string? Email,
