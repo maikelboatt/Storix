@@ -1,4 +1,9 @@
-﻿using Storix.Application.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
+using Dapper;
+using Storix.Application.Common;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;
@@ -11,87 +16,207 @@ namespace Storix.DataAccess.Repositories
         #region Validation
 
         /// <summary>
-        /// Checks if an order item exists by its ID.
+        ///     Checks if an order item exists by its ID.
         /// </summary>
         public async Task<bool> ExistsAsync( int orderItemId )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckOrderItemExists",
+            // language=tsql
+            const string sql = "SELECT COUNT(1) FROM OrderItem WHERE OrderItemId = @OrderItemId";
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
                     OrderItemId = orderItemId
                 });
-
-            return count > 0;
         }
 
         /// <summary>
-        /// Checks if an order has any items.
+        ///     Checks if an order has any items.
         /// </summary>
         public async Task<bool> OrderHasItemsAsync( int orderId )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckOrderHasItems",
+            // language=tsql
+            const string sql = "SELECT COUNT(1) FROM OrderItem WHERE OrderId = @OrderId";
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
                     OrderId = orderId
                 });
-
-            return count > 0;
         }
 
         /// <summary>
-        /// Checks if a specific product exists in any order.
+        ///     Checks if a specific product exists in any order.
         /// </summary>
         public async Task<bool> ProductExistsInOrdersAsync( int productId )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckProductInOrders",
+            // language=tsql
+            const string sql = "SELECT COUNT(1) FROM OrderItem WHERE ProductId = @ProductId";
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
                     ProductId = productId
                 });
-
-            return count > 0;
         }
 
         /// <summary>
-        /// Checks if a specific product exists in a specific order.
+        ///     Checks if a specific product exists in a specific order.
         /// </summary>
         public async Task<bool> ProductExistsInOrderAsync( int orderId, int productId )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckProductInOrder",
+            // language=tsql
+            const string sql = @"
+                SELECT COUNT(1) FROM OrderItem 
+                WHERE OrderId = @OrderId AND ProductId = @ProductId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
                     OrderId = orderId,
                     ProductId = productId
                 });
-
-            return count > 0;
         }
 
         #endregion
 
-        #region Create & Update
+        #region Read Operations
 
         /// <summary>
-        /// Creates a new order item record.
+        ///     Gets an order item by its ID.
+        /// </summary>
+        public async Task<OrderItem?> GetByIdAsync( int orderItemId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM OrderItem WHERE OrderItemId = @OrderItemId";
+            return await sqlDataAccess.QuerySingleOrDefaultAsync<OrderItem>(
+                sql,
+                new
+                {
+                    OrderItemId = orderItemId
+                });
+        }
+
+        /// <summary>
+        ///     Gets all order items.
+        /// </summary>
+        public async Task<IEnumerable<OrderItem>> GetAllAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM OrderItem ORDER BY OrderId, OrderItemId";
+            return await sqlDataAccess.QueryAsync<OrderItem>(sql);
+        }
+
+        /// <summary>
+        ///     Gets all order items for a specific order by Order ID.
+        /// </summary>
+        public async Task<IEnumerable<OrderItem>> GetByOrderIdAsync( int orderId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM OrderItem WHERE OrderId = @OrderId ORDER BY OrderItemId";
+            return await sqlDataAccess.QueryAsync<OrderItem>(
+                sql,
+                new
+                {
+                    OrderId = orderId
+                });
+        }
+
+        /// <summary>
+        ///     Gets all order items for a specific product (order history for that product).
+        /// </summary>
+        public async Task<IEnumerable<OrderItem>> GetByProductIdAsync( int productId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM OrderItem 
+                WHERE ProductId = @ProductId 
+                ORDER BY OrderId DESC, OrderItemId";
+
+            return await sqlDataAccess.QueryAsync<OrderItem>(
+                sql,
+                new
+                {
+                    ProductId = productId
+                });
+        }
+
+        #endregion
+
+        #region Statistics
+
+        /// <summary>
+        ///     Gets total count of order items in an order by the Order ID.
+        /// </summary>
+        public async Task<int> GetOrderItemsCountAsync( int orderId )
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM OrderItem WHERE OrderId = @OrderId";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    OrderId = orderId
+                });
+        }
+
+        /// <summary>
+        ///     Gets the total quantity of all items in an order by the Order ID.
+        /// </summary>
+        public async Task<int> GetOrderTotalQuantityAsync( int orderId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT ISNULL(SUM(Quantity), 0) 
+                FROM OrderItem 
+                WHERE OrderId = @OrderId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    OrderId = orderId
+                });
+        }
+
+        /// <summary>
+        ///     Gets the total price of all items in an order by the Order ID.
+        /// </summary>
+        public async Task<decimal> GetOrderTotalPriceAsync( int orderId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT ISNULL(SUM(TotalPrice), 0) 
+                FROM OrderItem 
+                WHERE OrderId = @OrderId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<decimal>(
+                sql,
+                new
+                {
+                    OrderId = orderId
+                });
+        }
+
+        #endregion
+
+        #region Write Operations
+
+        /// <summary>
+        ///     Creates a new order item record.
+        ///     Uses SQL Server SCOPE_IDENTITY() to retrieve the newly inserted ID.
         /// </summary>
         public async Task<OrderItem> CreateAsync( OrderItem orderItem )
         {
-            var parameters = new
-            {
-                orderItem.OrderId,
-                orderItem.ProductId,
-                orderItem.Quantity,
-                orderItem.UnitPrice,
-                orderItem.TotalPrice
-            };
+            // language=tsql
+            const string sql = @"
+                INSERT INTO OrderItem (OrderId, ProductId, Quantity, UnitPrice, TotalPrice)
+                VALUES (@OrderId, @ProductId, @Quantity, @UnitPrice, @TotalPrice);
+                
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            int orderItemId = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CreateOrderItem",
-                parameters);
+            int orderItemId = await sqlDataAccess.ExecuteScalarAsync<int>(sql, orderItem);
 
             return orderItem with
             {
@@ -100,38 +225,35 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        /// Updates an existing order item record.
+        ///     Updates an existing order item record.
         /// </summary>
         public async Task<OrderItem> UpdateAsync( OrderItem orderItem )
         {
-            var parameters = new
-            {
-                orderItem.OrderItemId,
-                orderItem.OrderId,
-                orderItem.ProductId,
-                orderItem.Quantity,
-                orderItem.UnitPrice,
-                orderItem.TotalPrice
-            };
+            // language=tsql
+            const string sql = @"
+                UPDATE OrderItem 
+                SET OrderId = @OrderId,
+                    ProductId = @ProductId,
+                    Quantity = @Quantity,
+                    UnitPrice = @UnitPrice,
+                    TotalPrice = @TotalPrice
+                WHERE OrderItemId = @OrderItemId";
 
-            await sqlDataAccess.CommandAsync(
-                "sp_UpdateOrderItem",
-                parameters);
-
+            await sqlDataAccess.ExecuteAsync(sql, orderItem);
             return orderItem;
         }
 
         /// <summary>
-        /// Deletes an existing order item record by its ID.
+        ///     Deletes an existing order item record by its ID.
         /// </summary>
-        /// <param name="orderItemId"></param>
-        /// <returns></returns>
         public async Task<DatabaseResult> DeleteAsync( int orderItemId )
         {
             try
             {
+                // language=tsql
+                const string sql = "DELETE FROM OrderItem WHERE OrderItemId = @OrderItemId";
                 int affectedRows = await sqlDataAccess.ExecuteAsync(
-                    "sp_DeleteOrderItem",
+                    sql,
                     new
                     {
                         OrderItemId = orderItemId
@@ -139,93 +261,17 @@ namespace Storix.DataAccess.Repositories
 
                 return affectedRows > 0
                     ? DatabaseResult.Success()
-                    : DatabaseResult.Failure($"Order item with ID {orderItemId} not found.", DatabaseErrorCode.NotFound);
+                    : DatabaseResult.Failure(
+                        $"Order item with ID {orderItemId} not found",
+                        DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure(ex.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error deleting order item: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
-
-        #endregion
-
-        #region Read Operations
-
-        /// <summary>
-        /// Get an order item by its ID.
-        /// </summary>
-        public async Task<OrderItem?> GetByIdAsync( int orderItemId ) => await sqlDataAccess.QuerySingleOrDefaultAsync<OrderItem>(
-            "sp_GetOrderItemById",
-            new
-            {
-                OrderItemId = orderItemId
-            });
-
-        /// <summary>
-        /// Gets all order items.
-        /// </summary>
-        public async Task<IEnumerable<OrderItem>> GetAllAsync() => await sqlDataAccess.QueryAsync<OrderItem>(
-            "sp_GetAllOrderItems"
-        );
-
-        /// <summary>
-        /// Gets all order items for a specific order by Order ID.
-        /// </summary>
-        public async Task<IEnumerable<OrderItem>> GetByOrderIdAsync( int orderId ) => await sqlDataAccess.QueryAsync<OrderItem>(
-            "sp_GetOrderItemsByOrderId",
-            new
-            {
-                OrderId = orderId
-            });
-
-        /// <summary>
-        ///     Gets all order items for a specific product (order history for that product).
-        /// </summary>
-        public async Task<IEnumerable<OrderItem>> GetByProductIdAsync( int productId ) => await sqlDataAccess.QueryAsync<OrderItem>(
-            "sp_GetOrderItemsByProductId",
-            new
-            {
-                ProductId = productId
-            });
-
-        #endregion
-
-        #region Statistics
-
-        /// <summary>
-        /// Get total count of order items in an order by the Order ID.
-        /// </summary>
-        /// <returns></returns>
-        public async Task<int> GetOrderItemsCountAsync( int orderId ) => await sqlDataAccess.ExecuteScalarAsync<int>(
-            "sp_GetOrderItemsCount",
-            new
-            {
-                OrderId = orderId
-            });
-
-        /// <summary>
-        /// Get the total quantity of all items in an order by the Order ID.
-        /// </summary>
-        /// <param name="orderId"></param>
-        /// <returns></returns>
-        public async Task<int> GetOrderTotalQuantityAsync( int orderId ) => await sqlDataAccess.ExecuteScalarAsync<int>(
-            "sp_GetOrderTotalQuantity",
-            new
-            {
-                OrderId = orderId
-            });
-
-        /// <summary>
-        /// Get the total price of all items in an order by the Order ID.
-        /// </summary>
-        /// <param name="orderId"></param>
-        /// <returns></returns>
-        public async Task<decimal> GetOrderTotalPriceAsync( int orderId ) => await sqlDataAccess.ExecuteScalarAsync<decimal>(
-            "sp_GetOrderTotalPrice",
-            new
-            {
-                OrderId = orderId
-            });
 
         #endregion
 
@@ -233,44 +279,67 @@ namespace Storix.DataAccess.Repositories
 
         /// <summary>
         ///     Creates multiple order items in a single transaction.
+        ///     Uses SQL Server SCOPE_IDENTITY() for each insert.
         /// </summary>
         public async Task<IEnumerable<OrderItem>> CreateBulkAsync( IEnumerable<OrderItem> orderItems )
         {
-            // Note: This would typically use a table-valued parameter or multiple inserts in a transaction
-            // Implementation depends on your stored procedure design
-            List<OrderItem> createdItems = [];
-
-            foreach (OrderItem item in orderItems)
+            return await sqlDataAccess.ExecuteInTransactionAsync(async ( connection, transaction ) =>
             {
-                OrderItem createdItem = await CreateAsync(item);
-                createdItems.Add(createdItem);
-            }
+                // language=tsql
+                const string sql = @"
+                    INSERT INTO OrderItem (OrderId, ProductId, Quantity, UnitPrice, TotalPrice)
+                    VALUES (@OrderId, @ProductId, @Quantity, @UnitPrice, @TotalPrice);
+                    
+                    SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            return createdItems;
+                List<OrderItem> createdItems = new();
+
+                foreach (OrderItem item in orderItems)
+                {
+                    int orderItemId = await connection.ExecuteScalarAsync<int>(
+                        sql,
+                        item,
+                        transaction,
+                        commandType: CommandType.Text);
+
+                    createdItems.Add(
+                        item with
+                        {
+                            OrderItemId = orderItemId
+                        });
+                }
+
+                return createdItems.AsEnumerable();
+            });
         }
 
         /// <summary>
-        /// Deletes all order items associated with a specific order by the Order ID.
+        ///     Deletes all order items associated with a specific order by the Order ID.
         /// </summary>
         public async Task<DatabaseResult> DeleteByOrderIdAsync( int orderId )
         {
             try
             {
-                int affectedRow = await sqlDataAccess.ExecuteAsync(
-                    "sp_DeleteOrderItemsByOrderId",
+                // language=tsql
+                const string sql = "DELETE FROM OrderItem WHERE OrderId = @OrderId";
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
                     new
                     {
                         OrderId = orderId
                     });
 
-                return affectedRow > 0
+                return affectedRows > 0
                     ? DatabaseResult.Success()
-                    : DatabaseResult.Failure("No order items found to delete.", DatabaseErrorCode.NotFound);
-
+                    : DatabaseResult.Failure(
+                        "No order items found to delete",
+                        DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure(ex.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error deleting order items: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
 

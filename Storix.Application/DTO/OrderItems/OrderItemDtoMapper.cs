@@ -35,6 +35,21 @@ namespace Storix.Application.DTO.OrderItems
             dto.UnitPrice * dto.Quantity // Calculate TotalPrice
         );
 
+        public static CreateOrderItemDto ToCreateDto( this OrderItemDto dto ) => new()
+        {
+            OrderId = dto.OrderId,
+            ProductId = dto.ProductId,
+            Quantity = dto.Quantity,
+            UnitPrice = dto.UnitPrice
+        };
+
+        public static UpdateOrderItemDto ToUpdateDto( this OrderItemDto dto ) => new()
+        {
+            OrderItemId = dto.OrderItemId,
+            Quantity = dto.Quantity,
+            UnitPrice = dto.UnitPrice
+        };
+
         public static OrderItem ToDomain( this UpdateOrderItemDto dto, OrderItem existingOrderItem ) => existingOrderItem with
         {
             Quantity = dto.Quantity,

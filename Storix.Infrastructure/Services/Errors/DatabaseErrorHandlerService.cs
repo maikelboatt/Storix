@@ -138,7 +138,6 @@ namespace Storix.Infrastructure.Services.Errors
                 : DatabaseResult.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-
         /// <summary>
         ///     Classifies an exception and determines if it should be retried.
         /// </summary>

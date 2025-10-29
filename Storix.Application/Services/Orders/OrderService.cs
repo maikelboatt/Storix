@@ -16,6 +16,7 @@ namespace Storix.Application.Services.Orders
     /// </summary>
     public class OrderService(
         IOrderReadService orderReadService,
+        IOrderCacheReadService orderCacheReadService,
         IOrderWriteService orderWriteService,
         IOrderValidationService orderValidationService,
         IOrderStore orderStore,
@@ -106,38 +107,62 @@ namespace Storix.Application.Services.Orders
 
         #endregion
 
-        #region Store Operations
+        #region Store Operations (Cache Reads)
 
-        public IEnumerable<OrderDto> SearchOrders( OrderType? type = null, OrderStatus? status = null )
-        {
-            logger.LogDebug("Searching orders in store with type: {Type}, status: {Status}", type, status);
-            IEnumerable<Order> orders = orderStore.SearchOrders(type, status);
-            return orders.ToDto();
-        }
+        public IEnumerable<OrderDto> SearchOrdersInCache( OrderType? type = null, OrderStatus? status = null ) =>
+            orderCacheReadService.SearchOrdersInCache(type, status);
 
-        public void RefreshStoreCache()
-        {
-            logger.LogInformation("Refreshing order store cache");
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    DatabaseResult<IEnumerable<OrderDto>> result = await GetAllOrdersAsync();
-                    if (result.IsSuccess)
-                    {
-                        logger.LogInformation("Order store cache refreshed successfully");
-                    }
-                    else
-                    {
-                        logger.LogWarning("Failed to refresh order store cache: {Error}", result.ErrorMessage);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Exception occurred while refreshing order store cache");
-                }
-            });
-        }
+        public OrderDto? GetOrderByIdInCache( int orderId ) => orderCacheReadService.GetOrderByIdInCache(orderId);
+
+        public IEnumerable<OrderDto> GetAllOrdersInCache(
+            OrderType? type = null,
+            OrderStatus? status = null,
+            int? supplierId = null,
+            int? customerId = null,
+            int skip = 0,
+            int take = 100 ) => orderCacheReadService.GetAllOrdersInCache(
+            type,
+            status,
+            supplierId,
+            customerId,
+            skip,
+            take);
+
+        public IEnumerable<OrderDto> GetOrdersByTypeInCache( OrderType type ) => orderCacheReadService.GetOrdersByTypeInCache(type);
+
+        public IEnumerable<OrderDto> GetOrdersByStatusInCache( OrderStatus status ) => orderCacheReadService.GetOrdersByStatusInCache(status);
+
+        public IEnumerable<OrderDto> GetOrdersBySupplierInCache( int supplierId ) => orderCacheReadService.GetOrdersBySupplierInCache(supplierId);
+
+        public IEnumerable<OrderDto> GetOrdersByCustomerInCache( int customerId ) => orderCacheReadService.GetOrdersByCustomerInCache(customerId);
+
+        public IEnumerable<OrderDto> GetOverdueOrdersInCache() => orderCacheReadService.GetOverdueOrdersInCache();
+
+        public IEnumerable<OrderDto> GetOrderByCreatedByInCache( int createdBy ) => orderCacheReadService.GetOrderByCreatedByInCache(createdBy);
+
+        public IEnumerable<OrderDto> GetDraftOrdersInCache() => orderCacheReadService.GetDraftOrdersInCache();
+
+        public IEnumerable<OrderDto> GetActiveOrdersInCache() => orderCacheReadService.GetActiveOrdersInCache();
+
+        public IEnumerable<OrderDto> GetCompletedOrdersInCache() => orderCacheReadService.GetCompletedOrdersInCache();
+
+        public IEnumerable<OrderDto> GetCancelledOrdersInCache() => orderCacheReadService.GetCancelledOrdersInCache();
+
+        public bool OrderExistsInCache( int orderId ) => orderCacheReadService.OrderExistsInCache(orderId);
+
+        public int GetTotalOrderCountInCache() => orderCacheReadService.GetTotalOrderCountInCache();
+
+        public int GetOrderCountByTypeInCache( OrderType type ) => orderCacheReadService.GetOrderCountByTypeInCache(type);
+
+        public int GetOrderCountByStatusInCache( OrderStatus status ) => orderCacheReadService.GetOrderCountByStatusInCache(status);
+
+        public bool SupplierHasOrdersInCache( int supplierId, bool activeOnly = false ) =>
+            orderCacheReadService.SupplierHasOrdersInCache(supplierId, activeOnly);
+
+        public bool CustomerHasOrdersInCache( int customerId, bool activeOnly = false ) =>
+            orderCacheReadService.CustomerHasOrdersInCache(customerId, activeOnly);
+
+        public void RefreshStoreCache() => orderCacheReadService.RefreshStoreCache();
 
         #endregion
     }

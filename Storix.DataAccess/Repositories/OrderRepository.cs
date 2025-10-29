@@ -1,4 +1,11 @@
-﻿using Storix.Application.Common;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Dapper;
+using Storix.Application.Common;
 using Storix.Application.DTO.Orders;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
@@ -10,95 +17,6 @@ namespace Storix.DataAccess.Repositories
 {
     public class OrderRepository( ISqlDataAccess sqlDataAccess ):IOrderRepository
     {
-        #region Search & Filter
-
-        public async Task<IEnumerable<Order>> SearchAsync( string? searchTerm = null,
-            OrderType? type = null,
-            OrderStatus? status = null,
-            int? supplierId = null,
-            int? customerId = null,
-            DateTime? startDate = null,
-            DateTime? endDate = null )
-        {
-            var parameters = new
-            {
-                SearchTerm = searchTerm ?? "",
-                Type = type,
-                Status = status,
-                SupplierId = supplierId,
-                CustomerId = customerId,
-                StartDate = startDate,
-                EndDate = endDate
-            };
-
-            return await sqlDataAccess.QueryAsync<Order>("sp_SearchOrders", parameters);
-        }
-
-        #endregion
-
-        #region Delete (Rarely Used - Orders Should Not Be Deleted)
-
-        /// <summary>
-        ///     Permanently deletes an order by ID.
-        ///     WARNING: Orders should typically NOT be deleted. Use status changes instead.
-        ///     This method should only be used for cleaning up test data or by administrators.
-        /// </summary>
-        public async Task<DatabaseResult> DeleteAsync( int orderId )
-        {
-            try
-            {
-                int affectedRows = await sqlDataAccess.ExecuteAsync(
-                    "sp_DeleteOrder",
-                    new
-                    {
-                        OrderId = orderId
-                    });
-
-                return affectedRows > 0
-                    ? DatabaseResult.Success()
-                    : DatabaseResult.Failure("No order found with the specified ID.", DatabaseErrorCode.NotFound);
-            }
-            catch (Exception ex)
-            {
-                return DatabaseResult.Failure(ex.Message, DatabaseErrorCode.UnexpectedError);
-            }
-        }
-
-        #endregion
-
-        #region Statistics & Reporting
-
-        public async Task<OrderStatisticsDto?> GetOrderStatisticsAsync( DateTime startDate, DateTime endDate ) =>
-            await sqlDataAccess.QuerySingleOrDefaultAsync<OrderStatisticsDto>(
-                "sp_GetOrderStatistics",
-                new
-                {
-                    StartDate = startDate,
-                    EndDate = endDate
-                });
-
-        /// <summary>
-        ///     Gets the total value of orders by the status.
-        /// </summary>
-        public async Task<decimal> GetTotalValueByStatusAsync( OrderStatus status ) => await sqlDataAccess.ExecuteScalarAsync<decimal>(
-            "sp_GetTotalValueByStatus",
-            new
-            {
-                Status = status
-            });
-
-        /// <summary>
-        ///     Gets the total value of orders by the type.
-        /// </summary>
-        public async Task<decimal> GetTotalValueByTypeAsync( OrderType type ) => await sqlDataAccess.ExecuteScalarAsync<decimal>(
-            "sp_GetTotalValueByType",
-            new
-            {
-                Type = type
-            });
-
-        #endregion
-
         #region Validation
 
         /// <summary>
@@ -106,43 +24,58 @@ namespace Storix.DataAccess.Repositories
         /// </summary>
         public async Task<bool> ExistsAsync( int orderId )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckOrderExists",
+            // language=tsql
+            const string sql = "SELECT COUNT(1) FROM [Order] WHERE OrderId = @OrderId";
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
-                    Order = orderId
+                    OrderId = orderId
                 });
-
-            return count > 0;
         }
 
         /// <summary>
         ///     Checks if a supplier has any orders (active or historical).
         /// </summary>
-        public async Task<bool> SupplierHasOrdersAsync( int supplierId, bool activeOnly = false ) =>
-            await EntityHasOrdersAsync(supplierId, "Supplier", activeOnly);
+        public async Task<bool> SupplierHasOrdersAsync( int supplierId, bool activeOnly = false )
+        {
+            // language=tsql
+            string sql = activeOnly
+                ? @"SELECT COUNT(1) FROM [Order] 
+                    WHERE SupplierId = @SupplierId 
+                    AND Status IN (@Draft, @Active)"
+                : "SELECT COUNT(1) FROM [Order] WHERE SupplierId = @SupplierId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    SupplierId = supplierId,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active
+                });
+        }
 
         /// <summary>
         ///     Checks if a customer has orders (active or historical).
         /// </summary>
-        public async Task<bool> CustomerHasOrdersAsync( int customerId, bool activeOnly = false ) =>
-            await EntityHasOrdersAsync(customerId, "Customer", activeOnly);
-
-        /// <summary>
-        ///     Checks if entity (customer or supplier) has orders (active or historical).
-        /// </summary>
-        private async Task<bool> EntityHasOrdersAsync( int orderId, string entityType, bool activeOnly = false )
+        public async Task<bool> CustomerHasOrdersAsync( int customerId, bool activeOnly = false )
         {
-            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
-                "sp_CheckEntityHasOrders",
+            // language=tsql
+            string sql = activeOnly
+                ? @"SELECT COUNT(1) FROM [Order] 
+                    WHERE CustomerId = @CustomerId 
+                    AND Status IN (@Draft, @Active)"
+                : "SELECT COUNT(1) FROM [Order] WHERE CustomerId = @CustomerId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
                 new
                 {
-                    OrderId = orderId,
-                    EntityType = entityType,
-                    ActiveOnly = activeOnly
+                    CustomerId = customerId,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active
                 });
-
-            return count > 0;
         }
 
         /// <summary>
@@ -151,7 +84,6 @@ namespace Storix.DataAccess.Repositories
         public async Task<bool> CanBeActivated( int orderId )
         {
             Order? order = await GetByIdAsync(orderId);
-
             return order is { Status: OrderStatus.Draft };
         }
 
@@ -161,65 +93,61 @@ namespace Storix.DataAccess.Repositories
         public async Task<bool> CanBeCancelled( int orderId )
         {
             Order? order = await GetByIdAsync(orderId);
-
             return order is { Status: OrderStatus.Draft or OrderStatus.Active };
         }
 
         /// <summary>
         ///     Checks if an order can be completed (only Active orders can be completed).
         /// </summary>
-        /// <param name="orderId" ></param>
-        /// <returns></returns>
         public async Task<bool> CanBeCompleted( int orderId )
         {
             Order? order = await GetByIdAsync(orderId);
-
             return order is { Status: OrderStatus.Active };
         }
 
         #endregion
 
-        #region Pagination
+        #region Count Operations
 
         /// <summary>
-        ///     Gets a paged list of orders.
+        ///     Gets the total count of orders.
         /// </summary>
-        public async Task<IEnumerable<Order>> GetPagedAsync( int pageNumber, int pageSize )
+        public async Task<int> GetTotalCountAsync()
         {
-            var parameters = new
-            {
-                Page = pageNumber,
-                PageSize = pageSize,
-                Offset = (pageNumber - 1) * pageSize
-            };
-
-            return await sqlDataAccess.QueryAsync<Order>("sp_GetOrdersPaged", parameters);
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM [Order]";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
-        ///     Gets the total counts of orders.
+        ///     Gets the count of orders by type.
         /// </summary>
-        public async Task<int> GetTotalCountAsync() => await sqlDataAccess.ExecuteScalarAsync<int>("sp_GetTotalCount");
-
-        /// <summary>
-        ///     Gets the counts of orders by type.
-        /// </summary>
-        public async Task<int> GetCountByTypeAsync( OrderType type ) => await sqlDataAccess.ExecuteScalarAsync<int>(
-            "sp_GetCountByType",
-            new
-            {
-                Type = type
-            });
+        public async Task<int> GetCountByTypeAsync( OrderType type )
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM [Order] WHERE Type = @Type";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    Type = (int)type
+                });
+        }
 
         /// <summary>
         ///     Gets the count of orders by status.
         /// </summary>
-        public async Task<int> GetCountByStatusAsync( OrderStatus status ) => await sqlDataAccess.ExecuteScalarAsync<int>(
-            "sp_GetCountByStatus",
-            new
-            {
-                Status = status
-            });
+        public async Task<int> GetCountByStatusAsync( OrderStatus status )
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM [Order] WHERE Status = @Status";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    Status = (int)status
+                });
+        }
 
         #endregion
 
@@ -228,108 +156,344 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Gets an order by its ID.
         /// </summary>
-        public async Task<Order?> GetByIdAsync( int orderId ) => await sqlDataAccess.QuerySingleOrDefaultAsync<Order>(
-            "sp_GetOrderById",
-            new
-            {
-                OrderId = orderId
-            });
+        public async Task<Order?> GetByIdAsync( int orderId )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM [Order] WHERE OrderId = @OrderId";
+            return await sqlDataAccess.QuerySingleOrDefaultAsync<Order>(
+                sql,
+                new
+                {
+                    OrderId = orderId
+                });
+        }
 
         /// <summary>
-        ///     Gets all order.
+        ///     Gets all orders.
         /// </summary>
-        public async Task<IEnumerable<Order>> GetAllAsync() => await sqlDataAccess.QueryAsync<Order>("sp_GetAllOrders");
+        public async Task<IEnumerable<Order>> GetAllAsync()
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM [Order] ORDER BY OrderDate DESC";
+            return await sqlDataAccess.QueryAsync<Order>(sql);
+        }
 
         /// <summary>
-        ///     Gets orders by Type (Purchase or Sale)
+        ///     Gets orders by Type (Purchase or Sale).
         /// </summary>
-        public async Task<IEnumerable<Order>> GetByTypeAsync( OrderType type ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersByType",
-            new
-            {
-                Type = type
-            });
+        public async Task<IEnumerable<Order>> GetByTypeAsync( OrderType type )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM [Order] WHERE Type = @Type ORDER BY OrderDate DESC";
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    Type = (int)type
+                });
+        }
 
         /// <summary>
-        ///     Gets orders by Status (Draft, Active, Completed, Cancelled)
+        ///     Gets orders by Status (Draft, Active, Completed, Cancelled).
         /// </summary>
-        public async Task<IEnumerable<Order>> GetByStatusAsync( OrderStatus status ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersByStatus",
-            new
-            {
-                Status = status
-            });
+        public async Task<IEnumerable<Order>> GetByStatusAsync( OrderStatus status )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM [Order] WHERE Status = @Status ORDER BY OrderDate DESC";
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    Status = (int)status
+                });
+        }
 
         /// <summary>
         ///     Gets purchase orders by supplier ID.
         /// </summary>
-        public async Task<IEnumerable<Order>> GetBySupplierAsync( int supplierId ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersBySupplier",
-            new
-            {
-                SupplierId = supplierId
-            });
+        public async Task<IEnumerable<Order>> GetBySupplierAsync( int supplierId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE SupplierId = @SupplierId 
+                AND Type = @PurchaseType
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    SupplierId = supplierId,
+                    PurchaseType = (int)OrderType.Purchase
+                });
+        }
 
         /// <summary>
         ///     Gets sale orders by customer ID.
         /// </summary>
-        public async Task<IEnumerable<Order>> GetByCustomerAsync( int customerId ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersByCustomer",
-            new
-            {
-                CustomerId = customerId
-            });
+        public async Task<IEnumerable<Order>> GetByCustomerAsync( int customerId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE CustomerId = @CustomerId 
+                AND Type = @SaleType
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    CustomerId = customerId,
+                    SaleType = (int)OrderType.Sale
+                });
+        }
 
         /// <summary>
         ///     Gets orders by date range.
         /// </summary>
-        public async Task<IEnumerable<Order>> GetByDateRangeAsync( DateTime startDate, DateTime endDate ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersByDateRange",
-            new
-            {
-                StartDate = startDate,
-                EndDate = endDate
-            });
+        public async Task<IEnumerable<Order>> GetByDateRangeAsync( DateTime startDate, DateTime endDate )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE OrderDate BETWEEN @StartDate AND @EndDate 
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    StartDate = startDate,
+                    EndDate = endDate
+                });
+        }
 
         /// <summary>
         ///     Gets overdue orders (DeliveryDate passed but status is still Draft or Active).
         /// </summary>
-        public async Task<IEnumerable<Order>> GetOverdueOrdersAsync() => await sqlDataAccess.QueryAsync<Order>("sp_GetOverdueOrders");
+        public async Task<IEnumerable<Order>> GetOverdueOrdersAsync()
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE DeliveryDate < @CurrentDate 
+                AND Status IN (@Draft, @Active)
+                ORDER BY DeliveryDate";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    CurrentDate = DateTime.UtcNow.Date,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active
+                });
+        }
 
         /// <summary>
-        ///     Gets orders by created by a specific user.
+        ///     Gets orders created by a specific user.
         /// </summary>
-        /// <param name="createdBy" ></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<Order>> GetByCreatedByAsync( int createdBy ) => await sqlDataAccess.QueryAsync<Order>(
-            "sp_GetOrdersByCreatedBy",
-            new
-            {
-                CreatedById = createdBy
-            });
+        public async Task<IEnumerable<Order>> GetByCreatedByAsync( int createdBy )
+        {
+            // language=tsql
+            const string sql = "SELECT * FROM [Order] WHERE CreatedBy = @CreatedBy ORDER BY OrderDate DESC";
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    CreatedBy = createdBy
+                });
+        }
+
+        /// <summary>
+        ///     Gets a paged list of orders.
+        ///     Uses SQL Server OFFSET-FETCH syntax.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetPagedAsync( int pageNumber, int pageSize )
+        {
+            int offset = (pageNumber - 1) * pageSize;
+
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                ORDER BY OrderDate DESC 
+                OFFSET @Offset ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    PageSize = pageSize,
+                    Offset = offset
+                });
+        }
 
         #endregion
 
-        #region Create & Update
+        #region Search & Filter
+
+        /// <summary>
+        ///     Searches orders with multiple optional filters.
+        /// </summary>
+        public async Task<IEnumerable<Order>> SearchAsync(
+            string? searchTerm = null,
+            OrderType? type = null,
+            OrderStatus? status = null,
+            int? supplierId = null,
+            int? customerId = null,
+            DateTime? startDate = null,
+            DateTime? endDate = null )
+        {
+            // language=tsql
+            StringBuilder sql = new("SELECT * FROM [Order] WHERE 1=1");
+            DynamicParameters parameters = new();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                sql.Append(" AND (Notes LIKE @SearchTerm)");
+                parameters.Add("SearchTerm", $"%{searchTerm}%");
+            }
+
+            if (type.HasValue)
+            {
+                sql.Append(" AND Type = @Type");
+                parameters.Add("Type", (int)type.Value);
+            }
+
+            if (status.HasValue)
+            {
+                sql.Append(" AND Status = @Status");
+                parameters.Add("Status", (int)status.Value);
+            }
+
+            if (supplierId.HasValue)
+            {
+                sql.Append(" AND SupplierId = @SupplierId");
+                parameters.Add("SupplierId", supplierId.Value);
+            }
+
+            if (customerId.HasValue)
+            {
+                sql.Append(" AND CustomerId = @CustomerId");
+                parameters.Add("CustomerId", customerId.Value);
+            }
+
+            if (startDate.HasValue)
+            {
+                sql.Append(" AND OrderDate >= @StartDate");
+                parameters.Add("StartDate", startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                sql.Append(" AND OrderDate <= @EndDate");
+                parameters.Add("EndDate", endDate.Value);
+            }
+
+            sql.Append(" ORDER BY OrderDate DESC");
+
+            return await sqlDataAccess.QueryAsync<Order>(sql.ToString(), parameters);
+        }
+
+        #endregion
+
+        #region Statistics & Reporting
+
+        /// <summary>
+        ///     Gets order statistics for a date range.
+        /// </summary>
+        public async Task<OrderStatisticsDto?> GetOrderStatisticsAsync( DateTime startDate, DateTime endDate )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT 
+                    COUNT(*) as TotalOrders,
+                    COUNT(CASE WHEN Type = @Purchase THEN 1 END) as PurchaseOrders,
+                    COUNT(CASE WHEN Type = @Sale THEN 1 END) as SaleOrders,
+                    COUNT(CASE WHEN Status = @Completed THEN 1 END) as CompletedOrders,
+                    COUNT(CASE WHEN Status = @Cancelled THEN 1 END) as CancelledOrders,
+                    SUM(CASE WHEN Type = @Purchase AND Status = @Completed THEN TotalAmount ELSE 0 END) as TotalPurchaseValue,
+                    SUM(CASE WHEN Type = @Sale AND Status = @Completed THEN TotalAmount ELSE 0 END) as TotalSaleValue
+                FROM [Order]
+                WHERE OrderDate BETWEEN @StartDate AND @EndDate";
+
+            return await sqlDataAccess.QuerySingleOrDefaultAsync<OrderStatisticsDto>(
+                sql,
+                new
+                {
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Purchase = (int)OrderType.Purchase,
+                    Sale = (int)OrderType.Sale,
+                    Completed = (int)OrderStatus.Completed,
+                    Cancelled = (int)OrderStatus.Cancelled
+                });
+        }
+
+        /// <summary>
+        ///     Gets the total value of orders by status.
+        /// </summary>
+        public async Task<decimal> GetTotalValueByStatusAsync( OrderStatus status )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT ISNULL(SUM(TotalAmount), 0) 
+                FROM [Order] 
+                WHERE Status = @Status";
+
+            return await sqlDataAccess.ExecuteScalarAsync<decimal>(
+                sql,
+                new
+                {
+                    Status = (int)status
+                });
+        }
+
+        /// <summary>
+        ///     Gets the total value of orders by type.
+        /// </summary>
+        public async Task<decimal> GetTotalValueByTypeAsync( OrderType type )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT ISNULL(SUM(TotalAmount), 0) 
+                FROM [Order] 
+                WHERE Type = @Type";
+
+            return await sqlDataAccess.ExecuteScalarAsync<decimal>(
+                sql,
+                new
+                {
+                    Type = (int)type
+                });
+        }
+
+        #endregion
+
+        #region Write Operations
 
         /// <summary>
         ///     Creates a new order and returns it with its generated ID.
+        ///     Uses SQL Server SCOPE_IDENTITY() to retrieve the newly inserted ID.
         /// </summary>
         public async Task<Order> CreateAsync( Order order )
         {
-            var parameters = new
-            {
-                order.Type,
-                order.Status,
-                order.SupplierId,
-                order.CustomerId,
-                order.OrderDate,
-                order.DeliveryDate,
-                order.Notes,
-                order.CreatedBy
-            };
+            // language=tsql
+            const string sql = @"
+                INSERT INTO [Order] (
+                    Type, Status, SupplierId, CustomerId, 
+                    OrderDate, DeliveryDate, Notes, CreatedBy
+                )
+                VALUES (
+                    @Type, @Status, @SupplierId, @CustomerId,
+                    @OrderDate, @DeliveryDate, @Notes, @CreatedBy
+                );
+                SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            int orderId = await sqlDataAccess.ExecuteScalarAsync<int>("sp_CreateOrder", parameters);
+            int orderId = await sqlDataAccess.ExecuteScalarAsync<int>(sql, order);
 
             return order with
             {
@@ -337,22 +501,20 @@ namespace Storix.DataAccess.Repositories
             };
         }
 
-
         /// <summary>
         ///     Updates an existing order (status, delivery date, and notes only).
         /// </summary>
         public async Task<Order> UpdateAsync( Order order )
         {
-            var parameters = new
-            {
-                order.OrderId,
-                order.Status,
-                order.DeliveryDate,
-                order.Notes
-            };
+            // language=tsql
+            const string sql = @"
+                UPDATE [Order] 
+                SET Status = @Status,
+                    DeliveryDate = @DeliveryDate,
+                    Notes = @Notes
+                WHERE OrderId = @OrderId";
 
-            await sqlDataAccess.CommandAsync("sp_UpdateOrder", parameters);
-
+            await sqlDataAccess.ExecuteAsync(sql, order);
             return order;
         }
 
@@ -363,82 +525,183 @@ namespace Storix.DataAccess.Repositories
         {
             try
             {
-                await sqlDataAccess.CommandAsync(
-                    "sp_UpdateOrderStatus",
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET Status = @Status 
+                    WHERE OrderId = @OrderId";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
                     new
                     {
                         OrderId = orderId,
-                        Status = status
+                        Status = (int)status
                     });
-                return DatabaseResult.Success();
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found",
+                        DatabaseErrorCode.NotFound);
             }
             catch (Exception ex)
             {
-                return DatabaseResult.Failure(ex.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error updating order status: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
-        ///     Activates an Order by setting its status from Draft to Active.
+        ///     Activates an order by setting its status from Draft to Active.
         /// </summary>
         public async Task<DatabaseResult> ActivateOrderAsync( int orderId )
         {
             try
             {
-                await sqlDataAccess.CommandAsync(
-                    "sp_ActivateOrder",
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET Status = @Active 
+                    WHERE OrderId = @OrderId AND Status = @Draft";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
                     new
                     {
-                        OrderId = orderId
+                        OrderId = orderId,
+                        Active = (int)OrderStatus.Active,
+                        Draft = (int)OrderStatus.Draft
                     });
-                return DatabaseResult.Success();
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found or is not in Draft status",
+                        DatabaseErrorCode.InvalidInput);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return DatabaseResult.Failure(e.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error activating order: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
-        ///     Complete an order by setting its status to completed.
+        ///     Completes an order by setting its status to Completed.
         /// </summary>
         public async Task<DatabaseResult> CompleteOrderAsync( int orderId )
         {
             try
             {
-                await sqlDataAccess.CommandAsync(
-                    "sp_CompleteOrder",
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET Status = @Completed 
+                    WHERE OrderId = @OrderId AND Status = @Active";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
                     new
                     {
-                        OrderId = orderId
+                        OrderId = orderId,
+                        Completed = (int)OrderStatus.Completed,
+                        Active = (int)OrderStatus.Active
                     });
-                return DatabaseResult.Success();
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found or is not in Active status",
+                        DatabaseErrorCode.InvalidInput);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return DatabaseResult.Failure(e.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error completing order: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
 
         /// <summary>
-        ///     Cancels an order by setting its status to cancelled.
+        ///     Cancels an order by setting its status to Cancelled.
+        ///     Uses SQL Server string concatenation with + operator and CHAR(13)+CHAR(10) for newline.
         /// </summary>
         public async Task<DatabaseResult> CancelOrderAsync( int orderId, string? reason = null )
         {
             try
             {
-                await sqlDataAccess.CommandAsync(
-                    "sp_CancelOrder",
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET Status = @Cancelled,
+                        Notes = CASE 
+                            WHEN @Reason IS NOT NULL THEN ISNULL(Notes, '') + CHAR(13) + CHAR(10) + 'Cancellation reason: ' + @Reason
+                            ELSE Notes 
+                        END
+                    WHERE OrderId = @OrderId 
+                    AND Status IN (@Draft, @Active)";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
                     new
                     {
                         OrderId = orderId,
+                        Cancelled = (int)OrderStatus.Cancelled,
+                        Draft = (int)OrderStatus.Draft,
+                        Active = (int)OrderStatus.Active,
                         Reason = reason
                     });
-                return DatabaseResult.Success();
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found or cannot be cancelled (must be Draft or Active)",
+                        DatabaseErrorCode.InvalidInput);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                return DatabaseResult.Failure(e.Message, DatabaseErrorCode.UnexpectedError);
+                return DatabaseResult.Failure(
+                    $"Error cancelling order: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
+            }
+        }
+
+        #endregion
+
+        #region Delete Operations
+
+        /// <summary>
+        ///     Permanently deletes an order by ID.
+        ///     WARNING: Orders should typically NOT be deleted. Use status changes instead.
+        ///     This method should only be used for cleaning up test data or by administrators.
+        /// </summary>
+        public async Task<DatabaseResult> DeleteAsync( int orderId )
+        {
+            try
+            {
+                // language=tsql
+                const string sql = "DELETE FROM [Order] WHERE OrderId = @OrderId";
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        OrderId = orderId
+                    });
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found",
+                        DatabaseErrorCode.NotFound);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure(
+                    $"Error deleting order: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
             }
         }
 
