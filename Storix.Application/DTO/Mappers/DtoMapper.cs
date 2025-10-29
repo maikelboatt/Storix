@@ -352,7 +352,7 @@
         // public static Domain.Models.User ToDomain( this UpdateUserDto dto, Domain.Models.User existingUser ) => new(
         //     dto.UserId,
         //     dto.Username,
-        //     existingUser.PasswordHash, // Keep existing password
+        //     existingUser.Password, // Keep existing password
         //     dto.Role,
         //     dto.FullName,
         //     dto.Email,

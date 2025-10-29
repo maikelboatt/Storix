@@ -8,13 +8,13 @@ namespace Storix.Application.Common.Errors
     /// </summary>
     public interface IDatabaseErrorHandlerService
     {
-        internal Task<DatabaseResult<TResult>> HandleDatabaseOperationAsync<TResult>(
+        public Task<DatabaseResult<TResult>> HandleDatabaseOperationAsync<TResult>(
             Func<Task<TResult>> operation,
             string userActionDescription,
             bool showUserMessage = true,
             bool enableRetry = true );
 
-        internal Task<DatabaseResult> HandleDatabaseOperationAsync(
+        public Task<DatabaseResult> HandleDatabaseOperationAsync(
             Func<Task> operation,
             string userActionDescription,
             bool showUserMessage = true,
