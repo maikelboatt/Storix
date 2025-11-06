@@ -35,6 +35,13 @@ namespace Storix.Application.Services.Suppliers
             return supplierStore.GetByPhone(phone);
         }
 
+        public IEnumerable<SupplierDto> GetAllActiveSuppliersInCache()
+        {
+            logger.LogInformation("Retrieving all active suppliers from cache");
+
+            return supplierStore.GetActiveSuppliers();
+        }
+
         public IEnumerable<SupplierDto> SearchSuppliersInCache( string searchTerm )
         {
             logger.LogInformation("Searching active categories in cache with term '{SearchTerm}'", searchTerm);

@@ -233,7 +233,10 @@ namespace Storix.Application.Stores.Suppliers
 
         public int GetActiveCount() => _suppliers.Count;
 
-        public List<SupplierDto> GetActiveSuppliers() => GetAll();
+        public List<SupplierDto> GetActiveSuppliers() => _suppliers
+                                                         .Values.OrderBy(s => s.Name)
+                                                         .Select(s => s.ToDto())
+                                                         .ToList();
 
         public IEnumerable<Supplier> GetAllSuppliers() => _suppliers.Values.OrderBy(s => s.Name);
 

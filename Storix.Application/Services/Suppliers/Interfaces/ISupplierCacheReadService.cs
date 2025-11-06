@@ -11,6 +11,8 @@ namespace Storix.Application.Services.Suppliers.Interfaces
 
         SupplierDto? GetSupplierByPhoneInCache( string phone );
 
+        IEnumerable<SupplierDto> GetAllActiveSuppliersInCache();
+
         IEnumerable<SupplierDto> SearchSuppliersInCache( string searchTerm );
 
         bool SupplierExistsInCache( int supplierId );
