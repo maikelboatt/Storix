@@ -22,7 +22,7 @@ namespace Storix.Application.Services.Products
         IProductCacheReadService productCacheReadService,
         IProductWriteService productWriteService,
         IProductValidationService productValidationService,
-        ILogger<ProductService> logger )
+        ILogger<ProductService> logger ):IProductService
     {
         #region Read Operations
 
@@ -44,26 +44,25 @@ namespace Storix.Application.Services.Products
             return await productReadService.GetProductBySku(sku);
         }
 
+        public async Task<DatabaseResult<IEnumerable<TopProductDto>>> GetTop5BestSellersAsync( int topCounts = 5, int monthsBack = 3 )
+        {
+            List<TopProductDto> cached = productCacheReadService.GetTopBestSellersFromCache(topCounts);
+            if (cached.Count == topCounts)
+                return DatabaseResult<IEnumerable<TopProductDto>>.Success(cached);
+
+            return await productReadService.GetTop5BestSellersAsync(topCounts, monthsBack);
+        }
+
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllProductsAsync() => await productReadService.GetAllProductsAsync();
 
         public async Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync() => await productReadService.GetAllActiveProductsAsync();
 
+        public async Task<DatabaseResult<IEnumerable<ProductListDto>>> GetAllActiveProductsForListAsync() =>
+            await productReadService.GetAllActiveProductsForListAsync();
+
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync() => await productReadService.GetAllDeletedProductsAsync();
 
-        // public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync(int supplierId)
-        // {
-        //     IEnumerable<ProductDto>? cached = productCacheReadService.GetProductsBySupplierFromCache(supplierId);
-        //     if (cached != null)
-        //         return DatabaseResult<IEnumerable<ProductDto>>.Success(cached);
-        //
-        //     var result = await productReadService.GetProductsBySupplierAsync(supplierId);
-        //
-        //     if (result.IsSuccess && result.Value != null)
-        //         productCacheReadService.SetProductsBySupplierInCache(supplierId, result.Data);
-        //
-        //     return result;
-        // }
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsByCategoryAsync(
             int categoryId ) => await productReadService.GetProductsByCategoryAsync(categoryId);
 
@@ -123,18 +122,6 @@ namespace Storix.Application.Services.Products
         public async Task<DatabaseResult> ValidateForHardDeletion( int productId ) => await productValidationService.ValidateForHardDeletion(productId);
 
         public async Task<DatabaseResult> ValidateForRestore( int productId ) => await productValidationService.ValidateForRestore(productId);
-
-        #endregion
-
-        #region Cache Operations (Fast In-Memory Queries - Active Products Only)
-
-        public ProductDto? GetProductByIdFromCache( int productId ) => productCacheReadService.GetProductByIdFromCache(productId);
-
-        public ProductDto? GetProductBySkuFromCache( string sku ) => productCacheReadService.GetProductBySkuFromCache(sku);
-
-        public List<ProductDto> GetProductsByCategoryFromCache( int categoryId ) => productCacheReadService.GetProductsByCategoryFromCache(categoryId);
-
-        public List<ProductDto> GetProductsBySupplierFromCache( int supplierId ) => productCacheReadService.GetProductsBySupplierFromCache(supplierId);
 
         #endregion
 
@@ -205,7 +192,7 @@ namespace Storix.Application.Services.Products
                 else
                 {
                     // Get the restored product from cache
-                    ProductDto? restoredProduct = GetProductByIdFromCache(productId);
+                    ProductDto? restoredProduct = productCacheReadService.GetProductByIdFromCache(productId);
                     if (restoredProduct != null)
                     {
                         restored.Add(restoredProduct);

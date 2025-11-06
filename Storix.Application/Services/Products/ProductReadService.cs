@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -141,6 +142,32 @@ namespace Storix.Application.Services.Products
             return DatabaseResult<IEnumerable<ProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        public async Task<DatabaseResult<IEnumerable<TopProductDto>>> GetTop5BestSellersAsync( int topCounts = 5, int monthsBack = 3 )
+        {
+            DatabaseResult<IEnumerable<TopProductDto>> result =
+                await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    () => productRepository.GetTopBestSellersAsync(topCounts, monthsBack),
+                    "Retrieving best-sellers");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation("Successfully retrieved {ProductCount} of the Top 5 best-sellers", result.Value.Count());
+                List<TopProductDto> rankedProducts = result
+                                                     .Value
+                                                     .Select(( p, index ) =>
+                                                     {
+                                                         p.Rank = index + 1;
+                                                         return p;
+                                                     })
+                                                     .ToList();
+                productStore.InitializeTopProducts(rankedProducts);
+                return DatabaseResult<IEnumerable<TopProductDto>>.Success(rankedProducts);
+            }
+            logger.LogError("Failed to retrieve top 5 best-selling products: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<TopProductDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+
+        }
+
         public async Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync()
         {
             DatabaseResult<IEnumerable<ProductDto>> result = await GetAllProductsAsync();
@@ -160,6 +187,42 @@ namespace Storix.Application.Services.Products
 
             logger.LogWarning("Failed to retrieve active products: {ErrorMessage}", result.ErrorMessage);
             return DatabaseResult<IEnumerable<Product>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<ProductListDto>>> GetAllActiveProductsForListAsync()
+        {
+            DatabaseResult<IEnumerable<ProductWithDetailsDto>> result = await GetProductsWithDetailsAsync();
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                IEnumerable<ProductListDto> productListDtos = result
+                                                              .Value
+                                                              .Select(dto => new ProductListDto
+                                                              {
+                                                                  ProductId = dto.ProductId,
+                                                                  Name = dto.Name,
+                                                                  SKU = dto.SKU,
+                                                                  Barcode = dto.Barcode,
+                                                                  Price = dto.Price,
+                                                                  Cost = dto.Cost,
+                                                                  MinStockLevel = dto.MinStockLevel,
+                                                                  MaxStockLevel = dto.MaxStockLevel,
+                                                                  CategoryName = dto.CategoryName,                // ✅ From ProductWithDetailsDto
+                                                                  SupplierName = dto.SupplierName,                // ✅ From ProductWithDetailsDto
+                                                                  CurrentStock = dto.AvailableStock,              // ✅ Map TotalStock to CurrentStock
+                                                                  IsLowStock = dto.TotalStock < dto.MinStockLevel // ✅ Computed from TotalStock
+                                                              });
+
+                IEnumerable<ProductListDto> dtos = productListDtos.ToList();
+                productStore.InitializeProductList(dtos.ToList());
+                logger.LogInformation(
+                    "Successfully mapped {ProductCount} active products to ProductListDto",
+                    dtos.Count());
+                return DatabaseResult<IEnumerable<ProductListDto>>.Success(dtos);
+            }
+
+            logger.LogWarning("Failed to retrieve active products for list: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<ProductListDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
         public async Task<DatabaseResult<IEnumerable<ProductDto>>> GetAllDeletedProductsAsync()
@@ -251,7 +314,7 @@ namespace Storix.Application.Services.Products
                 $"Retrieving products with details."
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation(
                     "Successfully retrieved {ProductWithDetailsCount} products with details.",

@@ -1,7 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Storix.Application.Common;
+using Storix.Application.DTO.Categories;
 using Storix.Application.DTO.Products;
+using Storix.Application.DTO.Suppliers;
+using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Services.Suppliers.Interfaces;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Stores.Products
@@ -12,11 +18,21 @@ namespace Storix.Application.Stores.Products
     /// </summary>
     public class ProductStore:IProductStore
     {
+        private readonly ICategoryCacheReadService _categoryCacheReadService;
+        private readonly ISupplierCacheReadService _supplierCacheReadService;
         private readonly Dictionary<int, Product> _products;
+        private readonly Dictionary<int, ProductListDto> _productListDtos;
+        private readonly Dictionary<int, TopProductDto> _topProductDtos;
 
-        public ProductStore( List<Product>? initialProducts = null )
+        public ProductStore( ICategoryCacheReadService categoryCacheReadService,
+            ISupplierCacheReadService supplierCacheReadService,
+            List<Product>? initialProducts = null )
         {
+            _categoryCacheReadService = categoryCacheReadService;
+            _supplierCacheReadService = supplierCacheReadService;
             _products = new Dictionary<int, Product>();
+            _productListDtos = new Dictionary<int, ProductListDto>();
+            _topProductDtos = new Dictionary<int, TopProductDto>();
 
             if (initialProducts == null) return;
 
@@ -38,10 +54,62 @@ namespace Storix.Application.Stores.Products
             }
         }
 
+        public void InitializeProductList( List<ProductListDto> productListDtos )
+        {
+            _productListDtos.Clear();
+
+            foreach (ProductListDto productListDto in productListDtos)
+            {
+                _productListDtos[productListDto.ProductId] = productListDto;
+            }
+        }
+
+        public string GetCategoryName( int categoryId )
+        {
+            CategoryDto? category = _categoryCacheReadService.GetCategoryByIdInCache(categoryId);
+            return category?.Name ?? "Unknown";
+        }
+
+        public string GetSupplierName( int supplierId )
+        {
+            SupplierDto? supplier = _supplierCacheReadService.GetSupplierByIdInCache(supplierId);
+            return supplier?.Name ?? "Unknown";
+        }
+
+        public void InitializeTopProducts( List<TopProductDto> topProducts )
+        {
+            _topProductDtos.Clear();
+
+            foreach (TopProductDto topProduct in topProducts)
+            {
+                _topProductDtos[topProduct.ProductId] = topProduct;
+            }
+        }
+
         public void Clear()
         {
             _products.Clear();
+            _topProductDtos.Clear();
         }
+
+        #region Events
+
+        /// <summary>
+        ///     Event triggered when a product is added.
+        /// </summary>
+        public event Action<Product> ProductAdded;
+
+        /// <summary>
+        ///     Event triggered when a product is updated.
+        /// </summary>
+        public event Action<Product> ProductUpdated;
+
+        /// <summary>
+        ///     Event triggered when a product is deleted.
+        /// </summary>
+        public event Action<int> ProductDeleted;
+
+        #endregion
 
 
         #region Write Operations
@@ -88,6 +156,7 @@ namespace Storix.Application.Stores.Products
             );
 
             _products[productId] = product;
+            ProductAdded?.Invoke(product);
             return product.ToDto();
         }
 
@@ -135,12 +204,16 @@ namespace Storix.Application.Stores.Products
             };
 
             _products[updateDto.ProductId] = updatedProduct;
+            ProductUpdated?.Invoke(updatedProduct);
             return updatedProduct.ToDto();
         }
 
-        public bool Delete( int productId ) =>
+        public bool Delete( int productId )
+        {
             // Remove from active cache (soft delete removes from cache, hard delete calls this too)
-            _products.Remove(productId);
+            ProductDeleted?.Invoke(productId);
+            return _products.Remove(productId);
+        }
 
         #endregion
 
@@ -213,6 +286,22 @@ namespace Storix.Application.Stores.Products
                    .Skip(skip)
                    .Take(take)
                    .Select(p => p.ToDto())
+                   .ToList();
+        }
+
+        public List<TopProductDto> GetTop5BestSellersAsync( int topCounts )
+        {
+            return _topProductDtos
+                   .Take(topCounts)
+                   .Select(p => p.Value)
+                   .ToList();
+
+        }
+
+        public List<ProductListDto> GetProductListDto()
+        {
+            return _productListDtos
+                   .Select(p => p.Value)
                    .ToList();
         }
 

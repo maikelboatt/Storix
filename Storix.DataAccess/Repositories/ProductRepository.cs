@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 using Dapper;
 using Storix.Application.Common;
 using Storix.Application.DTO;
+using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;
+using Storix.Domain.Enums;
 using Storix.Domain.Models;
 
 namespace Storix.DataAccess.Repositories
@@ -23,7 +25,7 @@ namespace Storix.DataAccess.Repositories
     /// </summary>
     public class ProductRepository:IProductRepository
     {
-        private readonly ISqlDataAccess sqlDataAccess;
+        private readonly ISqlDataAccess _sqlDataAccess;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProductRepository"/> class.
@@ -31,7 +33,7 @@ namespace Storix.DataAccess.Repositories
         /// <param name="sqlDataAccess">The SQL data access abstraction for executing queries and commands.</param>
         public ProductRepository( ISqlDataAccess sqlDataAccess )
         {
-            this.sqlDataAccess = sqlDataAccess;
+            _sqlDataAccess = sqlDataAccess;
         }
 
         #region Validation
@@ -50,7 +52,7 @@ namespace Storix.DataAccess.Repositories
                 ? "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId"
                 : "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId AND IsDeleted = 0";
 
-            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+            return await _sqlDataAccess.ExecuteScalarAsync<bool>(
                 sql,
                 new
                 {
@@ -79,7 +81,7 @@ namespace Storix.DataAccess.Repositories
                     AND IsDeleted = 0 
                     AND (@ExcludeProductId IS NULL OR ProductId != @ExcludeProductId)";
 
-            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+            return await _sqlDataAccess.ExecuteScalarAsync<bool>(
                 sql,
                 new
                 {
@@ -99,7 +101,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT COUNT(*) FROM Product";
-            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+            return await _sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
@@ -109,7 +111,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT COUNT(*) FROM Product WHERE IsDeleted = 0";
-            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+            return await _sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         /// <summary>
@@ -119,7 +121,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT COUNT(*) FROM Product WHERE IsDeleted = 1";
-            return await sqlDataAccess.ExecuteScalarAsync<int>(sql);
+            return await _sqlDataAccess.ExecuteScalarAsync<int>(sql);
         }
 
         #endregion
@@ -133,7 +135,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE ProductId = @ProductId";
-            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
+            return await _sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
                 sql,
                 new
                 {
@@ -148,7 +150,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE SKU = @SKU";
-            return await sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
+            return await _sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
                 sql,
                 new
                 {
@@ -163,7 +165,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Product>(sql);
+            return await _sqlDataAccess.QueryAsync<Product>(sql);
         }
 
         /// <summary>
@@ -174,7 +176,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE IsDeleted = 0 ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Product>(sql);
+            return await _sqlDataAccess.QueryAsync<Product>(sql);
         }
 
         /// <summary>
@@ -184,7 +186,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE IsDeleted = 1 ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Product>(sql);
+            return await _sqlDataAccess.QueryAsync<Product>(sql);
         }
 
         /// <summary>
@@ -194,7 +196,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE CategoryId = @CategoryId ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Product>(
+            return await _sqlDataAccess.QueryAsync<Product>(
                 sql,
                 new
                 {
@@ -209,7 +211,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = "SELECT * FROM Product WHERE SupplierId = @SupplierId ORDER BY Name";
-            return await sqlDataAccess.QueryAsync<Product>(
+            return await _sqlDataAccess.QueryAsync<Product>(
                 sql,
                 new
                 {
@@ -236,7 +238,7 @@ namespace Storix.DataAccess.Repositories
                 AND ISNULL(s.TotalStock, 0) < p.MinStockLevel
                 ORDER BY p.Name";
 
-            return await sqlDataAccess.QueryAsync<Product>(sql);
+            return await _sqlDataAccess.QueryAsync<Product>(sql);
         }
 
         /// <summary>
@@ -262,7 +264,7 @@ namespace Storix.DataAccess.Repositories
                 ) st ON p.ProductId = st.ProductId
                 ORDER BY p.Name";
 
-            return await sqlDataAccess.QueryAsync<ProductWithDetailsDto>(sql);
+            return await _sqlDataAccess.QueryAsync<ProductWithDetailsDto>(sql);
         }
 
         /// <summary>
@@ -280,7 +282,7 @@ namespace Storix.DataAccess.Repositories
                 OFFSET @Offset ROWS
                 FETCH NEXT @PageSize ROWS ONLY";
 
-            return await sqlDataAccess.QueryAsync<Product>(
+            return await _sqlDataAccess.QueryAsync<Product>(
                 sql,
                 new
                 {
@@ -302,11 +304,44 @@ namespace Storix.DataAccess.Repositories
                       OR Description LIKE @SearchTerm 
                 ORDER BY Name";
 
-            return await sqlDataAccess.QueryAsync<Product>(
+            return await _sqlDataAccess.QueryAsync<Product>(
                 sql,
                 new
                 {
                     SearchTerm = $"%{searchTerm}%"
+                });
+        }
+
+        /// <summary>
+        /// Retrieves the top best-selling products based on total units sold within a date range.
+        /// Includes only completed orders.
+        /// Products are ordered by units sold descending.
+        /// </summary>
+        public async Task<IEnumerable<TopProductDto>> GetTopBestSellersAsync( int topCount = 5, int monthsBack = 3 )
+        {
+            // language=tsql
+            const string sql = @"
+        SELECT TOP (@TopCount)
+            p.ProductId,
+            p.Name AS ProductName,
+            p.SKU,
+            ISNULL(SUM(oi.Quantity), 0) AS UnitsSold,
+            ISNULL(SUM(oi.Quantity * oi.UnitPrice), 0) AS TotalRevenue
+        FROM Product p
+        INNER JOIN OrderItem oi ON p.ProductId = oi.ProductId
+        INNER JOIN [Order] o ON oi.OrderId = o.OrderId
+        WHERE p.IsDeleted = 0
+            AND o.OrderDate >= DATEADD(MONTH, -@MonthsBack, GETDATE())
+        GROUP BY p.ProductId, p.Name, p.SKU
+        ORDER BY UnitsSold DESC";
+
+            return await _sqlDataAccess.QueryAsync<TopProductDto>(
+                sql,
+                new
+                {
+                    TopCount = topCount,
+                    MonthsBack = monthsBack,
+                    CompletedStatus = (int)OrderStatus.Completed
                 });
         }
 
@@ -334,7 +369,7 @@ namespace Storix.DataAccess.Repositories
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
-            int newProductId = await sqlDataAccess.ExecuteScalarAsync<int>(sql, product);
+            int newProductId = await _sqlDataAccess.ExecuteScalarAsync<int>(sql, product);
             return product with
             {
                 ProductId = newProductId,
@@ -370,7 +405,7 @@ namespace Storix.DataAccess.Repositories
             {
                 UpdatedDate = DateTime.UtcNow
             };
-            await sqlDataAccess.ExecuteAsync(sql, updated);
+            await _sqlDataAccess.ExecuteAsync(sql, updated);
             return updated;
         }
 
@@ -389,7 +424,7 @@ namespace Storix.DataAccess.Repositories
                         UpdatedDate = @UpdatedDate
                     WHERE ProductId = @ProductId AND IsDeleted = 0";
 
-                int affected = await sqlDataAccess.ExecuteAsync(
+                int affected = await _sqlDataAccess.ExecuteAsync(
                     sql,
                     new
                     {
@@ -423,7 +458,7 @@ namespace Storix.DataAccess.Repositories
                         UpdatedDate = @UpdatedDate
                     WHERE ProductId = @ProductId AND IsDeleted = 1";
 
-                int affected = await sqlDataAccess.ExecuteAsync(
+                int affected = await _sqlDataAccess.ExecuteAsync(
                     sql,
                     new
                     {
@@ -450,7 +485,7 @@ namespace Storix.DataAccess.Repositories
             {
                 // language=tsql
                 const string sql = "DELETE FROM Product WHERE ProductId = @ProductId";
-                int affected = await sqlDataAccess.ExecuteAsync(
+                int affected = await _sqlDataAccess.ExecuteAsync(
                     sql,
                     new
                     {
