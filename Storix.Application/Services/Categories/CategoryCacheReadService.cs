@@ -65,8 +65,7 @@ namespace Storix.Application.Services.Categories
             logger.LogInformation("Retrieves all active categories from cache");
 
             return categoryStore
-                   .GetActiveCategories()
-                   .Select(c => c.ToDto());
+                .GetActiveCategories();
         }
 
         /// <summary>
