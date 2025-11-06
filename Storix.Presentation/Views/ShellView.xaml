@@ -1,10 +1,13 @@
 ﻿<views:MvxWpfView x:Class="Storix.Presentation.Views.ShellView"
                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:components="clr-namespace:Storix.Presentation.Components"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:forms="clr-namespace:Storix.Presentation.Forms"
                   xmlns:local="clr-namespace:Storix.Presentation.Views"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                   xmlns:modalDialogControl="clr-namespace:ModalDialogControl;assembly=ModalDialogControl"
+                  xmlns:products="clr-namespace:Storix.Core.ViewModels.Products;assembly=Storix.Core"
                   xmlns:resources="clr-namespace:Storix.Presentation.Resources"
                   xmlns:viewModels="clr-namespace:Storix.Core.ViewModels;assembly=Storix.Core"
                   xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
@@ -55,6 +58,18 @@
             <local:SettingsPane />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type products:ProductListViewModel}">
+            <components:ProductList />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type products:ProductFormViewModel}">
+            <forms:ProductForm />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type products:FormerViewModel}">
+            <forms:Former />
+        </DataTemplate>
+
     </views:MvxWpfView.Resources>
 
     <Border UseLayoutRounding="True">
@@ -92,42 +107,66 @@
                                 <RowDefinition Height="80" />
                             </Grid.RowDefinitions>
 
-                            <!--  Logo + Toggle Button  -->
-                            <DockPanel Grid.Row="0"
-                                       VerticalAlignment="Center"
-                                       LastChildFill="False">
-                                <Button x:Name="ToggleNavButton"
-                                        Width="36"
-                                        Height="36"
-                                        Margin="0,0,5,0"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Center"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Click="ToggleNavButton_Click"
-                                        Content="☰"
-                                        Cursor="Hand"
-                                        FontSize="20"
-                                        Foreground="{DynamicResource SecondaryBlueColor}" />
+                            <!--  Logo + Toggle Button + Slogan  -->
+                            <Grid Grid.Row="0"
+                                  VerticalAlignment="Center"
+                                  Background="Transparent"
+                                  MouseDown="LogoArea_OnMouseDown">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
 
-                                <StackPanel x:Name="LogoPanel"
-                                            DockPanel.Dock="Right"
-                                            Orientation="Horizontal">
-                                    <Image Width="36"
-                                           Height="36"
-                                           Margin="10,0,0,0"
+                                <!--  Top Row: Toggle Button + Logo  -->
+                                <DockPanel Grid.Row="0"
                                            VerticalAlignment="Center"
-                                           Source="/Assets/Icons/logo.png"
-                                           Stretch="Fill" />
+                                           LastChildFill="False">
+                                    <Button x:Name="ToggleNavButton"
+                                            Width="36"
+                                            Height="36"
+                                            Margin="0,0,5,0"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Click="ToggleNavButton_Click"
+                                            Content="☰"
+                                            Cursor="Hand"
+                                            FontSize="20"
+                                            Foreground="{DynamicResource SecondaryBlueColor}" />
 
-                                    <Label Margin="5,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Content="Storix"
-                                           FontSize="24"
-                                           FontWeight="Bold"
-                                           Foreground="{DynamicResource SecondaryBlueColor}" />
-                                </StackPanel>
-                            </DockPanel>
+                                    <StackPanel x:Name="LogoPanel"
+                                                DockPanel.Dock="Right"
+                                                Orientation="Horizontal">
+                                        <Image Width="40"
+                                               Height="40"
+                                               Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Source="/Assets/Icons/Storix-logo.png"
+                                               Stretch="Fill" />
+
+                                        <Label Margin="5,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Content="Storix"
+                                               FontSize="24"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource SecondaryBlueColor}" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <!--  Bottom Row: Slogan  -->
+                                <TextBlock x:Name="SloganText"
+                                           Grid.Row="1"
+                                           Margin="10,5,10,0"
+                                           HorizontalAlignment="Center"
+                                           FontSize="10"
+                                           FontStyle="Italic"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Opacity="0.7"
+                                           Text="From Chaos to Clarity"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap" />
+                            </Grid>
 
                             <!--  Start Navigation Buttons  -->
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -335,15 +374,19 @@
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0">
+                        <Grid Grid.Row="0"
+                              Background="Transparent"
+                              MouseDown="TopBar_OnMouseDown">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
 
                             <!--  Search for Product and Categories  -->
-                            <resources:CustomSearchBox Grid.Column="0" Placeholder="Search for Product and Categories" />
-
+                            <resources:CustomSearchBox Grid.Column="0"
+                                                       Margin="15,0,0,0"
+                                                       VerticalAlignment="Center"
+                                                       Placeholder="Search Products..." />
                             <!--  Window Buttons  -->
                             <StackPanel Grid.Column="1"
                                         Height="30"
@@ -354,7 +397,8 @@
                                 <Button x:Name="CloseButton"
                                         Click="CloseButton_OnClick"
                                         Content="{DynamicResource Close}"
-                                        Style="{StaticResource IconButtonsStyle}" />
+                                        Style="{StaticResource IconButtonsStyle}"
+                                        Tag="IsCloseButton" />
                                 <Button x:Name="RestoreButton"
                                         Margin="5,0"
                                         Click="RestoreButton_OnClick"
@@ -378,5 +422,3 @@
         </Grid>
     </Border>
 </views:MvxWpfView>
-
-<!--  Let the Navigation Items show their labels as tooltips on hover when the NavBar is collapsed  -->

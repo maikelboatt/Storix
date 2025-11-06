@@ -24,6 +24,7 @@
         <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0"/>
         <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
+        <PackageReference Include="WPF-UI" Version="4.0.3"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -53,6 +54,36 @@
         <Resource Include="Assets\Icons\StorixBG.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Resource>
+        <None Remove="Assets\Icons\logo.png"/>
+        <Resource Include="Assets\Icons\logo.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\Storix-logo.png"/>
+        <Resource Include="Assets\Icons\Storix-logo.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\alert.png"/>
+        <Resource Include="Assets\Icons\alert.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\orders.png"/>
+        <Resource Include="Assets\Icons\orders.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\products.png"/>
+        <Resource Include="Assets\Icons\products.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\profit.png"/>
+        <Resource Include="Assets\Icons\profit.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\revenue.png"/>
+        <Resource Include="Assets\Icons\revenue.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Resource>
+        <None Remove="Assets\Icons\turnover.png"/>
+        <Resource Include="Assets\Icons\turnover.png"/>
     </ItemGroup>
 
 </Project>

@@ -8,10 +8,10 @@ namespace Storix.Core.ViewModels
     public class ShellViewModel:MvxViewModel
     {
         private readonly IViewModelFactory _viewModelFactory;
-        private readonly IModalNavigationStore _modalNavigationStore;
+        private readonly ModalNavigationStore _modalNavigationStore;
         private MvxViewModel? _currentMainContent;
 
-        public ShellViewModel( IViewModelFactory viewModelFactory, IModalNavigationStore modalNavigationStore )
+        public ShellViewModel( IViewModelFactory viewModelFactory, ModalNavigationStore modalNavigationStore )
         {
             _viewModelFactory = viewModelFactory;
             _modalNavigationStore = modalNavigationStore;
@@ -38,7 +38,8 @@ namespace Storix.Core.ViewModels
 
         private void ModalNavigationStoreOnCurrentModalViewModelChanged()
         {
-            RaisePropertyChanged(nameof(CurrentMainContent));
+            System.Diagnostics.Debug.WriteLine($"Modal changed. IsOpen: {IsModalOpen}, Content: {CurrentModalContent?.GetType().Name}");
+            RaisePropertyChanged(nameof(CurrentModalContent));
             RaisePropertyChanged(nameof(IsModalOpen));
         }
 
@@ -50,7 +51,7 @@ namespace Storix.Core.ViewModels
             private set => SetProperty(ref _currentMainContent, value);
         }
 
-        public bool IsModalOpen => _modalNavigationStore.IsOpen;
+        public bool IsModalOpen => _modalNavigationStore.CurrentModalViewModel != null;
         public MvxViewModel? CurrentModalContent => _modalNavigationStore.CurrentModalViewModel;
 
         #endregion

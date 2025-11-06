@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -111,62 +112,21 @@ namespace Storix.Presentation.Views
             _parentWindow = Window.GetWindow(this);
         }
 
-        private void Border_OnMouseDown( object sender, MouseButtonEventArgs e )
+        private void LogoArea_OnMouseDown( object sender, MouseButtonEventArgs e )
         {
             if (e.LeftButton == MouseButtonState.Pressed)
-                _parentWindow.DragMove();
+            {
+                _parentWindow?.DragMove();
+            }
         }
 
-        private void UIElement_OnMouseLeftButtonDown( object sender, MouseButtonEventArgs e )
+        private void TopBar_OnMouseDown( object sender, MouseButtonEventArgs e )
         {
-            _parentWindow.DragMove();
+            if (e.LeftButton == MouseButtonState.Pressed)
+            {
+                _parentWindow?.DragMove();
+            }
         }
-
-        // private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
-        // {
-        //     if (_isNavExpanded)
-        //     {
-        //         // Collapse NavBar
-        //         AnimateNavWidth(250, 70);
-        //         LogoPanel.Visibility = Visibility.Collapsed;
-        //
-        //         foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
-        //         {
-        //             if (child.Content is string label)
-        //             {
-        //                 child.ToolTip = child.Tag; // Add tooltip when collapsed
-        //                 child.Content = null;      // Hide label text
-        //             }
-        //         }
-        //     }
-        //     else
-        //     {
-        //         // Expand NavBar
-        //         AnimateNavWidth(70, 250);
-        //         LogoPanel.Visibility = Visibility.Visible;
-        //
-        //         List<RadioButton> buttons = NavButtonsPanel
-        //                                     .Children.OfType<RadioButton>()
-        //                                     .ToList();
-        //         string[] labels =
-        //         {
-        //             "Analytics",
-        //             "Home",
-        //             "Inventory",
-        //             "Orders",
-        //             "Reminders",
-        //             "Notifications"
-        //         };
-        //
-        //         for (int i = 0; i < Math.Min(buttons.Count, labels.Length); i++)
-        //         {
-        //             buttons[i].Content = labels[i];
-        //             buttons[i].ToolTip = null; // Remove tooltip when expanded
-        //         }
-        //     }
-        //
-        //     _isNavExpanded = !_isNavExpanded;
-        // }
 
         private void AnimateNavWidth( double from, double to )
         {
@@ -219,41 +179,164 @@ namespace Storix.Presentation.Views
         {
             if (_isNavExpanded)
             {
-                // AnimateNavWidth(250, 70);
-                // Collapse
-                NavColumn.Width = new GridLength(70);
+                // Collapse NavBar
+                AnimateNavWidth(250, 70);
                 LogoPanel.Visibility = Visibility.Collapsed;
+                SloganText.Visibility = Visibility.Collapsed;
 
-                foreach (RadioButton child in NavButtonsPanel.Children.OfType<RadioButton>())
-                {
-                    if (child.Content is string)
-                        child.Content = null; // Hide labels
-                }
+                // Update all navigation items
+                UpdateNavigationItems(true);
             }
             else
             {
-                // AnimateNavWidth(70, 250);
-                // Expand
-                NavColumn.Width = new GridLength(250);
+                // Expand NavBar
+                AnimateNavWidth(70, 250);
                 LogoPanel.Visibility = Visibility.Visible;
+                SloganText.Visibility = Visibility.Visible;
 
-                // Restore labels (match your XAML order)
-                List<RadioButton> buttons = NavButtonsPanel
-                                            .Children.OfType<RadioButton>()
-                                            .ToList();
-
-                if (buttons.Count >= 6)
-                {
-                    buttons[0].Content = "Analytics";
-                    buttons[1].Content = "Home";
-                    buttons[2].Content = "Inventory";
-                    buttons[3].Content = "Orders";
-                    buttons[4].Content = "Reminders";
-                    buttons[5].Content = "Notifications";
-                }
+                // Update all navigation items
+                UpdateNavigationItems(false);
             }
 
             _isNavExpanded = !_isNavExpanded;
+        }
+
+        private void UpdateNavigationItems( bool isCollapsed )
+        {
+            foreach (object? child in NavButtonsPanel.Children)
+            {
+                // Handle regular RadioButtons (Dashboard, Suppliers, Customers, etc.)
+                if (child is RadioButton radioButton)
+                {
+                    if (isCollapsed)
+                    {
+                        // Store the current content as tooltip and hide content
+                        if (radioButton.Content is string content)
+                        {
+                            radioButton.ToolTip = CreateStyledToolTip(content);
+                            radioButton.Content = null;
+                        }
+                    }
+                    else
+                    {
+                        // Restore content from tooltip and remove tooltip
+                        if (radioButton.ToolTip is ToolTip toolTip && toolTip.Content is string text)
+                        {
+                            radioButton.Content = text;
+                            radioButton.ToolTip = null;
+                        }
+                    }
+                }
+                // Handle StackPanels (Inventory and Orders expandable sections)
+                else if (child is StackPanel stackPanel)
+                {
+                    foreach (object? subChild in stackPanel.Children)
+                    {
+                        // Handle ToggleButtons (Inventory, Orders expanders)
+                        if (subChild is ToggleButton toggleButton)
+                        {
+                            if (isCollapsed)
+                            {
+                                // Extract text from the Grid's TextBlock
+                                string text = GetToggleButtonText(toggleButton);
+                                if (!string.IsNullOrEmpty(text))
+                                {
+                                    toggleButton.ToolTip = CreateStyledToolTip(text);
+                                }
+                            }
+                            else
+                            {
+                                toggleButton.ToolTip = null;
+                            }
+                        }
+                        // Handle sub-item StackPanels (Products, Categories, Sales Orders, Purchase Orders)
+                        else if (subChild is StackPanel subItemPanel)
+                        {
+                            foreach (object? subItem in subItemPanel.Children)
+                            {
+                                if (subItem is RadioButton subRadioButton)
+                                {
+                                    if (isCollapsed)
+                                    {
+                                        // Store the current content as tooltip and hide content
+                                        if (subRadioButton.Content is string subContent)
+                                        {
+                                            subRadioButton.ToolTip = CreateStyledToolTip(subContent);
+                                            subRadioButton.Content = null;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Restore content from tooltip and remove tooltip
+                                        if (subRadioButton.ToolTip is ToolTip subToolTip && subToolTip.Content is string subText)
+                                        {
+                                            subRadioButton.Content = subText;
+                                            subRadioButton.ToolTip = null;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // Handle Separator - skip it
+                else if (child is Separator)
+                {
+                    continue;
+                }
+            }
+        }
+
+        private string GetToggleButtonText( ToggleButton toggleButton )
+        {
+            // Extract text from the ToggleButton's Grid structure
+            if (toggleButton.Content is Grid grid)
+            {
+                foreach (object? child in grid.Children)
+                {
+                    if (child is TextBlock textBlock)
+                    {
+                        return textBlock.Text;
+                    }
+                }
+            }
+            return string.Empty;
+        }
+
+        private ToolTip CreateStyledToolTip( string content )
+        {
+            // Create a styled ToolTip that matches the UI design
+            ToolTip toolTip = new()
+            {
+                Content = content,
+                Placement = PlacementMode.Right,
+                HorizontalOffset = 10,
+                VerticalOffset = 0
+            };
+
+            // Try to apply the style from resources
+            if (TryFindResource("NavBarToolTipStyle") is Style style)
+            {
+                toolTip.Style = style;
+            }
+            else
+            {
+                // Fallback: Apply inline styling
+                toolTip.Background = (Brush)TryFindResource("TertiaryBackgroundColor") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
+                toolTip.Foreground = (Brush)TryFindResource("PrimaryWhiteColor") ?? Brushes.White;
+                toolTip.BorderBrush = (Brush)TryFindResource("SecondaryBlueColor") ?? new SolidColorBrush(Color.FromRgb(59, 130, 246));
+                toolTip.BorderThickness = new Thickness(1);
+                toolTip.Padding = new Thickness(
+                    12,
+                    8,
+                    12,
+                    8);
+                toolTip.FontSize = 13;
+                toolTip.FontWeight = FontWeights.Medium;
+                toolTip.HasDropShadow = true;
+            }
+
+            return toolTip;
         }
     }
 }
