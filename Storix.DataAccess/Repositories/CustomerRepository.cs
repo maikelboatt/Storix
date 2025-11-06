@@ -49,7 +49,8 @@ namespace Storix.DataAccess.Repositories
                 sql,
                 new
                 {
-                    Email = email
+                    Email = email,
+                    ExcludeUserId = excludeUserId
                 });
         }
 
@@ -71,7 +72,8 @@ namespace Storix.DataAccess.Repositories
                 sql,
                 new
                 {
-                    Phone = phone
+                    Phone = phone,
+                    ExcludeUserId = excludeUserId
                 });
         }
 

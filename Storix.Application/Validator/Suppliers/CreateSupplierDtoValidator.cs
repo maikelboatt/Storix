@@ -4,9 +4,9 @@ using Storix.Application.Validator.Customers;
 
 namespace Storix.Application.Validator.Suppliers
 {
-    public class CreateSupplerDtoValidatorBase:SupplerDtoValidatorBase<CreateSupplierDto>
+    public class CreateSupplierDtoValidator:SupplerDtoValidatorBase<CreateSupplierDto>
     {
-        public CreateSupplerDtoValidatorBase()
+        public CreateSupplierDtoValidator()
         {
             // Use shared rule configurations
             ConfigureNameRules(s => s.Name);
