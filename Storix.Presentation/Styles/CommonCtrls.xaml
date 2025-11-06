@@ -51,7 +51,6 @@
     </Style>
 
     <!--  Custom IntegerUpDown Style  -->
-    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     <Style x:Key="IntegerBoxStyle" TargetType="{x:Type xctk:IntegerUpDown}">
         <Setter Property="Height" Value="40" />
         <Setter Property="Width" Value="80" />
@@ -95,13 +94,56 @@
         </Setter>
     </Style>
 
+    <!--  Custom ToolTip Style  -->
     <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="#2A2A2A" />
-        <Setter Property="Foreground" Value="White" />
-        <Setter Property="Padding" Value="6,3" />
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="Placement" Value="Right" />
+        <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundColor}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryWhiteColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBlueColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Placement" Value="Right" />
+        <Setter Property="HorizontalOffset" Value="10" />
+        <Setter Property="VerticalOffset" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="12"
+                                              Direction="315"
+                                              Opacity="0.3"
+                                              ShadowDepth="4"
+                                              Color="#1e293b" />
+                        </Border.Effect>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          TextBlock.FontSize="{TemplateBinding FontSize}"
+                                          TextBlock.FontWeight="{TemplateBinding FontWeight}"
+                                          TextBlock.Foreground="{TemplateBinding Foreground}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  Alternative: Simpler style without custom templateustometemplate  -->
+    <Style x:Key="SimpleNavBarToolTipStyle" TargetType="ToolTip">
+        <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundColor}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryWhiteColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBlueColor}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Placement" Value="Right" />
+        <Setter Property="HorizontalOffset" Value="8" />
     </Style>
 
 

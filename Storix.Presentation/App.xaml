@@ -5,6 +5,9 @@
                       xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf">
     <views:MvxApplication.Resources>
         <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
+            <resources:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
+            <resources:EditModeToTextConverter x:Key="EditModeToTextConverter" />
             <ResourceDictionary.MergedDictionaries>
                 <!--  Default theme of application  -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml" />
@@ -15,8 +18,6 @@
                 <ResourceDictionary Source="Styles/DataGridStyles.xaml" />
                 <ResourceDictionary Source="Styles/CommonCtrls.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
-            <resources:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
         </ResourceDictionary>
     </views:MvxApplication.Resources>
 </views:MvxApplication>
