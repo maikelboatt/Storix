@@ -171,11 +171,12 @@ namespace Storix.Application.Stores.Categories
                    .ToList();
         }
 
-        public IEnumerable<Category> GetActiveCategories()
+        public IEnumerable<CategoryDto> GetActiveCategories()
         {
             return _categories
                    .Values
                    .OrderBy(c => c.Name)
+                   .Select(p => p.ToDto())
                    .ToList();
         }
 
@@ -187,12 +188,10 @@ namespace Storix.Application.Stores.Categories
 
         public int GetCount( int? parentId = null )
         {
-            if (!parentId.HasValue)
-            {
-                return _categories.Count;
-            }
+            return !parentId.HasValue
+                ? _categories.Count
+                : _categories.Values.Count(c => c.ParentCategoryId == parentId.Value);
 
-            return _categories.Values.Count(c => c.ParentCategoryId == parentId.Value);
         }
 
         public int GetActiveCount() => _categories.Count;
