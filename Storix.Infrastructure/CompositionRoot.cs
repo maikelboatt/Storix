@@ -4,9 +4,11 @@ using Microsoft.Extensions.Logging;
 using MvvmCross.Exceptions;
 using MvvmCross.IoC;
 using MvvmCross.ViewModels;
+using Storix.Application.Services.Products;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Application.Stores;
 using Storix.Core;
+using Storix.Core.Control;
 using Storix.Core.Factory;
 using Storix.DataAccess.DBAccess;
 using Storix.DataAccess.Repositories;
@@ -57,9 +59,10 @@ namespace Storix.Infrastructure
         {
             Assembly[] assembliesToScan =
             [
-                typeof(App).Assembly,              // Core assembly
-                typeof(IProductService).Assembly,  // Application assembly
-                typeof(ProductRepository).Assembly // DataAccess assembly
+                typeof(App).Assembly,               // Core assembly
+                typeof(IProductService).Assembly,   // Application assembly
+                typeof(ProductRepository).Assembly, // DataAccess assembly
+                typeof(CompositionRoot).Assembly    // Infrastructure assembly
             ];
 
             foreach (Assembly assembly in assembliesToScan)
@@ -92,6 +95,13 @@ namespace Storix.Infrastructure
                     .AsInterfaces()
                     .RegisterAsLazySingleton();
 
+                // Register Validators (FluentValidation)
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Validator")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
+
                 // Register ViewModels
                 assembly
                     .CreatableTypes()
@@ -105,10 +115,10 @@ namespace Storix.Infrastructure
         {
             // Register ModalNavigationStore
             iocProvider.RegisterSingleton(new ModalNavigationStore());
-            //
-            // // Register ModalNavigationControl
-            // iocProvider.RegisterType<IModalNavigationControl, ModalNavigationControl>();
-            //
+
+            // Register ModalNavigationControl
+            iocProvider.RegisterType<IModalNavigationControl, ModalNavigationControl>();
+
             // Register ViewModelFactory
             iocProvider.RegisterSingleton<IViewModelFactory>(new ViewModelFactory());
         }
@@ -138,7 +148,10 @@ namespace Storix.Infrastructure
                         });
 
                 // Initialize the ViewModel
-                viewModel.Initialize();
+                viewModel
+                    .Initialize()
+                    .GetAwaiter()
+                    .GetResult();
                 return viewModel;
             });
         }
