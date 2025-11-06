@@ -1,13 +1,16 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using FluentValidation;
 using FluentValidation.Results;
+using Storix.Application.DTO.Categories;
 using Storix.Application.DTO.Products;
+using Storix.Application.DTO.Suppliers;
 using Storix.Application.Validator.Products;
 using Storix.Core.ViewModels.Products;
 
 namespace Storix.Core.InputModel
 {
-    public class ProductInputModel():MvxValidatingViewModel, IProductViewModel
+    public class ProductInputModel:MvxValidatingViewModel, IProductViewModel
     {
         private readonly CreateProductDtoValidator _createProductValidator = new();
         private readonly UpdateProductDtoValidator _updateProductValidator = new();
@@ -39,6 +42,17 @@ namespace Storix.Core.InputModel
         {
             if (updateProductValidator != null) LoadFromDto(updateProductValidator);
             ValidateAllProperties();
+        }
+
+        // Collections for dropdowns
+        public ObservableCollection<CategoryDto> Categories { get; set; }
+        public ObservableCollection<SupplierDto> Suppliers { get; set; }
+
+        // Default constructor
+        public ProductInputModel()
+        {
+            Categories = [];
+            Suppliers = [];
         }
 
 
@@ -252,8 +266,10 @@ namespace Storix.Core.InputModel
 
             if (!result.IsValid)
             {
-                List<string> propertyErrors = result.Errors.Where(e => e.PropertyName == propertyName)
-                                                    .Select(e => e.ErrorMessage).ToList();
+                List<string> propertyErrors = result
+                                              .Errors.Where(e => e.PropertyName == propertyName)
+                                              .Select(e => e.ErrorMessage)
+                                              .ToList();
                 if (propertyErrors.Count != 0)
                     AddErrors(propertyName, propertyErrors);
             }
