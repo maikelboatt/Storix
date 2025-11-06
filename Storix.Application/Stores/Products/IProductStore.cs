@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Storix.Application.DTO.Products;
 using Storix.Domain.Models;
 
@@ -8,13 +9,37 @@ namespace Storix.Application.Stores.Products
     {
         void Initialize( List<Product> products );
 
+        void InitializeProductList( List<ProductListDto> productListDtos );
+
+        void InitializeTopProducts( List<TopProductDto> topProducts );
+
         void Clear();
+
+        /// <summary>
+        ///     Event triggered when a product is added.
+        /// </summary>
+        event Action<Product> ProductAdded;
+
+        /// <summary>
+        ///     Event triggered when a product is updated.
+        /// </summary>
+        event Action<Product> ProductUpdated;
+
+        /// <summary>
+        ///     Event triggered when a product is deleted.
+        /// </summary>
+        event Action<int> ProductDeleted;
+
 
         ProductDto? Create( int productId, CreateProductDto createDto );
 
         ProductDto? Update( UpdateProductDto updateDto );
 
         bool Delete( int productId );
+
+        string GetCategoryName( int categoryId );
+
+        string GetSupplierName( int supplierId );
 
         ProductDto? GetById( int productId );
 
@@ -34,6 +59,10 @@ namespace Storix.Application.Stores.Products
         List<ProductDto> GetBySupplier( int supplierId );
 
         List<ProductDto> GetActiveProducts();
+
+        List<TopProductDto> GetTop5BestSellersAsync( int topCounts );
+
+        List<ProductListDto> GetProductListDto();
 
         bool Exists( int productId );
 

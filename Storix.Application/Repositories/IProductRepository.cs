@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Storix.Application.Common;
 using Storix.Application.DTO;
+using Storix.Application.DTO.Products;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Repositories
@@ -91,6 +92,8 @@ namespace Storix.Application.Repositories
         ///     Gets all active products (IsActive = true and IsDeleted = false).
         /// </summary>
         Task<IEnumerable<Product>> GetAllActiveAsync();
+
+        Task<IEnumerable<TopProductDto>> GetTopBestSellersAsync( int topCount = 5, int monthsBack = 3 );
 
         /// <summary>
         ///     Gets all soft-deleted products.

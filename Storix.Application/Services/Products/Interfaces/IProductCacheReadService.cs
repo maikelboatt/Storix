@@ -38,6 +38,8 @@ namespace Storix.Application.Services.Products.Interfaces
         /// </summary>
         List<ProductDto> GetProductsBySupplierFromCache( int supplierId );
 
+        List<TopProductDto> GetTopBestSellersFromCache( int topCounts );
+
         /// <summary>
         ///     Checks if a product exists in the active cache (fast).
         /// </summary>

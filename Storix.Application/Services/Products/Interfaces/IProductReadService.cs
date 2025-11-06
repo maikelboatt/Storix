@@ -11,6 +11,10 @@ namespace Storix.Application.Services.Products.Interfaces
     {
         Task<DatabaseResult<IEnumerable<Product>>> GetAllActiveProductsAsync();
 
+        Task<DatabaseResult<IEnumerable<TopProductDto>>> GetTop5BestSellersAsync( int topCounts = 5, int monthsBack = 3 );
+
+        Task<DatabaseResult<IEnumerable<ProductListDto>>> GetAllActiveProductsForListAsync();
+
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetLowStockProductsAsync();
 
         Task<DatabaseResult<int>> GetActiveProductCountAsync();

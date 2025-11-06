@@ -28,7 +28,7 @@ namespace Storix.Application.Stores.Categories
 
         List<CategoryDto> GetRootCategories();
 
-        IEnumerable<Category> GetActiveCategories();
+        IEnumerable<CategoryDto> GetActiveCategories();
 
         bool Exists( int categoryId );
 
