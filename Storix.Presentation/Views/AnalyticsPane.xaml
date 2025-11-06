@@ -1,55 +1,21 @@
 ﻿<views:MvxWpfView x:Class="Storix.Presentation.Views.AnalyticsPane"
                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:components="clr-namespace:Storix.Presentation.Components"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                  xmlns:resources="clr-namespace:Storix.Presentation.Resources"
+                  xmlns:viewModels="clr-namespace:Storix.Core.ViewModels;assembly=Storix.Core"
                   xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=viewModels:AnalyticsPaneViewModel,
+                                                   IsDesignTimeCreatable=True}"
                   d:DesignHeight="auto"
                   d:DesignWidth="auto"
                   FontFamily="Raleway"
                   mc:Ignorable="d">
-    <Grid>
-        <Border Background="{DynamicResource SecondaryBackgroundColor}" CornerRadius="8">
-            <StackPanel Orientation="Vertical">
-                <TextBlock Margin="15"
-                           HorizontalAlignment="Center"
-                           FontSize="36"
-                           FontWeight="SemiBold"
-                           Text="Analytics Pane" />
-                <WrapPanel>
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E0E0E0"
-                                           CardImage="/Assets/Icons/Storix.png"
-                                           CardTitle="Monthly Revenue"
-                                           CardValue="$48.5K"
-                                           ChangePercentage="↑ 15%"
-                                           IconBackground="#FFF3E0" />
 
-
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E0E0E0"
-                                           CardImage="/Assets/Icons/StorixBG.png"
-                                           CardTitle="Low Stock"
-                                           CardValue="23"
-                                           ChangePercentage="↓ 8%"
-                                           IconBackground="#FFEBEE" />
-
-                    <resources:CustomCards CardImage="/Assets/Icons/Storix.png"
-                                           CardTitle="Low Stock Alert"
-                                           CardValue="23"
-                                           ChangePercentage="↓ 5%"
-                                           IconBackground="#FFEBEE" />
-
-                    <resources:CustomCards CardImage="/Assets/Icons/StorixBG.png"
-                                           CardTitle="Monthly Revenue"
-                                           CardValue="$48.5K"
-                                           ChangePercentage="↑ 15%"
-                                           IconBackground="#FFF3E0" />
-
-
-                </WrapPanel>
-            </StackPanel>
-        </Border>
-    </Grid>
+    <Border Background="{StaticResource SecondaryBackgroundColor}" CornerRadius="8">
+        <Grid>
+            <components:DashboardView DataContext="{Binding Dashboard}" />
+        </Grid>
+    </Border>
 </views:MvxWpfView>
