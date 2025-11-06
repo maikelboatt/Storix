@@ -17,8 +17,10 @@ namespace Storix.Core.ViewModels.Products
     public class ProductListViewModel:MvxViewModel
     {
         private readonly IProductService _productService;
-        private readonly IModalNavigationControl _modalNavigationControl;
         private readonly IProductStore _productStore;
+        private readonly ISupplierService _supplierService;
+        private readonly ICategoryService _categoryService;
+        private readonly IModalNavigationControl _modalNavigationControl;
         private readonly ILogger<ProductListViewModel> _logger;
         private MvxObservableCollection<ProductListItemViewModel> _products;
         private string _searchText;
@@ -28,19 +30,18 @@ namespace Storix.Core.ViewModels.Products
 
 
         public ProductListViewModel( IProductService productService,
-            IModalNavigationControl modalNavigationControl,
             IProductStore productStore,
+            ISupplierService supplierService,
+            ICategoryService categoryService,
+            IModalNavigationControl modalNavigationControl,
             ILogger<ProductListViewModel> logger )
         {
             _productService = productService;
-            _modalNavigationControl = modalNavigationControl;
             _productStore = productStore;
+            _supplierService = supplierService;
+            _categoryService = categoryService;
+            _modalNavigationControl = modalNavigationControl;
             _logger = logger;
-
-            // Subscribe to events
-            _productStore.ProductAdded += ProductStoreOnProductAdded;
-            _productStore.ProductUpdated += ProductStoreOnProductUpdated;
-            _productStore.ProductDeleted += ProductStoreOnProductDeleted;
 
             // Initialize commands
             OpenProductFormCommand = new MvxCommand<int>(ExecuteProductForm);
@@ -48,92 +49,6 @@ namespace Storix.Core.ViewModels.Products
             OpenCreatePurchaseOrderCommand = new MvxCommand(ExecuteCreatePurchaseOrder);
         }
 
-        #region Event-Handlers
-
-        private void ProductStoreOnProductAdded( Product product )
-        {
-            try
-            {
-                // Convert the added Product to ProductListDto
-                ProductListDto dto = product.ToListDto(
-                    product.CategoryId > 0
-                        ? _productStore.GetCategoryName(product.CategoryId)
-                        : null,
-                    product.SupplierId > 0
-                        ? _productStore.GetSupplierName(product.SupplierId)
-                        : null,
-                    3
-                    // _productStore.GetCurrentStock(product.ProductId)
-                );
-
-                // Create view model and add to lists
-                ProductListItemViewModel vm = new(dto);
-
-                _allProducts.Add(vm);
-
-                // Apply filter so it shows up if it matches current search
-                ApplyFilterOptimized();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling ProductAdded event for product {ProductId}", product.ProductId);
-            }
-        }
-
-        private void ProductStoreOnProductUpdated( Product product )
-        {
-            try
-            {
-                // Find existing item
-                ProductListItemViewModel? existing = _allProducts.FirstOrDefault(p => p.ProductId == product.ProductId);
-                if (existing is null)
-                    return;
-
-                // Replace with updated data
-                ProductListDto dto = product.ToListDto(
-                    product.CategoryId > 0
-                        ? _productStore.GetCategoryName(product.CategoryId)
-                        : null,
-                    product.SupplierId > 0
-                        ? _productStore.GetSupplierName(product.SupplierId)
-                        : null,
-                    5
-                    // _productStore.GetCurrentStock(product.ProductId)
-                );
-
-                ProductListItemViewModel updatedVm = new(dto);
-
-                // Update in the full list
-                int index = _allProducts.IndexOf(existing);
-                _allProducts[index] = updatedVm;
-
-                // Refresh visible list
-                ApplyFilterOptimized();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling ProductUpdated event for product {ProductId}", product.ProductId);
-            }
-        }
-
-        private void ProductStoreOnProductDeleted( int productId )
-        {
-            try
-            {
-                // Remove from both caches
-                _allProducts.RemoveAll(p => p.ProductId == productId);
-                // Products.Remove();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling ProductDeleted event for product {ProductId}", productId);
-            }
-        }
-
-        #endregion
-
-
-        #region ViewModel LifeCycle
 
         public override async Task Initialize()
         {
@@ -149,86 +64,45 @@ namespace Storix.Core.ViewModels.Products
             await base.Initialize();
         }
 
-        #endregion
-
         private void LoadProducts()
         {
+            // DatabaseResult<IEnumerable<ProductListDto>> result = await _productService.GetAllActiveProductsForListAsync();
+
+            // if (result is { IsSuccess: true, Value: not null })
+            //     Products = new MvxObservableCollection<ProductListItemViewModel>(
+            //         result.Value.Select(dto => new ProductListItemViewModel(dto))
+            //     );
+
             List<ProductListDto> result = _productStore.GetProductListDto();
 
-            if (result == null || result.Count == 0)
+            if (result.Count != 0)
             {
-                Products = [];
-                _logger.LogWarning("No products found from ProductStore.");
-                return;
-            }
-
-            _allProducts = result
-                           .Select(dto => new ProductListItemViewModel(dto))
-                           .ToList();
-
-            ApplyFilterOptimized();
-        }
-
-        private CancellationTokenSource _filterCancellation;
-        private const int FilterDebounceMs = 300;
-
-
-        private async void DebouncedFilter()
-        {
-            _filterCancellation?.Cancel();
-            _filterCancellation = new CancellationTokenSource();
-
-            try
-            {
-                await Task.Delay(FilterDebounceMs, _filterCancellation.Token);
-                ApplyFilterOptimized();
-            }
-            catch (TaskCanceledException)
-            {
-                // Cancelled by newer input
+                _allProducts = result
+                               .Select(dto => new ProductListItemViewModel(dto))
+                               .ToList();
+                ApplyFilter();
             }
         }
 
-        private void ApplyFilterOptimized()
+        private void ApplyFilter()
         {
-            string filter = SearchText?.Trim() ?? string.Empty;
+
+            string filter = SearchText
+                            ?.Trim()
+                            .ToLowerInvariant() ?? string.Empty;
 
             List<ProductListItemViewModel> filtered = string.IsNullOrEmpty(filter)
                 ? _allProducts
                 : _allProducts
                   .Where(p =>
-                             !string.IsNullOrEmpty(p.Name) &&
-                             p.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase) ||
-                             !string.IsNullOrEmpty(p.CategoryName) &&
-                             p.CategoryName.Contains(filter, StringComparison.InvariantCultureIgnoreCase)
+                             !string.IsNullOrEmpty(p.Name) && p
+                                                              .Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase) ||
+                             !string.IsNullOrEmpty(p.CategoryName) && p
+                                                                      .CategoryName.Contains(filter, StringComparison.InvariantCultureIgnoreCase)
                   )
                   .ToList();
 
-            // For small lists or first load, just replace
-            if (Products.Count == 0)
-            {
-                Products = new MvxObservableCollection<ProductListItemViewModel>(filtered);
-                return;
-            }
-
-            // Use HashSet for O(1) lookups
-            HashSet<ProductListItemViewModel> filteredSet = new(filtered);
-
-            // Remove items not in filtered list (backwards to avoid index issues)
-            for (int i = Products.Count - 1; i >= 0; i--)
-            {
-                if (!filteredSet.Contains(Products[i]))
-                {
-                    Products.RemoveAt(i);
-                }
-            }
-
-            // Add new items preserving order
-            HashSet<ProductListItemViewModel> existingSet = new(Products);
-            foreach (ProductListItemViewModel item in filtered.Where(f => !existingSet.Contains(f)))
-            {
-                Products.Add(item);
-            }
+            Products = new MvxObservableCollection<ProductListItemViewModel>(filtered);
         }
 
 
@@ -247,10 +121,11 @@ namespace Storix.Core.ViewModels.Products
             {
                 if (SetProperty(ref _searchText, value))
                 {
-                    DebouncedFilter();
+                    ApplyFilter();
                 }
             }
         }
+
 
         public bool IsLoading
         {
