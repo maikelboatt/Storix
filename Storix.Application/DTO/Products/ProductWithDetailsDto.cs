@@ -1,6 +1,4 @@
-﻿using Storix.Application.DTO.Products;
-
-namespace Storix.Application.DTO
+﻿namespace Storix.Application.DTO.Products
 {
     public class ProductWithDetailsDto:ProductDto
     {
