@@ -6,7 +6,7 @@ namespace Storix.Application.Stores
     /// <summary>
     ///     Manages the navigation for modal view models.
     /// </summary>
-    public class ModalNavigationStore:IModalNavigationStore
+    public class ModalNavigationStore
     {
         private MvxViewModel? _currentModalViewModel;
 

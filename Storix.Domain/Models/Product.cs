@@ -23,7 +23,6 @@ namespace Storix.Domain.Models
         public decimal ProfitMargin => Price - Cost;
 
 
-        // You can still add business logic methods if needed
         public bool IsLowStock( int currentStock ) => currentStock <= MinStockLevel;
     }
 }

@@ -83,6 +83,13 @@ namespace Storix.Application.Services.Products
         /// </summary>
         public bool ProductExistsInCache( int productId ) => productStore.Exists(productId);
 
+        public List<TopProductDto> GetTopBestSellersFromCache( int topCounts )
+        {
+            logger.LogDebug("Retrieving top {TopCounts} best-selling products from cache", topCounts);
+            return productStore
+                .GetTop5BestSellersAsync(topCounts);
+        }
+
         /// <summary>
         ///     Gets the count of active products in cache (fast).
         /// </summary>
@@ -101,8 +108,9 @@ namespace Storix.Application.Services.Products
                 {
                     // Get only active products from database
                     DatabaseResult<IEnumerable<Product>> result = await productReadService.GetAllActiveProductsAsync();
+                    DatabaseResult<IEnumerable<TopProductDto>> bestSellersResult = await productReadService.GetTop5BestSellersAsync();
 
-                    if (result.IsSuccess && result.Value != null)
+                    if (result is { IsSuccess: true, Value: not null })
                     {
                         logger.LogInformation(
                             "Product store cache refreshed successfully with {Count} active products",
