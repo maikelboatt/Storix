@@ -148,8 +148,7 @@ namespace Storix.Application.DTO.Products
             CategoryName = categoryName,
             SupplierName = supplierName,
             CurrentStock = currentStock,
-            IsLowStock = product.IsLowStock(currentStock),
-            IsDeleted = product.IsDeleted
+            IsLowStock = product.IsLowStock(currentStock)
         };
 
         public static ProductWithDetailsDto ToDetailsDto( this Product product,
@@ -190,8 +189,7 @@ namespace Storix.Application.DTO.Products
             supplierId,
             categoryId,
             DateTime.UtcNow,
-            null,
-            dto.IsDeleted
+            null
         );
 
         public static Product ToDomain( this ProductWithDetailsDto dto ) => new(
