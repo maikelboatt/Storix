@@ -8,6 +8,14 @@
             <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
             <resources:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
             <resources:EditModeToTextConverter x:Key="EditModeToTextConverter" />
+            <resources:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <resources:NullToBoolConverter x:Key="NullToBoolConverter" />
+            <resources:ErrorConverter x:Key="ErrorConverter" />
+            <resources:IntToVisibilityConverter x:Key="IntToVisibilityConverter" />
+            <resources:LongDateConverter x:Key="LongDateConverter" />
+            <resources:ShortDateConverter x:Key="ShortDateConverter" />
+            <resources:RadioButtonConverter x:Key="RadioButtonConverter" />
+
             <ResourceDictionary.MergedDictionaries>
                 <!--  Default theme of application  -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml" />
