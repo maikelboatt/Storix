@@ -22,7 +22,6 @@ namespace Storix.Core.ViewModels.Products
         public string? SupplierName => _product.SupplierName;
         public int CurrentStock => _product.CurrentStock;
         public bool IsLowStock => _product.IsLowStock;
-        public bool IsDeleted => _product.IsDeleted;
 
         #endregion
 
