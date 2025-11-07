@@ -18,6 +18,5 @@
         public string? SupplierName { get; init; } // Joined data
         public int CurrentStock { get; init; }     // Aggregated data
         public bool IsLowStock { get; init; }      // Computed
-        public bool IsDeleted { get; init; }
     }
 }
