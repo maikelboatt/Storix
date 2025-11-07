@@ -19,8 +19,8 @@ namespace Storix.Core.ViewModels.Products
         private readonly IModalNavigationControl _modalNavigationControl;
         private readonly ILogger<ProductListViewModel> _logger;
 
-        private MvxObservableCollection<ProductListItemViewModel> _products = new();
-        private List<ProductListItemViewModel> _allProducts = new();
+        private MvxObservableCollection<ProductListItemViewModel> _products = [];
+        private List<ProductListItemViewModel> _allProducts = [];
         private string _searchText = string.Empty;
         private bool _isLoading;
 
@@ -44,6 +44,7 @@ namespace Storix.Core.ViewModels.Products
             OpenProductFormCommand = new MvxCommand<int>(ExecuteProductForm);
             OpenCreateSalesOrderCommand = new MvxCommand(ExecuteCreateSalesOrder);
             OpenCreatePurchaseOrderCommand = new MvxCommand(ExecuteCreatePurchaseOrder);
+            OpenProductDeleteCommand = new MvxCommand<int>(ExecuteOpenProductDelete);
         }
 
         public override async Task Initialize()
@@ -80,7 +81,7 @@ namespace Storix.Core.ViewModels.Products
             ApplyFilter();
         }
 
-        #region === Store Event Handlers ===
+        #region Store Event Handlers
 
         private void OnProductAdded( Product product )
         {
@@ -165,7 +166,7 @@ namespace Storix.Core.ViewModels.Products
             Products = new MvxObservableCollection<ProductListItemViewModel>(filtered);
         }
 
-        #region === Properties ===
+        #region Properties
 
         public MvxObservableCollection<ProductListItemViewModel> Products
         {
@@ -195,23 +196,21 @@ namespace Storix.Core.ViewModels.Products
 
         #endregion
 
-        #region === Commands ===
+        #region Commands
 
-        private void ExecuteProductForm( int id )
-        {
-            _modalNavigationControl.PopUp<ProductFormViewModel>(id);
-        }
+        private void ExecuteProductForm( int id ) => _modalNavigationControl.PopUp<ProductFormViewModel>(id);
 
-        private void ExecuteCreateSalesOrder()
-        {
-            _modalNavigationControl.PopUp<FormerViewModel>();
-        }
+        private void ExecuteCreateSalesOrder() => _modalNavigationControl.PopUp<ProductFormViewModel>();
+
+        private void ExecuteOpenProductDelete( int productId ) => _modalNavigationControl.PopUp<ProductDeleteViewModel>(productId);
 
         private void ExecuteCreatePurchaseOrder() => _modalNavigationControl.PopUp<ProductFormViewModel>(4);
 
         public IMvxCommand<int> OpenProductFormCommand { get; }
         public IMvxCommand OpenCreateSalesOrderCommand { get; }
         public IMvxCommand OpenCreatePurchaseOrderCommand { get; }
+
+        public IMvxCommand<int> OpenProductDeleteCommand { get; }
 
         public IMvxCommand SelectAllCommand => new MvxCommand(SelectAll);
         public IMvxCommand DeselectAllCommand => new MvxCommand(DeselectAll);
