@@ -86,4 +86,8 @@
         <Resource Include="Assets\Icons\turnover.png"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <Folder Include="Details\"/>
+    </ItemGroup>
+
 </Project>

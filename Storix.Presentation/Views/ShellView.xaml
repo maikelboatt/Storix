@@ -3,6 +3,7 @@
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:components="clr-namespace:Storix.Presentation.Components"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:deletion="clr-namespace:Storix.Presentation.Deletion"
                   xmlns:forms="clr-namespace:Storix.Presentation.Forms"
                   xmlns:local="clr-namespace:Storix.Presentation.Views"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -66,8 +67,8 @@
             <forms:ProductForm />
         </DataTemplate>
 
-        <DataTemplate DataType="{x:Type products:FormerViewModel}">
-            <forms:Former />
+        <DataTemplate DataType="{x:Type products:ProductDeleteViewModel}">
+            <deletion:ProductDeleteConfirmation />
         </DataTemplate>
 
     </views:MvxWpfView.Resources>
