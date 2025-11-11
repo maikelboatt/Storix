@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Storix.Application.DTO.Categories;
 using Storix.Domain.Models;
 
@@ -8,7 +9,15 @@ namespace Storix.Application.Stores.Categories
     {
         void Initialize( IEnumerable<Category> categories );
 
+        void InitializeCategoryList( List<CategoryListDto> categoryListDtos );
+
         void Clear();
+
+        event Action<Category> CategoryAdded;
+
+        event Action<Category> CategoryUpdated;
+
+        event Action<int> CategoryDeleted;
 
         CategoryDto? Create( int categoryId, CreateCategoryDto createDto );
 
@@ -24,11 +33,15 @@ namespace Storix.Application.Stores.Categories
             int skip = 0,
             int take = 100 );
 
+        List<CategoryListDto> GetCategoryListDtos();
+
         List<CategoryDto> GetChildren( int parentCategoryId );
 
         List<CategoryDto> GetRootCategories();
 
         IEnumerable<CategoryDto> GetActiveCategories();
+
+        string? GetCategoryName( int parentCategoryId );
 
         bool Exists( int categoryId );
 

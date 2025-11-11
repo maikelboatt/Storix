@@ -15,6 +15,8 @@ namespace Storix.Application.Services.Categories.Interfaces
 
         Task<DatabaseResult<int>> GetTotalCategoryCountAsync();
 
+        Task<DatabaseResult<IEnumerable<CategoryListDto>>> GetAllActiveCategoriesForListAsync();
+
         CategoryDto? GetCategoryById( int categoryId );
 
         Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync();

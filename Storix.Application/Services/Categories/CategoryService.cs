@@ -35,6 +35,9 @@ namespace Storix.Application.Services.Categories
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync() => await categoryReadService.GetAllActiveCategoriesAsync();
 
+        public async Task<DatabaseResult<IEnumerable<CategoryListDto>>> GetAllActiveCategoriesForListAsync() =>
+            await categoryReadService.GetAllActiveCategoriesForListAsync();
+
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllDeletedCategoriesAsync() => await categoryReadService.GetAllDeletedCategoriesAsync();
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync() => await categoryReadService.GetRootCategoriesAsync();

@@ -13,6 +13,8 @@ namespace Storix.Application.Services.Categories.Interfaces
 
         Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync();
 
+        Task<DatabaseResult<IEnumerable<CategoryListDto>>> GetAllActiveCategoriesForListAsync();
+
         Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllDeletedCategoriesAsync();
 
         Task<DatabaseResult<IEnumerable<CategoryDto>>> GetRootCategoriesAsync();

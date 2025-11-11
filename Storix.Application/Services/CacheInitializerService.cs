@@ -24,8 +24,9 @@ namespace Storix.Application.Services
             [
                 productService.GetAllActiveProductsAsync(),
                 productService.GetAllActiveProductsForListAsync(),
-                supplierService.GetAllActiveAsync(),
                 categoryService.GetAllActiveCategoriesAsync(),
+                categoryService.GetAllActiveCategoriesForListAsync(),
+                supplierService.GetAllActiveAsync(),
 
                 customerService.GetAllActiveAsync(),
                 orderService.GetAllOrdersAsync()

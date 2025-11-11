@@ -13,18 +13,19 @@ namespace Storix.Application.Stores.Categories
     public class CategoryStore:ICategoryStore
     {
         private readonly Dictionary<int, Category> _categories;
+        private readonly Dictionary<int, CategoryListDto> _categoryListDtos;
 
         public CategoryStore( List<Category>? initialCategories = null )
         {
             _categories = new Dictionary<int, Category>();
+            _categoryListDtos = new Dictionary<int, CategoryListDto>();
 
-            if (initialCategories != null)
+            if (initialCategories == null) return;
+
+            // Only cache active categories
+            foreach (Category category in initialCategories.Where(c => !c.IsDeleted))
             {
-                // Only cache active categories
-                foreach (Category category in initialCategories.Where(c => !c.IsDeleted))
-                {
-                    _categories[category.CategoryId] = category;
-                }
+                _categories[category.CategoryId] = category;
             }
         }
 
@@ -39,10 +40,39 @@ namespace Storix.Application.Stores.Categories
             }
         }
 
+        public void InitializeCategoryList( List<CategoryListDto> categoryListDtos )
+        {
+            _categoryListDtos.Clear();
+
+            foreach (CategoryListDto dto in categoryListDtos)
+            {
+                _categoryListDtos[dto.CategoryId] = dto;
+            }
+        }
+
         public void Clear()
         {
             _categories.Clear();
         }
+
+        #region Events
+
+        /// <summary>
+        ///     Event triggered when a category is added.
+        /// </summary>
+        public event Action<Category> CategoryAdded;
+
+        /// <summary>
+        ///     Event triggered when a category is updated.
+        /// </summary>
+        public event Action<Category> CategoryUpdated;
+
+        /// <summary>
+        ///     Event triggered when a category is deleted.
+        /// </summary>
+        public event Action<int> CategoryDeleted;
+
+        #endregion
 
         #region Write Operations
 
@@ -159,6 +189,14 @@ namespace Storix.Application.Stores.Categories
                    .ToList();
         }
 
+        public List<CategoryListDto> GetCategoryListDtos()
+        {
+            return _categoryListDtos
+                   .Values
+                   .OrderBy(c => c.Name)
+                   .ToList();
+        }
+
         public List<CategoryDto> GetChildren( int parentCategoryId ) => GetAll(parentCategoryId);
 
         public List<CategoryDto> GetRootCategories()
@@ -178,6 +216,20 @@ namespace Storix.Application.Stores.Categories
                    .OrderBy(c => c.Name)
                    .Select(p => p.ToDto())
                    .ToList();
+        }
+
+        /// <summary>
+        /// Get the Name of a category by its ID from cache.
+        /// </summary>
+        public string? GetCategoryName( int parentCategoryId )
+        {
+            if (parentCategoryId <= 0)
+            {
+                return null;
+            }
+
+            CategoryDto? category = GetById(parentCategoryId);
+            return category?.Name;
         }
 
         #endregion

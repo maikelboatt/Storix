@@ -235,6 +235,36 @@ namespace Storix.Application.Services.Categories
             return DatabaseResult<IEnumerable<CategoryDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        public async Task<DatabaseResult<IEnumerable<CategoryListDto>>> GetAllActiveCategoriesForListAsync()
+        {
+            DatabaseResult<IEnumerable<CategoryDto>> result = await GetAllActiveCategoriesAsync();
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                IEnumerable<CategoryListDto> categoryListDtos = result
+                                                                .Value
+                                                                .Select(dto => new CategoryListDto
+                                                                {
+                                                                    CategoryId = dto.CategoryId,
+                                                                    Name = dto.Name,
+                                                                    Description = dto.Description,
+                                                                    ParentCategory = categoryStore.GetCategoryName(dto.ParentCategoryId ?? 0),
+                                                                    ImageUrl = dto.ImageUrl
+                                                                });
+
+
+                IEnumerable<CategoryListDto> dtos = categoryListDtos.ToList();
+                categoryStore.InitializeCategoryList(dtos.ToList());
+
+                logger.LogInformation("Successfully mapped {CategoryCount} active categories to CategoryListDTO", dtos.Count());
+
+                return DatabaseResult<IEnumerable<CategoryListDto>>.Success(dtos);
+            }
+
+            logger.LogWarning("Failed to retrieve active categories for list: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<CategoryListDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> SearchAsync( string searchTerm )
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
