@@ -78,6 +78,15 @@ namespace Storix.Application.DTO.Categories
             deletedAt
         );
 
+        public static CategoryListDto ToListDto( this Category category, string? parentCategoryName ) => new()
+        {
+            CategoryId = category.CategoryId,
+            Name = category.Name,
+            Description = category.Description,
+            ParentCategory = parentCategoryName,
+            ImageUrl = category.ImageUrl
+        };
+
         // Collection mapping
         public static IEnumerable<CategoryDto> ToDto( this IEnumerable<Category> categories ) => categories.Select(c => c.ToDto());
     }
