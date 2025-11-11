@@ -62,11 +62,21 @@ namespace Storix.Core.ViewModels.Products
             await base.Initialize();
         }
 
+        public override void ViewDestroy( bool viewFinishing = true )
+        {
+            // Unsubscribe from store events to prevent memory leaks
+            _productStore.ProductAdded -= OnProductAdded;
+            _productStore.ProductUpdated -= OnProductUpdated;
+            _productStore.ProductDeleted -= OnProductDeleted;
+
+            base.ViewDisappeared();
+        }
+
         private void LoadProducts()
         {
             List<ProductListDto> result = _productStore.GetProductListDto();
 
-            if (result == null || result.Count == 0)
+            if (result.Count == 0)
             {
                 _logger.LogInformation("No products found in store.");
                 Products = [];
