@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using FluentValidation;
 using FluentValidation.Results;
 using Storix.Application.DTO.Categories;
@@ -18,6 +19,7 @@ namespace Storix.Core.InputModel
         private string? _imageUrl = string.Empty;
         private string _name = string.Empty;
         private int? _parentCategoryId;
+        private bool _isActive = true;
 
         public CategoryInputModel( CreateCategoryDto? createCategoryDto ):this()
         {
@@ -36,6 +38,9 @@ namespace Storix.Core.InputModel
             }
             ValidateAllProperties();
         }
+
+        // Collections for dropdowns
+        public ObservableCollection<CategoryDto> ParentCategories { get; set; } = [];
 
         // Properties with validation
         public int CategoryId
@@ -68,6 +73,7 @@ namespace Storix.Core.InputModel
                 if (SetProperty(ref _imageUrl, value))
                 {
                     ValidateProperty(value!);
+                    RaisePropertyChanged(() => HasImageUrl);
                 }
             }
         }
@@ -93,6 +99,17 @@ namespace Storix.Core.InputModel
                 }
             }
         }
+
+        public bool IsActive
+        {
+            get => _isActive;
+            set => SetProperty(ref _isActive, value);
+        }
+
+        // Calculated properties
+        public bool HasImageUrl => !string.IsNullOrWhiteSpace(_imageUrl);
+        public bool IsImageLoading => false; // Can be used for async image loading status
+
 
         private void LoadFromDto( CreateCategoryDto dto )
         {
@@ -134,7 +151,9 @@ namespace Storix.Core.InputModel
             ClearErrors(propertyName);
 
             // Pick the correct validator based on whether CategoryId is set
-            IValidator validator = _categoryId == 0 ? _createCategoryValidator : _updateCategoryValidator;
+            IValidator validator = _categoryId == 0
+                ? _createCategoryValidator
+                : _updateCategoryValidator;
 
             ValidationResult result;
 
@@ -151,8 +170,10 @@ namespace Storix.Core.InputModel
 
             if (!result.IsValid)
             {
-                List<string> propertyErrors = result.Errors.Where(e => e.PropertyName == propertyName)
-                                                    .Select(e => e.ErrorMessage).ToList();
+                List<string> propertyErrors = result
+                                              .Errors.Where(e => e.PropertyName == propertyName)
+                                              .Select(e => e.ErrorMessage)
+                                              .ToList();
                 if (propertyErrors.Count != 0)
                     AddErrors(propertyName, propertyErrors);
             }
