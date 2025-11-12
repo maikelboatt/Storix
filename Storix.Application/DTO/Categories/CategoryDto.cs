@@ -9,5 +9,7 @@ namespace Storix.Application.DTO.Categories
         public string? Description { get; set; }
         public int? ParentCategoryId { get; set; }
         public string? ImageUrl { get; set; }
+
+        public override string ToString() => Name;
     }
 }
