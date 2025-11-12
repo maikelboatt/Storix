@@ -98,9 +98,6 @@ namespace Storix.Core.ViewModels.Products
 
         #endregion
 
-        // Navigation parameter support
-
-
         // Business operations
         public CreateProductDto? GetCreateProductDto() => _inputModel?.ToCreateDto();
 

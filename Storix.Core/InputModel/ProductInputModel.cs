@@ -10,7 +10,7 @@ using Storix.Core.ViewModels.Products;
 
 namespace Storix.Core.InputModel
 {
-    public class ProductInputModel:MvxValidatingViewModel, IProductViewModel
+    public class ProductInputModel():MvxValidatingViewModel, IProductViewModel
     {
         private readonly CreateProductDtoValidator _createProductValidator = new();
         private readonly UpdateProductDtoValidator _updateProductValidator = new();
@@ -45,16 +45,8 @@ namespace Storix.Core.InputModel
         }
 
         // Collections for dropdowns
-        public ObservableCollection<CategoryDto> Categories { get; set; }
-        public ObservableCollection<SupplierDto> Suppliers { get; set; }
-
-        // Default constructor
-        public ProductInputModel()
-        {
-            Categories = [];
-            Suppliers = [];
-        }
-
+        public ObservableCollection<CategoryDto> Categories { get; set; } = [];
+        public ObservableCollection<SupplierDto> Suppliers { get; set; } = [];
 
         // Properties with validation
         public string Name

@@ -212,7 +212,7 @@ namespace Storix.Core.ViewModels.Categories
 
         private void ExecuteCategoryForm( int categoryId )
         {
-            _modalNavigationControl.PopUp<ProductFormViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CategoryFormViewModel>(categoryId);
         }
 
         #endregion

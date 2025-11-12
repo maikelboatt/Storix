@@ -72,6 +72,10 @@
             <forms:ProductForm />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type categories:CategoryFormViewModel}">
+            <forms:CategoryForm />
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type products:ProductDeleteViewModel}">
             <deletion:ProductDeleteConfirmation />
         </DataTemplate>

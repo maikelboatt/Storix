@@ -144,7 +144,7 @@
                         <DataGridTextColumn Width="*"
                                             Binding="{Binding ParentCategory}"
                                             CanUserResize="False"
-                                            Header="ParentCategory"
+                                            Header="Parent Category"
                                             IsReadOnly="True" />
 
                         <!--  Column displaying the Cost of the category  -->
