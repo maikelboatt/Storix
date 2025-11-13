@@ -80,6 +80,10 @@
             <deletion:ProductDeleteConfirmation />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type categories:CategoryDeleteViewModel}">
+            <deletion:CategoryDeleteConfirmation />
+        </DataTemplate>
+
     </views:MvxWpfView.Resources>
 
     <Border UseLayoutRounding="True">
