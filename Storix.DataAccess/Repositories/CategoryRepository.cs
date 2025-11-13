@@ -32,12 +32,13 @@ namespace Storix.DataAccess.Repositories
                 // language=tsql
                 : "SELECT COUNT(1) FROM Category WHERE CategoryId = @CategoryId AND IsDeleted = 0";
 
-            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+            int count = await sqlDataAccess.ExecuteScalarAsync<int>(
                 sql,
                 new
                 {
                     CategoryId = categoryId
                 });
+            return count > 0;
         }
 
         /// <summary>
@@ -120,13 +121,16 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
-        ///     Gets all categories (active + deleted).
-        ///     Service layer filters for active/deleted. Use CategoryStore.GetAll() for fast active-only access.
+        ///     Gets categories from the database.
         /// </summary>
-        public async Task<IEnumerable<Category>> GetAllAsync()
+        /// <param name="includeDeleted">If false, only returns active categories (IsDeleted = 0)</param>
+        public async Task<IEnumerable<Category>> GetAllAsync( bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Category ORDER BY Name";
+            string sql = includeDeleted
+                ? "SELECT * FROM Category ORDER BY Name"
+                : "SELECT * FROM Category WHERE IsDeleted = 0 ORDER BY Name";
+
             return await sqlDataAccess.QueryAsync<Category>(sql);
         }
 

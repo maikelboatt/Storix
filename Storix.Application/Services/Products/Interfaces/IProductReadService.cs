@@ -35,7 +35,7 @@ namespace Storix.Application.Services.Products.Interfaces
         Task<DatabaseResult<IEnumerable<ProductDto>>> GetProductsBySupplierAsync( int supplierId );
 
 
-        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync();
+        Task<DatabaseResult<IEnumerable<ProductWithDetailsDto>>> GetProductsWithDetailsAsync( bool includeDeleted = false );
 
 
         Task<DatabaseResult<IEnumerable<ProductDto>>> SearchProductsAsync( string searchTerm );

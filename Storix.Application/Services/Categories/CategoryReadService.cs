@@ -141,7 +141,8 @@ namespace Storix.Application.Services.Categories
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllCategoriesAsync()
         {
             DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                categoryRepository.GetAllAsync,
+                () =>
+                    categoryRepository.GetAllAsync(true),
                 "Retrieving all categories"
             );
 
@@ -215,19 +216,21 @@ namespace Storix.Application.Services.Categories
 
         public async Task<DatabaseResult<IEnumerable<CategoryDto>>> GetAllActiveCategoriesAsync()
         {
-            DatabaseResult<IEnumerable<CategoryDto>> result = await GetAllCategoriesAsync();
+            // Now fetches only active categories from database
+            DatabaseResult<IEnumerable<Category>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => categoryRepository.GetAllAsync(false), // Filter in SQL
+                "Retrieving active categories"
+            );
 
             if (result is { IsSuccess: true, Value: not null })
             {
-                IEnumerable<Category> enumerable = result.Value.Select(c => c.ToDomain());
-                List<Category> active = enumerable
-                                        .Where(c => !c.IsDeleted)
-                                        .ToList();
-
-                logger.LogInformation("Successfully retrieved {ActiveCategoryCount} active categories", result.Value.Count());
-
-                categoryStore.Initialize(active);
+                List<Category> active = result.Value.ToList();
                 IEnumerable<CategoryDto> categoryDtos = active.ToDto();
+
+
+                logger.LogInformation("Successfully retrieved {ActiveCategoryCount} active categories", active.Count);
+                categoryStore.Initialize(active);
+
                 return DatabaseResult<IEnumerable<CategoryDto>>.Success(categoryDtos);
             }
 

@@ -86,7 +86,7 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets all products.
         /// </summary>
-        Task<IEnumerable<Product>> GetAllAsync();
+        Task<IEnumerable<Product>> GetAllAsync( bool includeDeleted = true );
 
         /// <summary>
         ///     Gets all active products (IsActive = true and IsDeleted = false).
@@ -120,7 +120,7 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets products with extended details (joins supplier, category, stock info).
         /// </summary>
-        Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync();
+        Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync( bool includeDeleted = false );
 
         /// <summary>
         ///     Searches products by name, SKU, or description.

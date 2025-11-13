@@ -49,15 +49,16 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             string sql = includeDeleted
-                ? "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId"
-                : "SELECT COUNT(1) FROM Product WHERE ProductId = @ProductId AND IsDeleted = 0";
+                ? "SELECT COUNT(*) FROM Product WHERE ProductId = @ProductId"
+                : "SELECT COUNT(*) FROM Product WHERE ProductId = @ProductId AND IsDeleted = 0";
 
-            return await _sqlDataAccess.ExecuteScalarAsync<bool>(
+            int count = await _sqlDataAccess.ExecuteScalarAsync<int>(
                 sql,
                 new
                 {
                     ProductId = productId
                 });
+            return count > 0;
         }
 
         /// <summary>
@@ -161,10 +162,12 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         /// Retrieves all products (active and soft-deleted), ordered by name.
         /// </summary>
-        public async Task<IEnumerable<Product>> GetAllAsync()
+        public async Task<IEnumerable<Product>> GetAllAsync( bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Product ORDER BY Name";
+            string sql = includeDeleted
+                ? "SELECT * FROM Product ORDER BY Name"
+                : "SELECT * FROM Product WHERE IsDeleted = 0 ORDER BY Name";
             return await _sqlDataAccess.QueryAsync<Product>(sql);
         }
 
@@ -245,24 +248,26 @@ namespace Storix.DataAccess.Repositories
         /// Retrieves products along with category, supplier, and stock details.
         /// Uses ISNULL for SQL Server NULL handling.
         /// </summary>
-        public async Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync()
+        /// <param name="includeDeleted">If false, only returns active products (IsDeleted = 0)</param>
+        public async Task<IEnumerable<ProductWithDetailsDto>> GetProductsWithDetailsAsync( bool includeDeleted = false )
         {
             // language=tsql
-            const string sql = @"
-                SELECT 
-                    p.*,
-                    c.Name AS CategoryName,
-                    s.Name AS SupplierName,
-                    ISNULL(st.TotalStock, 0) AS CurrentStock
-                FROM Product p
-                LEFT JOIN Category c ON p.CategoryId = c.CategoryId
-                LEFT JOIN Supplier s ON p.SupplierId = s.SupplierId
-                LEFT JOIN (
-                    SELECT ProductId, SUM(CurrentStock) AS TotalStock
-                    FROM Inventory
-                    GROUP BY ProductId
-                ) st ON p.ProductId = st.ProductId
-                ORDER BY p.Name";
+            string sql = $@"
+        SELECT 
+            p.*,
+            c.Name AS CategoryName,
+            s.Name AS SupplierName,
+            ISNULL(st.TotalStock, 0) AS CurrentStock
+        FROM Product p
+        LEFT JOIN Category c ON p.CategoryId = c.CategoryId
+        LEFT JOIN Supplier s ON p.SupplierId = s.SupplierId
+        LEFT JOIN (
+            SELECT ProductId, SUM(CurrentStock) AS TotalStock
+            FROM Inventory
+            GROUP BY ProductId
+        ) st ON p.ProductId = st.ProductId
+        {(includeDeleted ? "" : "WHERE p.IsDeleted = 0")}
+        ORDER BY p.Name";
 
             return await _sqlDataAccess.QueryAsync<ProductWithDetailsDto>(sql);
         }

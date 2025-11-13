@@ -42,7 +42,7 @@ namespace Storix.Application.Repositories
         ///     Gets all categories (active + deleted).
         ///     Service layer filters for active/deleted. Use CategoryStore.GetAll() for fast active-only access.
         /// </summary>
-        Task<IEnumerable<Category>> GetAllAsync();
+        Task<IEnumerable<Category>> GetAllAsync( bool includeDeleted = false );
 
         /// <summary>
         ///     Gets root categories (active + deleted).
