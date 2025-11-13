@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using MvvmCross.Commands;
 using MvvmCross.ViewModels;
+using Storix.Application.Common;
 using Storix.Application.DTO.Categories;
 using Storix.Application.Services.Categories.Interfaces;
 using Storix.Application.Stores.Categories;
@@ -51,7 +52,7 @@ namespace Storix.Core.ViewModels.Categories
             IsLoading = true;
             try
             {
-                LoadCategories();
+                await LoadCategories();
             }
             finally
             {
@@ -72,21 +73,21 @@ namespace Storix.Core.ViewModels.Categories
 
         #endregion
 
-        private void LoadCategories()
+        private async Task LoadCategories()
         {
-            List<CategoryListDto> result = _categoryStore
-                                           .GetCategoryListDtos()
-                                           .ToList();
+            DatabaseResult<IEnumerable<CategoryListDto>> result =
+                await _categoryService.GetAllActiveCategoriesForListAsync();
 
-            if (result.Count == 0)
+            if (!result.IsSuccess || result.Value == null)
             {
-                _logger.LogInformation("No categories found in the store.");
+                _logger.LogWarning("Failed to load categories: {Error}", result.ErrorMessage);
                 Categories = [];
                 _allCategories.Clear();
                 return;
             }
 
             _allCategories = result
+                             .Value
                              .Select(dto => new CategoryListItemViewModel(dto))
                              .ToList();
 
@@ -207,7 +208,7 @@ namespace Storix.Core.ViewModels.Categories
 
         private void ExecuteCategoryDelete( int categoryId )
         {
-            _modalNavigationControl.PopUp<ProductDeleteViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CategoryDeleteViewModel>(categoryId);
         }
 
         private void ExecuteCategoryForm( int categoryId )
