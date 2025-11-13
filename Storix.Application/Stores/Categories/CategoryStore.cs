@@ -31,7 +31,7 @@ namespace Storix.Application.Stores.Categories
 
         public void Initialize( IEnumerable<Category> categories )
         {
-            _categories.Clear();
+            Clear();
 
             // Only cache active categories
             foreach (Category category in categories.Where(c => !c.IsDeleted))
@@ -53,6 +53,7 @@ namespace Storix.Application.Stores.Categories
         public void Clear()
         {
             _categories.Clear();
+            _categoryListDtos.Clear();
         }
 
         #region Events
@@ -100,6 +101,7 @@ namespace Storix.Application.Stores.Categories
             );
 
             _categories[categoryId] = category;
+            CategoryAdded?.Invoke(category);
             return category.ToDto();
         }
 
@@ -139,12 +141,17 @@ namespace Storix.Application.Stores.Categories
             };
 
             _categories[updateDto.CategoryId] = updatedCategory;
+            CategoryUpdated?.Invoke(updatedCategory);
+
             return updatedCategory.ToDto();
         }
 
-        public bool Delete( int categoryId ) =>
-            // Remove from active cache (soft delete removes from cache, hard delete calls this too)
-            _categories.Remove(categoryId);
+        public bool Delete( int categoryId )
+        {
+            CategoryDeleted?.Invoke(categoryId);
+            _categoryListDtos.Remove(categoryId);
+            return _categories.Remove(categoryId);
+        }
 
         #endregion
 

@@ -45,7 +45,7 @@ namespace Storix.Application.Stores.Products
 
         public void Initialize( List<Product> products )
         {
-            _products.Clear();
+            Clear();
 
             // Only cache active products
             foreach (Product product in products.Where(p => !p.IsDeleted))
@@ -212,6 +212,7 @@ namespace Storix.Application.Stores.Products
         {
             // Remove from active cache (soft delete removes from cache, hard delete calls this too)
             ProductDeleted?.Invoke(productId);
+            _productListDtos.Remove(productId);
             return _products.Remove(productId);
         }
 
