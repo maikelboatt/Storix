@@ -1,58 +1,87 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 
 namespace Storix.Presentation.Themes
 {
+    /// <summary>
+    /// Controller class for managing application theme switching
+    /// </summary>
     public static class ThemesController
     {
-        public static ThemeTypes CurrentTheme { get; set; } = ThemeTypes.Light;
+        private const string LightThemeUri = "Themes/LightTheme.xaml";
+        private const string DarkThemeUri = "Themes/DarkTheme.xaml";
 
+        /// <summary>
+        /// Sets the application theme
+        /// </summary>
+        /// <param name="theme">The theme type to apply</param>
         public static void SetTheme( ThemeTypes theme )
         {
-            CurrentTheme = theme;
+            string themeSource = theme == ThemeTypes.Dark
+                ? DarkThemeUri
+                : LightThemeUri;
 
-            string themeName = theme switch
+            // Create a new ResourceDictionary from the theme file
+            ResourceDictionary themeDict = new()
             {
-                ThemeTypes.Light => "LightTheme",
-                ThemeTypes.Dark  => "DarkTheme",
-                _                => "LightTheme"
+                Source = new Uri(themeSource, UriKind.Relative)
             };
 
-            try
+            // Get the application resources
+            ResourceDictionary appResources = System.Windows.Application.Current.Resources;
+
+            // Find and remove existing theme dictionary
+            ResourceDictionary? existingTheme = null;
+            foreach (ResourceDictionary dict in appResources.MergedDictionaries)
             {
-                System.Windows.Application? app = System.Windows.Application.Current;
-
-                // Get the main resource dictionary
-                if (app.Resources.MergedDictionaries.Count > 0)
+                if (dict.Source != null &&
+                    (dict.Source.OriginalString.Contains("LightTheme.xaml") ||
+                     dict.Source.OriginalString.Contains("DarkTheme.xaml")))
                 {
-                    ResourceDictionary? mainDict = app.Resources.MergedDictionaries[0];
-
-                    // Create the new theme dictionary with proper URI
-                    Uri themeUri = new($"/Storix.Presentation;component/Themes/{themeName}.xaml", UriKind.Relative);
-                    ResourceDictionary newTheme = new()
-                    {
-                        Source = themeUri
-                    };
-
-                    // Replace the theme (it's the first in MergedDictionaries)
-                    if (mainDict.MergedDictionaries.Count > 0)
-                    {
-                        mainDict.MergedDictionaries[0] = newTheme;
-                    }
-                    else
-                    {
-                        mainDict.MergedDictionaries.Insert(0, newTheme);
-                    }
-
-                    // Force refresh
-                    app.Resources.MergedDictionaries.Remove(mainDict);
-                    app.Resources.MergedDictionaries.Insert(0, mainDict);
+                    existingTheme = dict;
+                    break;
                 }
             }
-            catch (Exception e)
+
+            // Remove old theme
+            if (existingTheme != null)
             {
-                Console.WriteLine($"Error switching theme: {e.Message}");
-                Console.WriteLine($"Stack trace: {e.StackTrace}");
+                appResources.MergedDictionaries.Remove(existingTheme);
             }
+
+            // Add new theme
+            appResources.MergedDictionaries.Add(themeDict);
+        }
+
+        /// <summary>
+        /// Gets the current theme type
+        /// </summary>
+        /// <returns>The current theme type</returns>
+        public static ThemeTypes GetCurrentTheme()
+        {
+            ResourceDictionary appResources = System.Windows.Application.Current.Resources;
+
+            foreach (ResourceDictionary dict in appResources.MergedDictionaries)
+            {
+                if (dict.Source != null && dict.Source.OriginalString.Contains("DarkTheme.xaml"))
+                {
+                    return ThemeTypes.Dark;
+                }
+            }
+
+            return ThemeTypes.Light;
+        }
+
+        /// <summary>
+        /// Toggles between light and dark themes
+        /// </summary>
+        public static void ToggleTheme()
+        {
+            ThemeTypes currentTheme = GetCurrentTheme();
+            ThemeTypes newTheme = currentTheme == ThemeTypes.Light
+                ? ThemeTypes.Dark
+                : ThemeTypes.Light;
+            SetTheme(newTheme);
         }
     }
 }

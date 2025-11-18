@@ -24,6 +24,7 @@
 
                 <TextBlock Margin="0,10"
                            FontFamily="Amita"
+                           Foreground="{DynamicResource PrimaryTextColor}"
                            Text="Loading analytics data..."
                            TextAlignment="Center" />
             </StackPanel>
@@ -42,57 +43,57 @@
                     <TextBlock Margin="0,0,0,8"
                                FontSize="32"
                                FontWeight="Bold"
-                               Foreground="#1e293b"
+                               Foreground="{DynamicResource PrimaryHeaderColor}"
                                Text="Analytics Dashboard" />
                     <TextBlock FontSize="16"
-                               Foreground="#64748b"
+                               Foreground="{DynamicResource SecondaryHeaderColor}"
                                Text="Comprehensive insights into your inventory performance" />
                 </StackPanel>
 
                 <!--  Key Metrics Cards  -->
                 <WrapPanel Grid.Row="1">
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/revenue.png"
                                            CardTitle="Total Revenue"
                                            CardValue="$48.5K"
                                            ChangePercentage="↑ 15%"
                                            IconBackground="#D1FAE5" />
 
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/products.png"
                                            CardTitle="Total Products"
                                            CardValue="1,284"
                                            ChangePercentage="↑ 12%"
                                            IconBackground="#DBEAFE" />
 
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/orders.png"
                                            CardTitle="Active Orders"
                                            CardValue="87"
                                            ChangePercentage="↑ 8%"
                                            IconBackground="#FEF3C7" />
 
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/alert.png"
                                            CardTitle="Low Stock Items"
                                            CardValue="23"
                                            ChangePercentage="Action needed"
                                            IconBackground="#FEE2E2" />
 
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/profit.png"
                                            CardTitle="Profit Margin"
                                            CardValue="32.4%"
                                            ChangePercentage="↑ 3.2%"
                                            IconBackground="#E9D5FF" />
 
-                    <resources:CustomCards Background="White"
-                                           BorderBrush="#E2E8F0"
+                    <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
+                                           BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/turnover.png"
                                            CardTitle="Inventory Turnover"
                                            CardValue="4.2x"
@@ -111,8 +112,8 @@
                     <!--  Revenue Trend Chart  -->
                     <Border Grid.Column="0"
                             Padding="20"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource CardBackgroundColor}"
+                            BorderBrush="{DynamicResource CardBorderColor}"
                             BorderThickness="1"
                             CornerRadius="12">
                         <StackPanel>
@@ -120,7 +121,7 @@
                                 <TextBlock HorizontalAlignment="Left"
                                            FontSize="20"
                                            FontWeight="SemiBold"
-                                           Foreground="#1e293b"
+                                           Foreground="{DynamicResource PrimaryHeaderColor}"
                                            Text="Revenue Trend" />
                                 <ComboBox Width="120"
                                           HorizontalAlignment="Right"
@@ -134,32 +135,31 @@
 
                             <!--  Placeholder for Chart Control  -->
                             <Border Height="280"
-                                    Background="#F8FAFC"
-                                    BorderBrush="#E2E8F0"
+                                    Background="{DynamicResource ChartPlaceholderBackground}"
+                                    BorderBrush="{DynamicResource CardBorderColor}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontSize="16"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="📊 Line Chart: Revenue Over Time" />
                             </Border>
                         </StackPanel>
                     </Border>
 
                     <!--  Top Products  -->
-                    <!--  2. Use ItemsControl to bind to collection  -->
                     <Border Grid.Column="2"
                             Padding="20"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource CardBackgroundColor}"
+                            BorderBrush="{DynamicResource CardBorderColor}"
                             BorderThickness="1"
                             CornerRadius="12">
                         <StackPanel>
                             <TextBlock Margin="0,0,0,15"
                                        FontSize="20"
                                        FontWeight="SemiBold"
-                                       Foreground="#1e293b"
+                                       Foreground="{DynamicResource PrimaryHeaderColor}"
                                        Text="Top Products" />
 
                             <!--  ItemsControl bound to TopProducts collection  -->
@@ -180,36 +180,36 @@
                 <!--  Additional Analytics Section  -->
                 <Grid Grid.Row="3" Margin="0,0,0,30">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="15" />
-                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="15" />
-                        <ColumnDefinition Width="1*" />
+                        <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
                     <!--  Sales by Category  -->
                     <Border Grid.Column="0"
                             Padding="20"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource CardBackgroundColor}"
+                            BorderBrush="{DynamicResource CardBorderColor}"
                             BorderThickness="1"
                             CornerRadius="12">
                         <StackPanel>
                             <TextBlock Margin="0,0,0,20"
                                        FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#1e293b"
+                                       Foreground="{DynamicResource PrimaryHeaderColor}"
                                        Text="Sales by Category" />
 
                             <Border Height="220"
-                                    Background="#F8FAFC"
-                                    BorderBrush="#E2E8F0"
+                                    Background="{DynamicResource ChartPlaceholderBackground}"
+                                    BorderBrush="{DynamicResource CardBorderColor}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontSize="16"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="🥧 Pie Chart" />
                             </Border>
                         </StackPanel>
@@ -218,26 +218,26 @@
                     <!--  Stock Levels  -->
                     <Border Grid.Column="2"
                             Padding="20"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource CardBackgroundColor}"
+                            BorderBrush="{DynamicResource CardBorderColor}"
                             BorderThickness="1"
                             CornerRadius="12">
                         <StackPanel>
                             <TextBlock Margin="0,0,0,20"
                                        FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#1e293b"
+                                       Foreground="{DynamicResource PrimaryHeaderColor}"
                                        Text="Stock Levels" />
 
                             <Border Height="220"
-                                    Background="#F8FAFC"
-                                    BorderBrush="#E2E8F0"
+                                    Background="{DynamicResource ChartPlaceholderBackground}"
+                                    BorderBrush="{DynamicResource CardBorderColor}"
                                     BorderThickness="1"
                                     CornerRadius="8">
                                 <TextBlock HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
                                            FontSize="16"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="📊 Bar Chart" />
                             </Border>
                         </StackPanel>
@@ -246,15 +246,15 @@
                     <!--  Order Status  -->
                     <Border Grid.Column="4"
                             Padding="20"
-                            Background="White"
-                            BorderBrush="#E2E8F0"
+                            Background="{DynamicResource CardBackgroundColor}"
+                            BorderBrush="{DynamicResource CardBorderColor}"
                             BorderThickness="1"
                             CornerRadius="12">
                         <StackPanel>
                             <TextBlock Margin="0,0,0,20"
                                        FontSize="18"
                                        FontWeight="SemiBold"
-                                       Foreground="#1e293b"
+                                       Foreground="{DynamicResource PrimaryHeaderColor}"
                                        Text="Order Status" />
 
                             <StackPanel>
@@ -264,7 +264,7 @@
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
-                                                   Foreground="#1e293b"
+                                                   Foreground="#1E293B"
                                                    Text="Draft" />
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
@@ -280,7 +280,7 @@
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
-                                                   Foreground="#1e293b"
+                                                   Foreground="#1E293B"
                                                    Text="Active" />
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
@@ -296,7 +296,7 @@
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
-                                                   Foreground="#1e293b"
+                                                   Foreground="#1E293B"
                                                    Text="Completed" />
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
@@ -311,7 +311,7 @@
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
-                                                   Foreground="#1e293b"
+                                                   Foreground="#1E293B"
                                                    Text="Cancelled" />
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
@@ -328,15 +328,15 @@
                 <!--  Performance Indicators  -->
                 <Border Grid.Row="4"
                         Padding="20"
-                        Background="White"
-                        BorderBrush="#E2E8F0"
+                        Background="{DynamicResource CardBackgroundColor}"
+                        BorderBrush="{DynamicResource CardBorderColor}"
                         BorderThickness="1"
                         CornerRadius="12">
                     <StackPanel>
                         <TextBlock Margin="0,0,0,20"
                                    FontSize="20"
                                    FontWeight="SemiBold"
-                                   Foreground="#1e293b"
+                                   Foreground="{DynamicResource PrimaryHeaderColor}"
                                    Text="Key Performance Indicators" />
 
                         <Grid>
@@ -351,12 +351,12 @@
                             <StackPanel Grid.Column="0" Margin="0,0,15,0">
                                 <TextBlock Margin="0,0,0,8"
                                            FontSize="14"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="Avg. Order Value" />
                                 <TextBlock Margin="0,0,0,5"
                                            FontSize="28"
                                            FontWeight="Bold"
-                                           Foreground="#1e293b"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
                                            Text="$558" />
                                 <Border Padding="8,4"
                                         HorizontalAlignment="Left"
@@ -373,12 +373,12 @@
                             <StackPanel Grid.Column="1" Margin="0,0,15,0">
                                 <TextBlock Margin="0,0,0,8"
                                            FontSize="14"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="Conversion Rate" />
                                 <TextBlock Margin="0,0,0,5"
                                            FontSize="28"
                                            FontWeight="Bold"
-                                           Foreground="#1e293b"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
                                            Text="68.3%" />
                                 <Border Padding="8,4"
                                         HorizontalAlignment="Left"
@@ -395,12 +395,12 @@
                             <StackPanel Grid.Column="2" Margin="0,0,15,0">
                                 <TextBlock Margin="0,0,0,8"
                                            FontSize="14"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="Customer Retention" />
                                 <TextBlock Margin="0,0,0,5"
                                            FontSize="28"
                                            FontWeight="Bold"
-                                           Foreground="#1e293b"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
                                            Text="84.7%" />
                                 <Border Padding="8,4"
                                         HorizontalAlignment="Left"
@@ -417,12 +417,12 @@
                             <StackPanel Grid.Column="3">
                                 <TextBlock Margin="0,0,0,8"
                                            FontSize="14"
-                                           Foreground="#64748b"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
                                            Text="Avg. Days to Fulfill" />
                                 <TextBlock Margin="0,0,0,5"
                                            FontSize="28"
                                            FontWeight="Bold"
-                                           Foreground="#1e293b"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
                                            Text="2.4 days" />
                                 <Border Padding="8,4"
                                         HorizontalAlignment="Left"

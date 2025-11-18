@@ -104,7 +104,7 @@
                     CornerRadius="10">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="NavColumn" Width="250" />
+                        <ColumnDefinition x:Name="NavColumn" Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
@@ -114,93 +114,71 @@
                             Background="{DynamicResource SecondaryBackgroundColor}"
                             CornerRadius="10 0 0 10">
 
-                        <Grid x:Name="GridMenu">
+                        <Grid x:Name="GridNav" Width="250">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="60" />
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="80" />
                             </Grid.RowDefinitions>
 
-                            <!--  Logo + Toggle Button + Slogan  -->
+                            <!--  Logo Area  -->
                             <Grid Grid.Row="0"
                                   VerticalAlignment="Center"
                                   Background="Transparent"
                                   MouseDown="LogoArea_OnMouseDown">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
 
-                                <!--  Top Row: Toggle Button + Logo  -->
-                                <DockPanel Grid.Row="0"
-                                           VerticalAlignment="Center"
-                                           LastChildFill="False">
-                                    <Button x:Name="ToggleNavButton"
-                                            Width="36"
-                                            Height="36"
-                                            Margin="0,0,5,0"
-                                            HorizontalAlignment="Left"
-                                            VerticalAlignment="Center"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            Click="ToggleNavButton_Click"
-                                            Content="☰"
-                                            Cursor="Hand"
-                                            FontSize="20"
-                                            Foreground="{DynamicResource SecondaryBlueColor}" />
+                                <Border Grid.Column="0"
+                                        Width="32"
+                                        Height="32"
+                                        Margin="14,0,10,0"
+                                        HorizontalAlignment="Left">
+                                    <Border.Background>
+                                        <ImageBrush ImageSource="/Assets/Icons/Storix-logo.png" Stretch="Uniform" />
+                                    </Border.Background>
+                                </Border>
 
-                                    <StackPanel x:Name="LogoPanel"
-                                                DockPanel.Dock="Right"
-                                                Orientation="Horizontal">
-                                        <Image Width="40"
-                                               Height="40"
-                                               Margin="10,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Source="/Assets/Icons/Storix-logo.png"
-                                               Stretch="Fill" />
-
-                                        <Label Margin="5,0,0,0"
-                                               VerticalAlignment="Center"
-                                               Content="Storix"
-                                               FontSize="24"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource SecondaryBlueColor}" />
-                                    </StackPanel>
-                                </DockPanel>
-
-                                <!--  Bottom Row: Slogan  -->
-                                <TextBlock x:Name="SloganText"
-                                           Grid.Row="1"
-                                           Margin="10,5,10,0"
-                                           HorizontalAlignment="Center"
-                                           FontSize="10"
-                                           FontStyle="Italic"
-                                           Foreground="{DynamicResource SecondaryTextColor}"
-                                           Opacity="0.7"
-                                           Text="From Chaos to Clarity"
-                                           TextAlignment="Center"
-                                           TextWrapping="Wrap" />
+                                <Label Grid.Column="1"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Center"
+                                       Content="Storix"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource SecondaryBlueColor}" />
                             </Grid>
 
                             <!--  Start Navigation Buttons  -->
                             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                                 <StackPanel x:Name="NavButtonsPanel">
                                     <!--  Dashboard  -->
-                                    <RadioButton Margin="0,30,0,0"
-                                                 Command="{Binding NavigateToAnalyticCommand}"
-                                                 Content="Dashboard"
-                                                 IsChecked="True"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Dashboard}" />
+                                    <Button x:Name="BtnDashboard"
+                                            Margin="0,10,0,2"
+                                            MouseEnter="BtnDashboard_MouseEnter"
+                                            MouseLeave="BtnDashboard_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToAnalyticCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Dashboard}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  IsSelected="True"
+                                                                  Text="Dashboard" />
+                                    </Button>
 
                                     <!--  Inventory (Expandable)  -->
-                                    <StackPanel Margin="0,1,0,0">
+                                    <StackPanel Margin="0,2,0,2">
                                         <ToggleButton x:Name="InventoryExpander"
+                                                      MouseEnter="BtnInventory_MouseEnter"
+                                                      MouseLeave="BtnInventory_MouseLeave"
                                                       Style="{DynamicResource MenuToggleButtonStyle}"
                                                       Tag="{DynamicResource Inventory}">
-                                            <Grid>
+                                            <Grid Height="40">
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="60" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
@@ -208,19 +186,21 @@
                                                 <Path Grid.Column="0"
                                                       Width="18"
                                                       Height="18"
-                                                      Margin="10,0,15,0"
+                                                      Margin="21,0,0,0"
                                                       Data="{DynamicResource Inventory}"
                                                       Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                                       Stretch="Uniform" />
 
                                                 <TextBlock Grid.Column="1"
+                                                           Margin="18,0,0,0"
                                                            VerticalAlignment="Center"
+                                                           FontSize="13"
                                                            Text="Inventory" />
 
                                                 <Path Grid.Column="2"
-                                                      Width="10"
-                                                      Height="10"
-                                                      Margin="0,0,10,0"
+                                                      Width="8"
+                                                      Height="8"
+                                                      Margin="0,0,15,0"
                                                       Data="M7 10L12 15L17 10H7Z"
                                                       Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                                       RenderTransformOrigin="0.5,0.5"
@@ -234,30 +214,52 @@
 
                                         <!--  Inventory Sub-items  -->
                                         <StackPanel x:Name="InventorySubItems"
-                                                    Margin="20,0,0,0"
+                                                    Margin="0,2,0,2"
                                                     Visibility="Collapsed">
-                                            <RadioButton Margin="0,5,0,0"
-                                                         Command="{Binding NavigateToProductsCommand}"
-                                                         Content="Products"
-                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
-                                                         Tag="{DynamicResource Products}" />
+                                            <Button x:Name="BtnProducts"
+                                                    Margin="0,0,0,2"
+                                                    MouseEnter="BtnProducts_MouseEnter"
+                                                    MouseLeave="BtnProducts_MouseLeave"
+                                                    Style="{DynamicResource PopupButtonStyle}">
+                                                <resources:NavigationItem Padding="0,6"
+                                                                          CommandName="{Binding NavigateToProductsCommand}"
+                                                                          GroupName="MenuItem"
+                                                                          Icon="{DynamicResource Products}"
+                                                                          IconMargin="23,0,0,0"
+                                                                          IconWidth="14"
+                                                                          IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                          IsSubMenuItem="True"
+                                                                          Text="Products" />
+                                            </Button>
 
-                                            <RadioButton Margin="0,5,0,5"
-                                                         Command="{Binding NavigateToCategoriesCommand}"
-                                                         Content="Categories"
-                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
-                                                         Tag="{DynamicResource Categories}" />
+                                            <Button x:Name="BtnCategories"
+                                                    Margin="0,0,0,2"
+                                                    MouseEnter="BtnCategories_MouseEnter"
+                                                    MouseLeave="BtnCategories_MouseLeave"
+                                                    Style="{DynamicResource PopupButtonStyle}">
+                                                <resources:NavigationItem Padding="0,6"
+                                                                          CommandName="{Binding NavigateToCategoriesCommand}"
+                                                                          GroupName="MenuItem"
+                                                                          Icon="{DynamicResource Categories}"
+                                                                          IconMargin="23,0,0,0"
+                                                                          IconWidth="14"
+                                                                          IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                          IsSubMenuItem="True"
+                                                                          Text="Categories" />
+                                            </Button>
                                         </StackPanel>
                                     </StackPanel>
 
                                     <!--  Orders (Expandable)  -->
-                                    <StackPanel Margin="0,1,0,0">
+                                    <StackPanel Margin="0,2,0,2">
                                         <ToggleButton x:Name="OrdersExpander"
+                                                      MouseEnter="BtnOrders_MouseEnter"
+                                                      MouseLeave="BtnOrders_MouseLeave"
                                                       Style="{DynamicResource MenuToggleButtonStyle}"
                                                       Tag="{DynamicResource Orders}">
-                                            <Grid>
+                                            <Grid Height="40">
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="60" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
@@ -265,19 +267,21 @@
                                                 <Path Grid.Column="0"
                                                       Width="18"
                                                       Height="18"
-                                                      Margin="10,0,15,0"
+                                                      Margin="21,0,0,0"
                                                       Data="{DynamicResource Orders}"
                                                       Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                                       Stretch="Uniform" />
 
                                                 <TextBlock Grid.Column="1"
+                                                           Margin="18,0,0,0"
                                                            VerticalAlignment="Center"
+                                                           FontSize="13"
                                                            Text="Orders" />
 
                                                 <Path Grid.Column="2"
-                                                      Width="10"
-                                                      Height="10"
-                                                      Margin="0,0,10,0"
+                                                      Width="8"
+                                                      Height="8"
+                                                      Margin="0,0,15,0"
                                                       Data="M7 10L12 15L17 10H7Z"
                                                       Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}"
                                                       RenderTransformOrigin="0.5,0.5"
@@ -291,58 +295,116 @@
 
                                         <!--  Orders Sub-items  -->
                                         <StackPanel x:Name="OrdersSubItems"
-                                                    Margin="20,0,0,0"
+                                                    Margin="0,2,0,2"
                                                     Visibility="Collapsed">
-                                            <RadioButton Margin="0,5,0,0"
-                                                         Command="{Binding NavigateToSalesOrdersCommand}"
-                                                         Content="Sales Orders"
-                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
-                                                         Tag="{DynamicResource SalesOrders}" />
+                                            <Button x:Name="BtnSalesOrders"
+                                                    Margin="0,0,0,2"
+                                                    MouseEnter="BtnSalesOrders_MouseEnter"
+                                                    MouseLeave="BtnSalesOrders_MouseLeave"
+                                                    Style="{DynamicResource PopupButtonStyle}">
+                                                <resources:NavigationItem Padding="20,6"
+                                                                          CommandName="{Binding NavigateToSalesOrdersCommand}"
+                                                                          GroupName="MenuItem"
+                                                                          Icon="{DynamicResource SalesOrders}"
+                                                                          IconMargin="0,0,0,0"
+                                                                          IconWidth="14"
+                                                                          IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                          Text="Sales Orders" />
+                                            </Button>
 
-                                            <RadioButton Margin="0,5,0,5"
-                                                         Command="{Binding NavigateToPurchaseOrdersCommand}"
-                                                         Content="Purchase Orders"
-                                                         Style="{DynamicResource SubMenuRadioButtonStyle}"
-                                                         Tag="{DynamicResource PurchaseOrders}" />
+                                            <Button x:Name="BtnPurchaseOrders"
+                                                    Margin="0,0,0,2"
+                                                    MouseEnter="BtnPurchaseOrders_MouseEnter"
+                                                    MouseLeave="BtnPurchaseOrders_MouseLeave"
+                                                    Style="{DynamicResource PopupButtonStyle}">
+                                                <resources:NavigationItem Padding="20,6"
+                                                                          CommandName="{Binding NavigateToPurchaseOrdersCommand}"
+                                                                          GroupName="MenuItem"
+                                                                          Icon="{DynamicResource PurchaseOrders}"
+                                                                          IconMargin="0,0,0,0"
+                                                                          IconWidth="14"
+                                                                          IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                          Text="Purchase Orders" />
+                                            </Button>
                                         </StackPanel>
                                     </StackPanel>
 
                                     <!--  Suppliers  -->
-                                    <RadioButton Margin="0,1,0,1"
-                                                 Command="{Binding NavigateToSuppliersCommand}"
-                                                 Content="Suppliers"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Suppliers}" />
+                                    <Button x:Name="BtnSuppliers"
+                                            Margin="0,2,0,2"
+                                            MouseEnter="BtnSuppliers_MouseEnter"
+                                            MouseLeave="BtnSuppliers_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToSuppliersCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Suppliers}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  Text="Suppliers" />
+                                    </Button>
 
                                     <!--  Customers  -->
-                                    <RadioButton Margin="0,1,0,1"
-                                                 Command="{Binding NavigateToCustomersCommand}"
-                                                 Content="Customers"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Customers}" />
+                                    <Button x:Name="BtnCustomers"
+                                            Margin="0,2,0,2"
+                                            MouseEnter="BtnCustomers_MouseEnter"
+                                            MouseLeave="BtnCustomers_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToCustomersCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Customers}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  Text="Customers" />
+                                    </Button>
 
                                     <!--  Locations  -->
-                                    <RadioButton Margin="0,1,0,1"
-                                                 Command="{Binding NavigateToLocationsCommand}"
-                                                 Content="Locations"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Locations}" />
+                                    <Button x:Name="BtnLocations"
+                                            Margin="0,2,0,2"
+                                            MouseEnter="BtnLocations_MouseEnter"
+                                            MouseLeave="BtnLocations_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToLocationsCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Locations}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  Text="Locations" />
+                                    </Button>
 
                                     <!--  Reports  -->
-                                    <RadioButton Margin="0,1,0,1"
-                                                 Command="{Binding NavigateToReportsCommand}"
-                                                 Content="Reports"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Reports}" />
+                                    <Button x:Name="BtnReports"
+                                            Margin="0,2,0,2"
+                                            MouseEnter="BtnReports_MouseEnter"
+                                            MouseLeave="BtnReports_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToReportsCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Reports}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  Text="Reports" />
+                                    </Button>
 
-                                    <Separator Margin="20,20" Background="{DynamicResource TertiaryBackgroundColor}" />
+                                    <Separator Margin="20,15,20,15" Background="{DynamicResource TertiaryBackgroundColor}" />
 
                                     <!--  Settings  -->
-                                    <RadioButton Margin="0,1,0,1"
-                                                 Command="{Binding NavigateToSettingsCommand}"
-                                                 Content="Settings"
-                                                 Style="{DynamicResource MenuRadioButtonStyle}"
-                                                 Tag="{DynamicResource Settings}" />
+                                    <Button x:Name="BtnSettings"
+                                            Margin="0,2,0,2"
+                                            MouseEnter="BtnSettings_MouseEnter"
+                                            MouseLeave="BtnSettings_MouseLeave"
+                                            Style="{DynamicResource PopupButtonStyle}">
+                                        <resources:NavigationItem Padding="0,8"
+                                                                  CommandName="{Binding NavigateToSettingsCommand}"
+                                                                  GroupName="MenuItem"
+                                                                  Icon="{DynamicResource Settings}"
+                                                                  IconWidth="18"
+                                                                  IndicatorBrush="{DynamicResource PrimaryBlueColor}"
+                                                                  Text="Settings" />
+                                    </Button>
                                 </StackPanel>
                             </ScrollViewer>
                             <!--  End Navigation Buttons  -->
@@ -377,6 +439,14 @@
                                 </StackPanel>
                             </Border>
                             <!--  End Theme Switcher  -->
+
+                            <!--  Popup user control  -->
+                            <Popup x:Name="Popup"
+                                   AllowsTransparency="True"
+                                   HorizontalOffset="0"
+                                   VerticalOffset="10">
+                                <resources:UserPopUp x:Name="PopupHeader" Foreground="{DynamicResource ForegroundBrush}" />
+                            </Popup>
                         </Grid>
                     </Border>
                     <!--  End Navigation-Pane  -->
@@ -384,7 +454,7 @@
                     <!--  Start Main-Content  -->
                     <Grid Grid.Column="1">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="60" />
+                            <RowDefinition Height="70" />
                             <RowDefinition />
                         </Grid.RowDefinitions>
 
@@ -392,17 +462,59 @@
                               Background="Transparent"
                               MouseDown="TopBar_OnMouseDown">
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="auto" />
                             </Grid.ColumnDefinitions>
 
-                            <!--  Search for Product and Categories  -->
-                            <resources:CustomSearchBox Grid.Column="0"
-                                                       Margin="15,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Placeholder="Search Products..." />
+                            <!--  Toggle button for expanding/collapsing the navigation panel  -->
+                            <ToggleButton x:Name="TgBtn"
+                                          Grid.Column="0"
+                                          Margin="10,0,0,0"
+                                          HorizontalAlignment="Left"
+                                          VerticalAlignment="Center"
+                                          IsChecked="True"
+                                          Style="{DynamicResource AnimatedHamburgerToggleStyle}">
+                                <ToggleButton.Triggers>
+                                    <!--  Animation for collapsing the navigation panel  -->
+                                    <EventTrigger RoutedEvent="ToggleButton.Unchecked">
+                                        <BeginStoryboard>
+                                            <Storyboard x:Name="HideStackPanel">
+                                                <DoubleAnimation BeginTime="0:0:0"
+                                                                 Storyboard.TargetName="GridNav"
+                                                                 Storyboard.TargetProperty="Width"
+                                                                 From="250"
+                                                                 To="60"
+                                                                 Duration="0:0:0.3" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                    <!--  Animation for expanding the navigation panel  -->
+                                    <EventTrigger RoutedEvent="ToggleButton.Checked">
+                                        <BeginStoryboard>
+                                            <Storyboard x:Name="ShowStackPanel">
+                                                <DoubleAnimation BeginTime="0:0:0"
+                                                                 Storyboard.TargetName="GridNav"
+                                                                 Storyboard.TargetProperty="Width"
+                                                                 From="60"
+                                                                 To="250"
+                                                                 Duration="0:0:0.3" />
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </ToggleButton.Triggers>
+                            </ToggleButton>
+
+                            <!--  Breadcrumb  -->
+                            <TextBlock Grid.Column="1"
+                                       Margin="15,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Foreground="#94a3b8"
+                                       Text="Home / Dashboard" />
+
                             <!--  Window Buttons  -->
-                            <StackPanel Grid.Column="1"
+                            <StackPanel Grid.Column="2"
                                         Height="30"
                                         Margin="0,5,10,0"
                                         VerticalAlignment="Top"

@@ -18,16 +18,33 @@ namespace Storix.Presentation.Views
             _parentWindow = Window.GetWindow(this);
             InitializeComponent();
 
-            // Subscribe to expander toggle events
-            InventoryExpander.Checked += ( s, e ) => ExpandSection(InventorySubItems, InventoryArrow);
+            // Subscribe to expander toggle events with mutual exclusion
+            InventoryExpander.Checked += ( s, e ) =>
+            {
+                // Collapse Orders if it's expanded
+                if (OrdersExpander.IsChecked == true)
+                {
+                    OrdersExpander.IsChecked = false;
+                }
+                ExpandSection(InventorySubItems, InventoryArrow);
+            };
             InventoryExpander.Unchecked += ( s, e ) => CollapseSection(InventorySubItems, InventoryArrow);
 
-            OrdersExpander.Checked += ( s, e ) => ExpandSection(OrdersSubItems, OrdersArrow);
+            OrdersExpander.Checked += ( s, e ) =>
+            {
+                // Collapse Inventory if it's expanded
+                if (InventoryExpander.IsChecked == true)
+                {
+                    InventoryExpander.IsChecked = false;
+                }
+                ExpandSection(OrdersSubItems, OrdersArrow);
+            };
             OrdersExpander.Unchecked += ( s, e ) => CollapseSection(OrdersSubItems, OrdersArrow);
 
+            // Subscribe to toggle button state changes
+            TgBtn.Checked += TgBtn_StateChanged;
+            TgBtn.Unchecked += TgBtn_StateChanged;
         }
-
-        private bool _isNavExpanded = true;
 
         private void ExpandSection( StackPanel subItems, RotateTransform arrow )
         {
@@ -67,6 +84,21 @@ namespace Storix.Presentation.Views
             subItems.Visibility = Visibility.Collapsed;
         }
 
+        private void TgBtn_StateChanged( object sender, RoutedEventArgs e )
+        {
+            // When collapsing, close any expanded sections
+            if (TgBtn.IsChecked == false)
+            {
+                if (InventoryExpander.IsChecked == true)
+                {
+                    InventoryExpander.IsChecked = false;
+                }
+                if (OrdersExpander.IsChecked == true)
+                {
+                    OrdersExpander.IsChecked = false;
+                }
+            }
+        }
 
         private void Themes_Click( object sender, RoutedEventArgs e )
         {
@@ -80,7 +112,6 @@ namespace Storix.Presentation.Views
         {
             _parentWindow?.Close();
         }
-
 
         private void RestoreButton_OnClick( object sender, RoutedEventArgs e )
         {
@@ -99,7 +130,6 @@ namespace Storix.Presentation.Views
                 window.WindowState = WindowState.Maximized;
                 RestoreButton.Content = FindResource("Restore"); // your restore icon
             }
-
         }
 
         private void MinimizeButton_OnClick( object sender, RoutedEventArgs e )
@@ -128,215 +158,186 @@ namespace Storix.Presentation.Views
             }
         }
 
-        private void AnimateNavWidth( double from, double to )
+        // Start: MenuLeft PopupButton //
+        private void BtnDashboard_MouseEnter( object sender, MouseEventArgs e )
         {
-            // Build the animation (duration & easing)
-            DoubleAnimation animation = new()
-            {
-                From = from,
-                To = to,
-                Duration = TimeSpan.FromMilliseconds(250),
-                EasingFunction = new QuadraticEase
-                {
-                    EasingMode = EasingMode.EaseInOut
-                }
-            };
-
-            // Create an AnimationClock from the animation
-            AnimationClock clock = animation.CreateClock();
-
-            // Handler: update NavColumn.Width each tick/frame
-            EventHandler handler = null;
-            handler = ( s, e ) =>
-            {
-                // CurrentProgress is a double? nullable between 0..1
-                double progress = clock.CurrentProgress ?? 0.0;
-                double current = from + (to - from) * progress;
-                NavColumn.Width = new GridLength(current);
-            };
-
-            // Completed handler to ensure exact final width and detach handlers
-            EventHandler completedHandler = null;
-            completedHandler = ( s, e ) =>
-            {
-                // finalize exact width
-                NavColumn.Width = new GridLength(to);
-
-                // Detach handlers to avoid memory leaks
-                clock.CurrentTimeInvalidated -= handler;
-                clock.Completed -= completedHandler;
-            };
-
-            // Attach handlers
-            clock.CurrentTimeInvalidated += handler;
-            clock.Completed += completedHandler;
-
-            // Start the clock (this drives the animation)
-            clock.Controller?.Begin();
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnDashboard;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Dashboard";
         }
 
-        private void ToggleNavButton_Click( object sender, RoutedEventArgs e )
+        private void BtnDashboard_MouseLeave( object sender, MouseEventArgs e )
         {
-            if (_isNavExpanded)
-            {
-                // Collapse NavBar
-                AnimateNavWidth(250, 70);
-                LogoPanel.Visibility = Visibility.Collapsed;
-                SloganText.Visibility = Visibility.Collapsed;
-
-                // Update all navigation items
-                UpdateNavigationItems(true);
-            }
-            else
-            {
-                // Expand NavBar
-                AnimateNavWidth(70, 250);
-                LogoPanel.Visibility = Visibility.Visible;
-                SloganText.Visibility = Visibility.Visible;
-
-                // Update all navigation items
-                UpdateNavigationItems(false);
-            }
-
-            _isNavExpanded = !_isNavExpanded;
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
         }
 
-        private void UpdateNavigationItems( bool isCollapsed )
+        private void BtnInventory_MouseEnter( object sender, MouseEventArgs e )
         {
-            foreach (object? child in NavButtonsPanel.Children)
-            {
-                // Handle regular RadioButtons (Dashboard, Suppliers, Customers, etc.)
-                if (child is RadioButton radioButton)
-                {
-                    if (isCollapsed)
-                    {
-                        // Store the current content as tooltip and hide content
-                        if (radioButton.Content is string content)
-                        {
-                            radioButton.ToolTip = CreateStyledToolTip(content);
-                            radioButton.Content = null;
-                        }
-                    }
-                    else
-                    {
-                        // Restore content from tooltip and remove tooltip
-                        if (radioButton.ToolTip is ToolTip toolTip && toolTip.Content is string text)
-                        {
-                            radioButton.Content = text;
-                            radioButton.ToolTip = null;
-                        }
-                    }
-                }
-                // Handle StackPanels (Inventory and Orders expandable sections)
-                else if (child is StackPanel stackPanel)
-                {
-                    foreach (object? subChild in stackPanel.Children)
-                    {
-                        // Handle ToggleButtons (Inventory, Orders expanders)
-                        if (subChild is ToggleButton toggleButton)
-                        {
-                            if (isCollapsed)
-                            {
-                                // Extract text from the Grid's TextBlock
-                                string text = GetToggleButtonText(toggleButton);
-                                if (!string.IsNullOrEmpty(text))
-                                {
-                                    toggleButton.ToolTip = CreateStyledToolTip(text);
-                                }
-                            }
-                            else
-                            {
-                                toggleButton.ToolTip = null;
-                            }
-                        }
-                        // Handle sub-item StackPanels (Products, Categories, Sales Orders, Purchase Orders)
-                        else if (subChild is StackPanel subItemPanel)
-                        {
-                            foreach (object? subItem in subItemPanel.Children)
-                            {
-                                if (subItem is RadioButton subRadioButton)
-                                {
-                                    if (isCollapsed)
-                                    {
-                                        // Store the current content as tooltip and hide content
-                                        if (subRadioButton.Content is string subContent)
-                                        {
-                                            subRadioButton.ToolTip = CreateStyledToolTip(subContent);
-                                            subRadioButton.Content = null;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        // Restore content from tooltip and remove tooltip
-                                        if (subRadioButton.ToolTip is ToolTip subToolTip && subToolTip.Content is string subText)
-                                        {
-                                            subRadioButton.Content = subText;
-                                            subRadioButton.ToolTip = null;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                // Handle Separator - skip it
-                else if (child is Separator)
-                {
-                    continue;
-                }
-            }
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = InventoryExpander;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Inventory";
         }
 
-        private string GetToggleButtonText( ToggleButton toggleButton )
+        private void BtnInventory_MouseLeave( object sender, MouseEventArgs e )
         {
-            // Extract text from the ToggleButton's Grid structure
-            if (toggleButton.Content is Grid grid)
-            {
-                foreach (object? child in grid.Children)
-                {
-                    if (child is TextBlock textBlock)
-                    {
-                        return textBlock.Text;
-                    }
-                }
-            }
-            return string.Empty;
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
         }
 
-        private ToolTip CreateStyledToolTip( string content )
+        private void BtnProducts_MouseEnter( object sender, MouseEventArgs e )
         {
-            // Create a styled ToolTip that matches the UI design
-            ToolTip toolTip = new()
-            {
-                Content = content,
-                Placement = PlacementMode.Right,
-                HorizontalOffset = 10,
-                VerticalOffset = 0
-            };
-
-            // Try to apply the style from resources
-            if (TryFindResource("NavBarToolTipStyle") is Style style)
-            {
-                toolTip.Style = style;
-            }
-            else
-            {
-                // Fallback: Apply inline styling
-                toolTip.Background = (Brush)TryFindResource("TertiaryBackgroundColor") ?? new SolidColorBrush(Color.FromRgb(51, 65, 85));
-                toolTip.Foreground = (Brush)TryFindResource("PrimaryWhiteColor") ?? Brushes.White;
-                toolTip.BorderBrush = (Brush)TryFindResource("SecondaryBlueColor") ?? new SolidColorBrush(Color.FromRgb(59, 130, 246));
-                toolTip.BorderThickness = new Thickness(1);
-                toolTip.Padding = new Thickness(
-                    12,
-                    8,
-                    12,
-                    8);
-                toolTip.FontSize = 13;
-                toolTip.FontWeight = FontWeights.Medium;
-                toolTip.HasDropShadow = true;
-            }
-
-            return toolTip;
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnProducts;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Products";
         }
+
+        private void BtnProducts_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnCategories_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnCategories;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Categories";
+        }
+
+        private void BtnCategories_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnOrders_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = OrdersExpander;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Orders";
+        }
+
+        private void BtnOrders_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnSalesOrders_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnSalesOrders;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Sales Orders";
+        }
+
+        private void BtnSalesOrders_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnPurchaseOrders_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnPurchaseOrders;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Purchase Orders";
+        }
+
+        private void BtnPurchaseOrders_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnSuppliers_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnSuppliers;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Suppliers";
+        }
+
+        private void BtnSuppliers_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnCustomers_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnCustomers;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Customers";
+        }
+
+        private void BtnCustomers_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnLocations_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnLocations;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Locations";
+        }
+
+        private void BtnLocations_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnReports_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnReports;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Reports";
+        }
+
+        private void BtnReports_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+
+        private void BtnSettings_MouseEnter( object sender, MouseEventArgs e )
+        {
+            if (TgBtn.IsChecked != false) return;
+            Popup.PlacementTarget = BtnSettings;
+            Popup.Placement = PlacementMode.Right;
+            Popup.IsOpen = true;
+            PopupHeader.PopupText.Text = "Settings";
+        }
+
+        private void BtnSettings_MouseLeave( object sender, MouseEventArgs e )
+        {
+            Popup.Visibility = Visibility.Collapsed;
+            Popup.IsOpen = false;
+        }
+        // End: MenuLeft PopupButton //
     }
 }
