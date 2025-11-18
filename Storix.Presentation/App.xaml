@@ -22,7 +22,7 @@
 
                 <ResourceDictionary Source="Assets/Icons/Icons.xaml" />
                 <ResourceDictionary Source="Styles/ButtonStyle.xaml" />
-                <ResourceDictionary Source="Styles/RadioButtonStyle.xaml" />
+                <ResourceDictionary Source="Styles/NavigationButtons.xaml" />
                 <ResourceDictionary Source="Styles/DataGridStyles.xaml" />
                 <ResourceDictionary Source="Styles/CommonCtrls.xaml" />
             </ResourceDictionary.MergedDictionaries>

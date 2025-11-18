@@ -1,0 +1,270 @@
+﻿<!--
+    NavigationItem.xaml
+    This file defines the XAML structure and styles for a custom navigation item in the Storix UI.
+    It includes modern styles with smooth animations for indicators, menu icons, menu text, and menu buttons,
+    as well as a ControlTemplate for a RadioButton used as a menu item.
+-->
+
+<views:MvxWpfView x:Class="Storix.Presentation.Resources.NavigationItem"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  Name="This"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="auto"
+                  mc:Ignorable="d">
+
+    <views:MvxWpfView.Resources>
+        <!--
+            Indicator Style (Main Menu Items)
+            Modern indicator with smooth animations and rounded corners
+        -->
+        <Style x:Key="IndicatorStyle" TargetType="{x:Type Border}">
+            <Setter Property="CornerRadius" Value="0 6 6 0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Width" Value="3" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Opacity" Value="0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="1"
+                                                 Duration="0:0:0.2" />
+                                <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                To="#60a5fa"
+                                                Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 To="0"
+                                                 Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="Background" Value="{DynamicResource PrimaryBlueColor}" />
+                    <Setter Property="Width" Value="3.5" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
+        <!--
+            Menu Icon Style (Main Items)
+            Icons with smooth color transitions and scale animation on hover
+        -->
+        <Style x:Key="MenuIconStyle" TargetType="{x:Type Path}">
+            <Setter Property="Fill" Value="{DynamicResource SecondaryTextColor}" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform">
+                <Setter.Value>
+                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetProperty="(Path.Fill).(SolidColorBrush.Color)"
+                                                To="#60a5fa"
+                                                Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(ScaleTransform.ScaleX)"
+                                                 To="1.1"
+                                                 Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(ScaleTransform.ScaleY)"
+                                                 To="1.1"
+                                                 Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetProperty="(Path.Fill).(SolidColorBrush.Color)" Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(ScaleTransform.ScaleX)"
+                                                 To="1"
+                                                 Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetProperty="(RenderTransform).(ScaleTransform.ScaleY)"
+                                                 To="1"
+                                                 Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <Setter Property="Fill" Value="{DynamicResource PrimaryBlueColor}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--
+            Sub Menu Icon Style
+            Smaller icons for sub-menu items with subtle animations
+        -->
+
+        <!--
+            Menu Text Style (Main Items)
+            Text with smooth color transitions
+        -->
+        <Style x:Key="MenuTextStyle" TargetType="{x:Type TextBlock}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextColor}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Margin" Value="18,0,0,0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)"
+                                                To="#60a5fa"
+                                                Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <ColorAnimation Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" Duration="0:0:0.2" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsChecked, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=ToggleButton}}" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryBlueColor}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!--
+            Sub Menu Text Style
+            Smaller text with subtle hover effects
+        -->
+
+        <!--
+            Main Menu Button Style
+            Modern button with background hover effect
+        -->
+        <Style x:Key="MenuButtonStyle" TargetType="RadioButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="Padding" Value="0,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RadioButton}">
+                        <Border x:Name="MainBorder"
+                                Margin="5,0,5,0"
+                                Padding="{Binding Padding, ElementName=This}"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!--  Indicator  -->
+                                <Border Style="{StaticResource IndicatorStyle}" />
+
+                                <!--  Icon  -->
+                                <Path Width="{Binding IconWidth, ElementName=This, FallbackValue=18, TargetNullValue=18}"
+                                      Margin="{Binding IconMargin, ElementName=This, FallbackValue='21,0,0,0', TargetNullValue='21,0,0,0'}"
+                                      Data="{Binding Icon, ElementName=This, FallbackValue={StaticResource Home}, TargetNullValue={StaticResource Home}}"
+                                      Stretch="Uniform"
+                                      Style="{StaticResource MenuIconStyle}" />
+
+                                <!--  Menu Text  -->
+                                <TextBlock Grid.Column="1"
+                                           Style="{StaticResource MenuTextStyle}"
+                                           Text="{Binding Text, ElementName=This, FallbackValue=MenuText, TargetNullValue=MenuText}" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!--  Hover Effect  -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="MainBorder"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            To="#1e293b"
+                                                            Duration="0:0:0.2" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <ColorAnimation Storyboard.TargetName="MainBorder"
+                                                            Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                            Duration="0:0:0.2" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                            <!--  Active/Checked State  -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="MainBorder" Property="Background">
+                                    <Setter.Value>
+                                        <SolidColorBrush Opacity="0.5" Color="#1e3a5f" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <!--  To set IsChecked property to true on default  -->
+                            <DataTrigger Binding="{Binding IsSelected, ElementName=This}" Value="True">
+                                <Setter Property="IsChecked" Value="True" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!--
+            Sub Menu Button Style
+            Lighter style for nested menu items
+        -->
+    </views:MvxWpfView.Resources>
+
+    <!--
+        Main Grid
+        Contains a single RadioButton styled as a menu button.
+        The RadioButton is bound to commands and properties defined in the code-behind.
+        Style is determined by IsSubMenuItem property
+    -->
+    <Grid>
+        <RadioButton x:Name="MenuButton"
+                     Command="{Binding CommandName, ElementName=This}"
+                     GroupName="{Binding GroupName, ElementName=This}"
+                     Style="{StaticResource MenuButtonStyle}" />
+    </Grid>
+</views:MvxWpfView>

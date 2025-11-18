@@ -1,0 +1,507 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        PopupButtonStyle
+        Modern, clean button style for navigation items with:
+        - Transparent background
+        - No borders
+        - Smooth hover transitions
+        - Full width/height to match content
+        - Proper cursor behavior
+    -->
+    <Style x:Key="PopupButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="ContentPresenter"
+                                          Margin="0"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Focusable="False"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!--  Hover State - Subtle feedback  -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Pressed State - No visual change, let inner content handle it  -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Disabled State  -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        PopupButtonStyle with Ripple Effect (Alternative)
+        Enhanced version with subtle ripple/scale effect on click
+    -->
+    <Style x:Key="PopupButtonStyleWithRipple" TargetType="{x:Type Button}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="ButtonBorder"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            RenderTransformOrigin="0.5,0.5"
+                            SnapsToDevicePixels="True">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                        </Border.RenderTransform>
+                        <ContentPresenter x:Name="ContentPresenter"
+                                          Margin="0"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Focusable="False"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!--  Hover State  -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Pressed State with Scale Animation  -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ScaleTransform"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="0.98"
+                                                         Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ScaleTransform"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="0.98"
+                                                         Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ScaleTransform"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1"
+                                                         Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ScaleTransform"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         To="1"
+                                                         Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <!--  Disabled State  -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        PopupButtonStyle for Toggle Buttons (Expandable Menu Items)
+        Special style for ToggleButtons used in expandable sections
+    -->
+    <Style x:Key="PopupToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextColor}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="ButtonBorder"
+                            Padding="{TemplateBinding Padding}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="ContentPresenter"
+                                          Margin="0"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Focusable="False"
+                                          RecognizesAccessKey="True"
+                                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!--  Hover State  -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Checked State  -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Pressed State  -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="ButtonBorder" Property="Background" Value="Transparent" />
+                        </Trigger>
+                        <!--  Disabled State  -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
+                            <Setter Property="Cursor" Value="Arrow" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+        Toggle Button Content Options for Navigation Menu
+        Choose one of these options based on your preference
+    -->
+
+    <!--  Add this to your ShellView.xaml Resources section  -->
+    <Style x:Key="AnimatedHamburgerToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8">
+                        <Canvas Width="24"
+                                Height="24"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                            <!--  Top Line  -->
+                            <Rectangle x:Name="TopLine"
+                                       Canvas.Top="5"
+                                       Width="24"
+                                       Height="2.5"
+                                       Fill="{DynamicResource PrimaryTextColor}"
+                                       RadiusX="1.5"
+                                       RadiusY="1.5"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <Rectangle.RenderTransform>
+                                    <TransformGroup>
+                                        <RotateTransform x:Name="TopRotate" Angle="0" />
+                                        <TranslateTransform x:Name="TopTranslate" Y="0" />
+                                    </TransformGroup>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+
+                            <!--  Middle Line  -->
+                            <Rectangle x:Name="MiddleLine"
+                                       Canvas.Top="11"
+                                       Width="24"
+                                       Height="2.5"
+                                       Fill="{DynamicResource PrimaryTextColor}"
+                                       RadiusX="1.5"
+                                       RadiusY="1.5">
+                                <Rectangle.RenderTransform>
+                                    <ScaleTransform x:Name="MiddleScale" ScaleX="1" />
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+
+                            <!--  Bottom Line  -->
+                            <Rectangle x:Name="BottomLine"
+                                       Canvas.Top="17"
+                                       Width="24"
+                                       Height="2.5"
+                                       Fill="{DynamicResource PrimaryTextColor}"
+                                       RadiusX="1.5"
+                                       RadiusY="1.5"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <Rectangle.RenderTransform>
+                                    <TransformGroup>
+                                        <RotateTransform x:Name="BottomRotate" Angle="0" />
+                                        <TranslateTransform x:Name="BottomTranslate" Y="0" />
+                                    </TransformGroup>
+                                </Rectangle.RenderTransform>
+                            </Rectangle>
+                        </Canvas>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!--  Hover Effect  -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="TopLine" Property="Fill" Value="{DynamicResource PrimaryBlueColor}" />
+                            <Setter TargetName="MiddleLine" Property="Fill" Value="{DynamicResource PrimaryBlueColor}" />
+                            <Setter TargetName="BottomLine" Property="Fill" Value="{DynamicResource PrimaryBlueColor}" />
+                        </Trigger>
+
+                        <!--  Checked State - Animate to X  -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <!--  Top line rotates 45° and moves down  -->
+                                        <DoubleAnimation Storyboard.TargetName="TopRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         To="45"
+                                                         Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="TopTranslate"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="6"
+                                                         Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+
+                                        <!--  Middle line fades out  -->
+                                        <DoubleAnimation Storyboard.TargetName="MiddleScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="0"
+                                                         Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+
+                                        <!--  Bottom line rotates -45° and moves up  -->
+                                        <DoubleAnimation Storyboard.TargetName="BottomRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         To="-45"
+                                                         Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="BottomTranslate"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="-6"
+                                                         Duration="0:0:0.3">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseInOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <!--  Reverse all animations  -->
+                                        <DoubleAnimation Storyboard.TargetName="TopRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         To="0"
+                                                         Duration="0:0:0.3" />
+                                        <DoubleAnimation Storyboard.TargetName="TopTranslate"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0"
+                                                         Duration="0:0:0.3" />
+                                        <DoubleAnimation Storyboard.TargetName="MiddleScale"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         To="1"
+                                                         Duration="0:0:0.3" />
+                                        <DoubleAnimation Storyboard.TargetName="BottomRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         To="0"
+                                                         Duration="0:0:0.3" />
+                                        <DoubleAnimation Storyboard.TargetName="BottomTranslate"
+                                                         Storyboard.TargetProperty="Y"
+                                                         To="0"
+                                                         Duration="0:0:0.3" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--  Start: ToggleButtonStyle  -->
+    <Style x:Key="ToggleButtonStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Background" Value="{DynamicResource SecondaryWhiteColor}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryWhiteColor}" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Width" Value="35" />
+        <Setter Property="MaxHeight" Value="20" />
+        <Setter Property="MaxWidth" Value="35" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Grid>
+                        <Border x:Name="Border"
+                                Width="35"
+                                Height="14"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="7">
+                            <!--  Optional  -->
+                            <Border.Effect>
+                                <DropShadowEffect Opacity=".2" ShadowDepth="0.5" />
+                            </Border.Effect>
+                        </Border>
+                        <Ellipse x:Name="Ellipse"
+                                 Width="20"
+                                 Height="20"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Center"
+                                 Fill="{DynamicResource TertiaryWhiteColor}"
+                                 Stroke="{TemplateBinding BorderBrush}"
+                                 StrokeThickness="3">
+                            <!--  Optional  -->
+                            <Ellipse.Effect>
+                                <DropShadowEffect Opacity=".2" ShadowDepth="0.5" />
+                            </Ellipse.Effect>
+                        </Ellipse>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!--  EventTrigger Checked  -->
+                        <EventTrigger RoutedEvent="Checked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <ColorAnimation Storyboard.TargetName="Border"
+                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                    To="#C2D1FC"
+                                                    Duration="0:0:0.2" />
+                                    <ThicknessAnimation Storyboard.TargetName="Ellipse"
+                                                        Storyboard.TargetProperty="Margin"
+                                                        To="15 0 0 0"
+                                                        Duration="0:0:0.2" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <!--  EventTrigger UnChecked  -->
+                        <EventTrigger RoutedEvent="Unchecked">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <ColorAnimation Storyboard.TargetName="Border"
+                                                    Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)"
+                                                    To="#CECECE"
+                                                    Duration="0:0:0.2" />
+                                    <ThicknessAnimation Storyboard.TargetName="Ellipse"
+                                                        Storyboard.TargetProperty="Margin"
+                                                        To="0 0 0 0"
+                                                        Duration="0:0:0.2" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Ellipse" Property="Fill" Value="{DynamicResource SecondaryBlueColor}" />
+                            <Setter TargetName="Ellipse" Property="Stroke" Value="{DynamicResource PrimaryTextColor}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!--  End: ToggleButtonStyle  -->
+
+    <!--  MenuToggleButtonStyle for expandable menu items  -->
+    <Style x:Key="MenuToggleButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Height" Value="45" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryWhiteColor}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Normal" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8">
+                        <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundColor}" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource TertiaryBackgroundColor}" />
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryBlueColor}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

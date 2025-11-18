@@ -1,0 +1,51 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Resources.UserPopUp"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DesignHeight="300"
+                  d:DesignWidth="300"
+                  mc:Ignorable="d">
+    <views:MvxWpfView.Style>
+        <Style>
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="0"
+                                             To="1"
+                                             Duration="00:00:01" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+                <Trigger Property="FrameworkElement.Visibility" Value="Collapsed">
+                    <Setter Property="FrameworkElement.Opacity" Value="0" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </views:MvxWpfView.Style>
+    <Grid>
+        <!--  Start: Popup User Control  -->
+        <Border x:Name="Container"
+                Width="Auto"
+                Height="30"
+                Margin="10,0,0,0"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="{DynamicResource PrimaryBlueColor}"
+                CornerRadius="5">
+            <!--  Star: Reusable Text  -->
+            <TextBlock x:Name="PopupText"
+                       Margin="10,5,10,5"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Panel.ZIndex="1"
+                       FontSize="14"
+                       FontWeight="Regular" />
+            <!--  Star: Reusable Text  -->
+        </Border>
+        <!--  End: Popup User Control  -->
+    </Grid>
+</views:MvxWpfView>
