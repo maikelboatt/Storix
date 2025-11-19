@@ -1,0 +1,218 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Components.SalesOrderList"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:resources="clr-namespace:Storix.Presentation.Resources"
+                  xmlns:viewModels="clr-namespace:Storix.Core.ViewModels.Orders.Sales;assembly=Storix.Core"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=viewModels:SalesOrderListViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="auto"
+                  mc:Ignorable="d">
+    <views:MvxWpfView.Resources>
+        <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
+    </views:MvxWpfView.Resources>
+    <Grid>
+        <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+
+            <loadingSpinnerControl:LoadingSpinner Diameter="100"
+                                                  IsLoading="{Binding IsLoading}"
+                                                  Thickness="3" />
+
+            <TextBlock Margin="0,10"
+                       VerticalAlignment="Top"
+                       FontFamily="Amita"
+                       Text="Loading Categories from database..."
+                       TextAlignment="Center" />
+        </StackPanel>
+
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+            <Grid Margin="3">
+                <!--  Row definitions for the header and content sections  -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!--  Header section containing search and action buttons  -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <!--  Search takes more space  -->
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Search bar with icon  -->
+                    <resources:CustomSearchBox Grid.Column="0"
+                                               Margin="15,0,0,0"
+                                               VerticalAlignment="Center"
+                                               Data="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                               Placeholder="Search Categories..." />
+
+                    <!--  Button to create Sales Order  -->
+                    <Button Grid.Column="1"
+                            Width="120"
+                            Margin="10,0"
+                            HorizontalAlignment="Right"
+                            Command="{Binding OpenCreateSalesOrderCommand}"
+                            Style="{DynamicResource OpenBtn}"
+                            ToolTip="Create Sales Order">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
+                                                        Kind="CartPlus"
+                                                        Style="{StaticResource IconButtonIcon}" />
+                            <TextBlock VerticalAlignment="Center" Text="Sale" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Button to create Purchase Order  -->
+                    <Button Grid.Column="2"
+                            Width="120"
+                            Margin="10,0"
+                            HorizontalAlignment="Right"
+                            Command="{Binding OpenCreatePurchaseOrderCommand}"
+                            Style="{DynamicResource OpenBtn}"
+                            ToolTip="Create Purchase Order">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
+                                                        Kind="PackageUp"
+                                                        Style="{StaticResource IconButtonIcon}" />
+                            <TextBlock VerticalAlignment="Center" Text="Purchase" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Button to add new Category  -->
+                    <Button Grid.Column="3"
+                            Width="120"
+                            Margin="10,0,15,0"
+                            HorizontalAlignment="Right"
+                            Command="{Binding OpenSalesOrderFormCommand}"
+                            CommandParameter="{x:Null}"
+                            IsDefault="True"
+                            Style="{DynamicResource OpenBtn}"
+                            ToolTip="Add New Category">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
+                                                        Kind="PackageVariantPlus"
+                                                        Style="{StaticResource IconButtonIcon}" />
+                            <TextBlock VerticalAlignment="Center" Text="Category" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!--  DataGrid displaying the list of members  -->
+                <DataGrid Grid.Row="1"
+                          Background="{DynamicResource SecondaryBackgroundColor}"
+                          CellStyle="{StaticResource DataGridCellStyle1}"
+                          ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle1}"
+                          ItemsSource="{Binding SalesOrder, UpdateSourceTrigger=PropertyChanged}"
+                          RowStyle="{StaticResource DataGridRowStyle1}"
+                          Style="{DynamicResource DataGridStyle1}"
+                          VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <!--  Column for selecting members using a checkbox  -->
+                        <DataGridTemplateColumn Width="Auto" Header="Select">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!--  Column displaying the Customer name of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding CustomerName}"
+                                            CanUserResize="False"
+                                            Header="Customer Name"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the Order date of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding OrderDate}"
+                                            CanUserResize="False"
+                                            Header="Order date"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the Delivery Date of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding DeliveryDate}"
+                                            CanUserResize="False"
+                                            Header="Delivery Date"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the Status of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding Status}"
+                                            CanUserResize="False"
+                                            Header="Status"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the Total amount of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding TotalAmount}"
+                                            CanUserResize="False"
+                                            Header="Total Amount"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the Notes of the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding Notes}"
+                                            CanUserResize="False"
+                                            Header="Notes"
+                                            IsReadOnly="True" />
+
+                        <!--  Column displaying the user who created the sales order  -->
+                        <DataGridTextColumn Width="*"
+                                            Binding="{Binding CreatedBy}"
+                                            CanUserResize="False"
+                                            Header="Created By"
+                                            IsReadOnly="True" />
+
+
+                        <!--  Column containing operation buttons for each member  -->
+                        <DataGridTemplateColumn Width="auto"
+                                                Header="Operations"
+                                                IsReadOnly="True">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <!--  Button to open the details dialog for a member  -->
+                                        <Button Margin="0,0,5,0"
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenAddMemberPaymentDialogCommand}"
+                                                CommandParameter="{Binding OrderId}"
+                                                IsDefault="True"
+                                                Style="{DynamicResource CreateBtn}">
+                                            <iconPacks:PackIconMaterial Kind="OpenInNew" Style="{StaticResource IconButtonIcon}" />
+                                        </Button>
+
+                                        <!--  Button to open the update dialog for a member  -->
+                                        <Button Margin="0,0,5,0"
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenCategoryFormCommand}"
+                                                CommandParameter="{Binding OrderId}"
+                                                Style="{DynamicResource EditBtn}">
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus" Style="{StaticResource IconButtonIcon}" />
+                                        </Button>
+
+                                        <!--  Button to open the delete dialog for a member  -->
+                                        <Button Margin="0,0,5,0"
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenCategoryDeleteCommand}"
+                                                CommandParameter="{Binding OrderId}"
+                                                Style="{DynamicResource DelBtn}">
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove" Style="{StaticResource IconButtonIcon}" />
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+    </Grid>
+</views:MvxWpfView>
