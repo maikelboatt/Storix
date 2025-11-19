@@ -26,7 +26,7 @@ namespace Storix.Application.Services.Suppliers.Interfaces
         /// <summary>
         /// Gets all suppliers in database.
         /// </summary>
-        Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllAsync();
+        Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllSuppliersAsync();
 
         /// <summary>
         /// Retrieves all active (non-deleted) suppliers from persistence

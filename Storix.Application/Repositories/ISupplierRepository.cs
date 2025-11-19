@@ -40,12 +40,12 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets a supplier by ID (includes deleted).
         /// </summary>
-        Task<Supplier?> GetByIdAsync( int supplierId );
+        Task<Supplier?> GetByIdAsync( int supplierId, bool includeDeleted = true );
 
         /// <summary>
-        ///     Gets all suppliers (includes deleted).
+        ///     Gets all suppliers.
         /// </summary>
-        Task<IEnumerable<Supplier>> GetAllAsync();
+        Task<IEnumerable<Supplier>> GetAllAsync( bool includeDeleted = true );
 
         /// <summary>
         ///     Gets a supplier by email (includes deleted).

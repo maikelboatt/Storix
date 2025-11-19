@@ -11,7 +11,6 @@ using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Users;
-using Storix.DataAccess.Repositories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users
@@ -176,7 +175,7 @@ namespace Storix.Application.Services.Users
         {
             // Get existing user (only active ones - can't update deleted users)
             DatabaseResult<User?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => userRepository.GetByIdAsync(updateUserDto.UserId),
+                () => userRepository.GetByIdAsync(updateUserDto.UserId, false),
                 $"Retrieving user {updateUserDto.UserId} for update",
                 enableRetry: false
             );

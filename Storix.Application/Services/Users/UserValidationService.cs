@@ -5,7 +5,6 @@ using Storix.Application.Common.Errors;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Users.Interfaces;
-using Storix.DataAccess.Repositories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users

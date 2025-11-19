@@ -51,7 +51,7 @@ namespace Storix.Application.Services.Customers
             return await customerReadService.GetCustomerByPhoneAsync(phone);
         }
 
-        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync() => await customerReadService.GetAllAsync();
+        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync() => await customerReadService.GetAllCustomersAsync();
 
         public async Task<DatabaseResult<IEnumerable<Customer>>> GetAllActiveAsync() => await customerReadService.GetsAllActiveCustomersAsync();
 

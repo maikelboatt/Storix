@@ -26,7 +26,7 @@ namespace Storix.Application.Services.Customers.Interfaces
         /// <summary>
         /// Gets all customers in database.
         /// </summary>
-        Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync();
+        Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllCustomersAsync();
 
         /// <summary>
         /// Retrieves all active (non-deleted) customers from persistence and initializes the in-memory store (cache) with them.

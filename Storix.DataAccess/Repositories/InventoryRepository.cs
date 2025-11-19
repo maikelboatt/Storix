@@ -170,7 +170,7 @@
 //         /// <summary>
 //         ///     Gets all inventory records.
 //         /// </summary>
-//         public async Task<IEnumerable<Inventory>> GetAllAsync()
+//         public async Task<IEnumerable<Inventory>> GetAllCustomersAsync()
 //         {
 //             // language=tsql
 //             const string sql = "SELECT * FROM Inventory ORDER BY ProductId, LocationId";
@@ -735,5 +735,6 @@
 //         #endregion
 //     }
 // }
+
 
 

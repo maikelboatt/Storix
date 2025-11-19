@@ -127,10 +127,10 @@ namespace Storix.Application.Services.Suppliers
         /// <summary>
         /// Gets all suppliers in database.
         /// </summary>
-        public async Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllAsync()
+        public async Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllSuppliersAsync()
         {
             DatabaseResult<IEnumerable<Supplier>> result =
-                await databaseErrorHandlerService.HandleDatabaseOperationAsync(supplierRepository.GetAllAsync, "Retrieving all suppliers");
+                await databaseErrorHandlerService.HandleDatabaseOperationAsync(() => supplierRepository.GetAllAsync(true), "Retrieving all suppliers");
 
             if (!result.IsSuccess)
             {
@@ -159,7 +159,7 @@ namespace Storix.Application.Services.Suppliers
                 async () =>
                 {
                     // Fetch all suppliers from persistence.
-                    IEnumerable<Supplier> allSuppliers = await supplierRepository.GetAllAsync();
+                    IEnumerable<Supplier> allSuppliers = await supplierRepository.GetAllAsync(false);
 
                     // Filter only active (non-deleted) suppliers.
                     List<Supplier> activeSuppliers = allSuppliers

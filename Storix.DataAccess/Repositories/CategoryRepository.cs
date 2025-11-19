@@ -105,13 +105,16 @@ namespace Storix.DataAccess.Repositories
         #region Read Operations (Always returns ALL records - active + deleted)
 
         /// <summary>
-        ///     Gets a category by its ID (returns active or deleted).
+        ///     Gets a category by its ID 
         ///     Use CategoryStore.GetById() for fast active-only access.
         /// </summary>
-        public async Task<Category?> GetByIdAsync( int categoryId )
+        public async Task<Category?> GetByIdAsync( int categoryId, bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Category WHERE CategoryId = @CategoryId";
+            string sql = includeDeleted
+                ? "SELECT * FROM Category WHERE CategoryId = @CategoryId"
+                // language=tsql
+                : "SELECT * FROM Category WHERE CategoryId = @CategoryId AND IsDeleted = 0";
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Category>(
                 sql,
                 new

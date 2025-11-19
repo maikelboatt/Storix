@@ -14,7 +14,7 @@ namespace Storix.Application.Services.Users
 
         Task<DatabaseResult<UserDto?>> GetByEmailAsync( string email );
 
-        Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync();
+        Task<DatabaseResult<IEnumerable<UserDto>>> GetAllUsersAsync();
 
         /// <summary>
         /// Retrieves all active (non-deleted) users from persistence

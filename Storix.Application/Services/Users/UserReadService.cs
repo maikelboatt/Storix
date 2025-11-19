@@ -9,7 +9,6 @@ using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Users;
-using Storix.DataAccess.Repositories;
 using Storix.Domain.Models;
 
 namespace Storix.Application.Services.Users
@@ -127,10 +126,10 @@ namespace Storix.Application.Services.Users
             return DatabaseResult<UserDto?>.Success(result.Value.ToDto());
         }
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync()
+        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllUsersAsync()
         {
             DatabaseResult<IEnumerable<User>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                userRepository.GetAllAsync,
+                () => userRepository.GetAllAsync(true),
                 "Retrieving all users"
             );
 
@@ -160,7 +159,7 @@ namespace Storix.Application.Services.Users
                 async () =>
                 {
                     // Fetch all users from persistence
-                    IEnumerable<User> allUsers = await userRepository.GetAllAsync();
+                    IEnumerable<User> allUsers = await userRepository.GetAllAsync(false);
 
                     // Filter only active (non-deleted) users at the service layer
                     List<User> activeUsers = allUsers
@@ -179,7 +178,8 @@ namespace Storix.Application.Services.Users
         public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllDeletedAsync()
         {
             DatabaseResult<IEnumerable<User>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                userRepository.GetAllAsync,
+                () =>
+                    userRepository.GetAllAsync(),
                 "Retrieving all deleted users"
             );
 

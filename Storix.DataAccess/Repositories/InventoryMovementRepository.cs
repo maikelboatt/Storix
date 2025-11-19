@@ -151,7 +151,7 @@
 //         /// <summary>
 //         ///     Gets all inventory movements.
 //         /// </summary>
-//         public async Task<IEnumerable<InventoryMovement>> GetAllAsync()
+//         public async Task<IEnumerable<InventoryMovement>> GetAllCustomersAsync()
 //         {
 //             // language=tsql
 //             const string sql = "SELECT * FROM InventoryMovement ORDER BY CreatedDate DESC";
@@ -601,5 +601,6 @@
 //         #endregion
 //     }
 // }
+
 
 

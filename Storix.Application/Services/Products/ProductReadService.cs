@@ -172,7 +172,7 @@ namespace Storix.Application.Services.Products
         {
             DatabaseResult<IEnumerable<Product>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => productRepository.GetAllAsync(false),
-                "Retrieving active proucts");
+                "Retrieving active products");
 
             if (result is { IsSuccess: true, Value: not null })
             {
@@ -234,7 +234,7 @@ namespace Storix.Application.Services.Products
                 "Retrieving all deleted products"
             );
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation("Successfully retrieved {DeletedProductCount} deleted products", result.Value.Count());
                 IEnumerable<ProductDto> productDtos = result.Value.ToDto();

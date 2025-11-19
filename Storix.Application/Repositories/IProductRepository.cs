@@ -74,8 +74,7 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Gets a product by its ID.
         /// </summary>
-        /// <param name="productId" >The product ID.</param>
-        Task<Product?> GetByIdAsync( int productId );
+        Task<Product?> GetByIdAsync( int productId, bool includeDeleted = true );
 
         /// <summary>
         ///     Gets a product by its SKU.

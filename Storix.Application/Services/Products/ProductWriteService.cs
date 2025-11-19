@@ -154,7 +154,7 @@ namespace Storix.Application.Services.Products
         {
             // Get existing active product
             DatabaseResult<Product?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => productRepository.GetByIdAsync(updateProductDto.ProductId),
+                () => productRepository.GetByIdAsync(updateProductDto.ProductId, false),
                 $"Retrieving product {updateProductDto.ProductId} for update",
                 false
             );

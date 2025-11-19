@@ -118,10 +118,13 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Gets a customer by ID (includes deleted).
         /// </summary>
-        public async Task<Customer?> GetByIdAsync( int customerId )
+        public async Task<Customer?> GetByIdAsync( int customerId, bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Customer WHERE CustomerId = @CustomerId";
+            string sql = includeDeleted
+                ? "SELECT * FROM Customer WHERE CustomerId = @CustomerId"
+                // language=tsql
+                : "SELECT * FROM Customer WHERE CustomerId = @CustomerId AND IsDeleted = 0";
             return await sqlDataAccess.QuerySingleOrDefaultAsync<Customer>(
                 sql,
                 new
@@ -133,10 +136,13 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         ///     Gets all customers (includes deleted).
         /// </summary>
-        public async Task<IEnumerable<Customer>> GetAllAsync()
+        public async Task<IEnumerable<Customer>> GetAllAsync( bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Customer ORDER BY Name";
+            string sql = includeDeleted
+                ? "SELECT * FROM Customer ORDER BY Name"
+                // language=tsql
+                : "SELECT * FROM Customer WHERE IsDeleted = 0 ORDER BY Name";
             return await sqlDataAccess.QueryAsync<Customer>(sql);
         }
 

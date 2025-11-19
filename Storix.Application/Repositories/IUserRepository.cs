@@ -3,15 +3,14 @@ using System.Threading.Tasks;
 using Storix.Application.Common;
 using Storix.Domain.Models;
 
-namespace Storix.DataAccess.Repositories
+namespace Storix.Application.Repositories
 {
     public interface IUserRepository
     {
         /// <summary>
         /// Retrieves a user by its unique ID.
-        /// Always returns the record regardless of IsDeleted status.
         /// </summary>
-        Task<User?> GetByIdAsync( int userId );
+        Task<User?> GetByIdAsync( int userId, bool includeDeleted = true );
 
         /// <summary>
         /// Retrieves a user by username (includes deleted users).
@@ -24,9 +23,9 @@ namespace Storix.DataAccess.Repositories
         Task<User?> GetByEmailAsync( string email );
 
         /// <summary>
-        /// Retrieves all users, including soft-deleted ones.
+        /// Retrieves all users.
         /// </summary>
-        Task<IEnumerable<User>> GetAllAsync();
+        Task<IEnumerable<User>> GetAllAsync( bool includeDeleted = true );
 
         /// <summary>
         /// Retrieves all users for a given role (includes deleted).

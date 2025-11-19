@@ -128,10 +128,10 @@ namespace Storix.Application.Services.Customers
         /// <summary>
         /// Gets all customers in database.
         /// </summary>
-        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync()
+        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllCustomersAsync()
         {
             DatabaseResult<IEnumerable<Customer>> result =
-                await databaseErrorHandlerService.HandleDatabaseOperationAsync(customerRepository.GetAllAsync, "Retrieving all customers");
+                await databaseErrorHandlerService.HandleDatabaseOperationAsync(() => customerRepository.GetAllAsync(true), "Retrieving all customers");
 
             if (!result.IsSuccess)
             {
@@ -159,7 +159,7 @@ namespace Storix.Application.Services.Customers
                 async () =>
                 {
                     // Fetch all customers from persistence.
-                    IEnumerable<Customer> allCustomers = await customerRepository.GetAllAsync();
+                    IEnumerable<Customer> allCustomers = await customerRepository.GetAllAsync(false);
 
                     // Filter only active (non-deleted) customers.
                     List<Customer> activeCustomers = allCustomers

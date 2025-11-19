@@ -132,10 +132,13 @@ namespace Storix.DataAccess.Repositories
         /// <summary>
         /// Retrieves a product by its unique identifier (includes both active and deleted).
         /// </summary>
-        public async Task<Product?> GetByIdAsync( int productId )
+        public async Task<Product?> GetByIdAsync( int productId, bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Product WHERE ProductId = @ProductId";
+            string sql = includeDeleted
+                ? "SELECT * FROM Product WHERE ProductId = @ProductId"
+                // language=tsql
+                : "SELECT * FROM Product WHERE ProductId = @ProductId AND IsDeleted = 0";
             return await _sqlDataAccess.QuerySingleOrDefaultAsync<Product>(
                 sql,
                 new

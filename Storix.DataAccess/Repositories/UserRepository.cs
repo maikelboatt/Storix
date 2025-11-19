@@ -17,10 +17,13 @@ namespace Storix.DataAccess.Repositories
     {
         #region Read Operations
 
-        public async Task<User?> GetByIdAsync( int userId )
+        public async Task<User?> GetByIdAsync( int userId, bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Users WHERE UserId = @UserId";
+            string sql = includeDeleted
+                ? "SELECT * FROM Users WHERE UserId = @UserId"
+                // language=tsql
+                : "SELECT * FROM Users WHERE UserId = @UserId AND IsDeleted = 0";
             return await sqlDataAccess.QuerySingleOrDefaultAsync<User>(
                 sql,
                 new
@@ -53,10 +56,13 @@ namespace Storix.DataAccess.Repositories
                 });
         }
 
-        public async Task<IEnumerable<User>> GetAllAsync()
+        public async Task<IEnumerable<User>> GetAllAsync( bool includeDeleted = true )
         {
             // language=tsql
-            const string sql = "SELECT * FROM Users ORDER BY Username";
+            string sql = includeDeleted
+                ? "SELECT * FROM Users ORDER BY Username"
+                // language=tsql
+                : "SELECT * FROM Users WHERE IsDeleted = 0 ORDER BY Username";
             return await sqlDataAccess.QueryAsync<User>(sql);
         }
 

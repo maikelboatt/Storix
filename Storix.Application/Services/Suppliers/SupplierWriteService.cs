@@ -55,7 +55,7 @@ namespace Storix.Application.Services.Suppliers
                 return businessValidation;
 
             // Update Supplier
-            return await PerformUpdate(updateSupplierDto);
+            return await PerformUpdateAsync(updateSupplierDto);
         }
 
         public async Task<DatabaseResult> SoftDeleteSupplierAsync( int supplierId )
@@ -142,11 +142,11 @@ namespace Storix.Application.Services.Suppliers
             return DatabaseResult<SupplierDto>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        private async Task<DatabaseResult<SupplierDto>> PerformUpdate( UpdateSupplierDto updateSupplierDto )
+        private async Task<DatabaseResult<SupplierDto>> PerformUpdateAsync( UpdateSupplierDto updateSupplierDto )
         {
             // Get existing supplier (only active ones - can't update deleted suppliers)
             DatabaseResult<Supplier?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => supplierRepository.GetByIdAsync(updateSupplierDto.SupplierId),
+                () => supplierRepository.GetByIdAsync(updateSupplierDto.SupplierId, false),
                 $"Retrieving supplier {updateSupplierDto.SupplierId} for update");
 
             if (!getResult.IsSuccess || getResult.Value is null)
@@ -160,33 +160,37 @@ namespace Storix.Application.Services.Suppliers
                     getResult.ErrorCode);
             }
 
-            Supplier? existingSupplier = getResult.Value;
-
-            // Update supplier in cache
-            supplierStore.Update(updateSupplierDto);
-
-            // Check if supplier is soft-deleted
-            if (existingSupplier.IsDeleted)
+            Supplier updatedSupplier = getResult.Value with
             {
-                logger.LogWarning("Cannot update deleted supplier {SupplierId}. Restore the supplier first", updateSupplierDto.SupplierId);
-                return DatabaseResult<SupplierDto>.Failure("Cannot update deleted supplier. Restore supplier first.", DatabaseErrorCode.InvalidInput);
-            }
-
-            // Update supplier while preserving soft delete properties
-            Supplier updatedSupplier = updateSupplierDto.ToDomain(existingSupplier.IsDeleted, existingSupplier.DeletedAt);
+                Name = updateSupplierDto.Name,
+                Email = updateSupplierDto.Email,
+                Phone = updateSupplierDto.Phone,
+                Address = updateSupplierDto.Address
+            };
 
             DatabaseResult<Supplier> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => supplierRepository.UpdateAsync(updatedSupplier),
                 "Updating supplier");
 
-            if (updateResult is { IsSuccess: true, Value: not null })
+            if (!updateResult.IsSuccess || updateResult.Value == null)
             {
-                logger.LogInformation("Successfully updated supplier with ID {SupplierId}", updateResult.Value.SupplierId);
-                return DatabaseResult<SupplierDto>.Success(updateResult.Value.ToDto());
+                logger.LogWarning("Failed to update supplier with ID {SupplierId}: {ErrorMessage}", updateSupplierDto, updateResult.ErrorMessage);
+                return DatabaseResult<SupplierDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
             }
 
-            logger.LogWarning("Failed to update supplier with ID {SupplierId}: {ErrorMessage}", updateSupplierDto, updateResult.ErrorMessage);
-            return DatabaseResult<SupplierDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
+            SupplierDto supplierDto = updateResult.Value.ToDto();
+            SupplierDto? storeResult = supplierStore.Update(updateSupplierDto);
+
+            if (storeResult == null)
+            {
+                logger.LogWarning(
+                    "Supplier with ID {SupplierId} updated in database but failed to update in cache",
+                    updateSupplierDto.SupplierId);
+            }
+
+            logger.LogInformation("Successfully updated supplier with ID {SupplierId}", updateResult.Value.SupplierId);
+            return DatabaseResult<SupplierDto>.Success(updateResult.Value.ToDto());
+
         }
 
         private async Task<DatabaseResult> PerformSoftDelete( int supplierId )

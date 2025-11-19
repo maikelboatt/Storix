@@ -33,10 +33,10 @@ namespace Storix.Application.Repositories
         Task<int> GetDeletedCountAsync();
 
         /// <summary>
-        ///     Gets a category by its ID (returns active or deleted).
+        ///     Gets a category by its ID.
         ///     Use CategoryStore.GetById() for fast active-only access.
         /// </summary>
-        Task<Category?> GetByIdAsync( int categoryId );
+        Task<Category?> GetByIdAsync( int categoryId, bool includeDeleted = true );
 
         /// <summary>
         ///     Gets all categories (active + deleted).

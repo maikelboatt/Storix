@@ -38,14 +38,14 @@ namespace Storix.Application.Repositories
         Task<int> GetDeletedCountAsync();
 
         /// <summary>
-        ///     Gets a customer by ID (includes deleted).
+        ///     Gets a customer by ID.
         /// </summary>
-        Task<Customer?> GetByIdAsync( int customerId );
+        Task<Customer?> GetByIdAsync( int customerId, bool includeDeleted = true );
 
         /// <summary>
         ///     Gets all customers (includes deleted).
         /// </summary>
-        Task<IEnumerable<Customer>> GetAllAsync();
+        Task<IEnumerable<Customer>> GetAllAsync( bool includeDeleted = true );
 
         /// <summary>
         ///     Gets a customer by email (includes deleted).

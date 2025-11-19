@@ -32,7 +32,7 @@ namespace Storix.Application.Services.Users
         public async Task<DatabaseResult<UserDto?>> GetByEmailAsync( string email, bool includeDeleted = false ) =>
             await userReadService.GetByEmailAsync(email);
 
-        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync() => await userReadService.GetAllAsync();
+        public async Task<DatabaseResult<IEnumerable<UserDto>>> GetAllAsync() => await userReadService.GetAllUsersAsync();
 
         public async Task<DatabaseResult<IEnumerable<User>>> GetAllActiveAsync() => await userReadService.GetAllActiveUsersAsync();
 
