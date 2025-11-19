@@ -1,0 +1,17 @@
+﻿using System;
+using Storix.Domain.Enums;
+
+namespace Storix.Application.DTO.Orders
+{
+    public class PurchaseOrderListDto
+    {
+        public int OrderId { get; set; }
+        public string SupplierName { get; set; } = string.Empty;
+        public DateTime OrderDate { get; set; }
+        public OrderStatus Status { get; set; }
+        public decimal TotalAmount { get; set; }
+        public DateTime? DeliveryDate { get; set; }
+        public string? Notes { get; set; }
+        public int CreatedBy { get; set; }
+    }
+}
