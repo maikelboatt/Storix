@@ -74,6 +74,13 @@ namespace Storix.Infrastructure
                     .AsInterfaces()
                     .RegisterAsLazySingleton();
 
+                // Register Managers
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Manager")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
+
                 // Register Stores
                 assembly
                     .CreatableTypes()

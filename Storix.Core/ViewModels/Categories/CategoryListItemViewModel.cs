@@ -36,7 +36,7 @@ namespace Storix.Core.ViewModels.Categories
         #region Helper Methods
 
         /// <summary>
-        /// Gets the underlying Product entity (useful for edit/delete operations).
+        /// Gets the underlying Category entity (useful for edit/delete operations).
         /// </summary>
         public CategoryListDto GetCategory() => _category;
 
