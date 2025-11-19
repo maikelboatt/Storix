@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Storix.Application.DTO.Orders;
 using Storix.Domain.Enums;
 using Storix.Domain.Models;
@@ -9,17 +10,40 @@ namespace Storix.Application.Stores.Orders
     {
         void Initialize( IEnumerable<Order> orders );
 
+        void InitializeSalesOrderList( List<SalesOrderListDto> salesOrderListDtos );
+
+        void InitializePurchaseOrderList( List<PurchaseOrderListDto> purchaseOrderListDtos );
+
+        string GetCustomerName( int customerId );
+
+        string GetSupplierName( int supplierId );
+
         void Clear();
 
-        OrderDto? Create( int orderId, OrderDto orderDto );
+        /// <summary>
+        ///     Event triggered when an order is added.
+        /// </summary>
+        event Action<Order> OrderAdded;
 
-        OrderDto? GetById( int orderId );
+        /// <summary>
+        ///     Event triggered when an order is updated.
+        /// </summary>
+        event Action<Order> OrderUpdated;
 
-        OrderDto? Update( OrderDto orderDto );
+        /// <summary>
+        ///     Event triggered when an order is deleted.
+        /// </summary>
+        event Action<int> OrderDeleted;
+
+        OrderDto? Create( int orderId, CreateOrderDto orderDto );
+
+        OrderDto? Update( UpdateOrderDto orderDto );
+
+        bool Delete( int orderId );
 
         bool UpdateStatus( int orderId, OrderStatus newStatus );
 
-        bool Delete( int orderId );
+        OrderDto? GetById( int orderId );
 
         List<OrderDto> GetAll( OrderType? type = null,
             OrderStatus? status = null,

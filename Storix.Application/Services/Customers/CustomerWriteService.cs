@@ -147,9 +147,9 @@ namespace Storix.Application.Services.Customers
 
         private async Task<DatabaseResult<CustomerDto>> PerformUpdate( UpdateCustomerDto updateCustomerDto )
         {
-            // Get existing customer (only active ones - can't update deleted customers)
+            // Retrieve existing customer (automatically excludes deleted)
             DatabaseResult<Customer?> getResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => customerRepository.GetByIdAsync(updateCustomerDto.CustomerId),
+                () => customerRepository.GetByIdAsync(updateCustomerDto.CustomerId, false),
                 $"Retrieving customer {updateCustomerDto.CustomerId} for update",
                 enableRetry: false
             );
@@ -167,41 +167,43 @@ namespace Storix.Application.Services.Customers
 
             Customer existingCustomer = getResult.Value;
 
-            // Update customer in cache
-            customerStore.Update(updateCustomerDto);
-
-            // Check if customer is soft-deleted
-            if (existingCustomer.IsDeleted)
+            // Map to updated entity (preserve soft-delete properties)
+            Customer updatedCustomer = existingCustomer with
             {
-                logger.LogWarning(
-                    "Cannot update deleted customer {CustomerId}. Restore the customer first.",
-                    updateCustomerDto.CustomerId);
-                return DatabaseResult<CustomerDto>.Failure(
-                    "Cannot update deleted customer. Restore the customer first.",
-                    DatabaseErrorCode.InvalidInput);
-            }
+                Name = updateCustomerDto.Name,
+                Email = updateCustomerDto.Email,
+                Phone = updateCustomerDto.Phone,
+                Address = updateCustomerDto.Address
+            };
 
-            // Update customer while preserving soft delete properties
-            Customer updatedCustomer = updateCustomerDto.ToDomain(
-                existingCustomer.IsDeleted,
-                existingCustomer.DeletedAt);
-
+            // Perform database update
             DatabaseResult<Customer> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => customerRepository.UpdateAsync(updatedCustomer),
                 "Updating customer"
             );
 
-            if (updateResult is { IsSuccess: true, Value: not null })
+            if (!updateResult.IsSuccess || updateResult.Value == null)
             {
-                logger.LogInformation("Successfully updated customer with ID {CustomerId}", updateCustomerDto.CustomerId);
-                return DatabaseResult<CustomerDto>.Success(updateResult.Value.ToDto());
+                logger.LogWarning(
+                    "Failed to update customer {CustomerId}: {ErrorMessage}",
+                    updateCustomerDto.CustomerId,
+                    updateResult.ErrorMessage);
+                return DatabaseResult<CustomerDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
             }
 
-            logger.LogWarning(
-                "Failed to update customer with ID {CustomerId}: {ErrorMessage}",
-                updateCustomerDto.CustomerId,
-                updateResult.ErrorMessage);
-            return DatabaseResult<CustomerDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
+            // Update cache AFTER successful database update
+            CustomerDto customerDto = updateResult.Value.ToDto();
+            CustomerDto? cacheResult = customerStore.Update(updateCustomerDto);
+
+            if (cacheResult == null)
+            {
+                logger.LogWarning(
+                    "Customer {CustomerId} updated in database but failed to update in cache",
+                    updateCustomerDto.CustomerId);
+            }
+
+            logger.LogInformation("Successfully updated customer {CustomerId}", updateCustomerDto.CustomerId);
+            return DatabaseResult<CustomerDto>.Success(customerDto);
         }
 
         private async Task<DatabaseResult> PerformSoftDelete( int customerId )

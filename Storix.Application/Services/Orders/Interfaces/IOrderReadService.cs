@@ -13,6 +13,10 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetAllOrdersAsync();
 
+        Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrderListAsync();
+
+        Task<DatabaseResult<IEnumerable<PurchaseOrderListDto>>> GetPurchaseOrderListAsync();
+
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByTypeAsync( OrderType type );
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByStatusAsync( OrderStatus status );

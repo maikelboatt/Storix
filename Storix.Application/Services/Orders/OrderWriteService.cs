@@ -152,7 +152,7 @@ namespace Storix.Application.Services.Orders
             if (result is { IsSuccess: true, Value: not null })
             {
                 OrderDto orderDto = result.Value.ToDto();
-                orderStore.Create(result.Value.OrderId, orderDto);
+                orderStore.Create(result.Value.OrderId, createOrderDto);
                 logger.LogInformation("Successfully created order with ID {OrderId} in Draft status", result.Value.OrderId);
                 return DatabaseResult<OrderDto>.Success(orderDto);
             }
@@ -171,27 +171,42 @@ namespace Storix.Application.Services.Orders
 
             if (!getResult.IsSuccess || getResult.Value == null)
             {
+                logger.LogWarning("Cannot update order {OrderId}: {ErrorMessage}", updateOrderDto.OrderId, getResult.ErrorMessage ?? "Order not found");
                 return DatabaseResult<OrderDto>.Failure(
                     getResult.ErrorMessage ?? "Order not found",
                     getResult.ErrorCode);
             }
 
-            Order updatedOrder = updateOrderDto.ToDomain(getResult.Value);
+            Order updatedOrder = getResult.Value with
+            {
+                Status = updateOrderDto.Status,
+                DeliveryDate = updateOrderDto.DeliveryDate,
+                Notes = updateOrderDto.Notes
+            };
 
             DatabaseResult<Order> updateResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => orderRepository.UpdateAsync(updatedOrder),
                 "Updating order");
 
-            if (updateResult is { IsSuccess: true, Value: not null })
+            if (!updateResult.IsSuccess || updateResult.Value == null)
             {
-                OrderDto orderDto = updateResult.Value.ToDto();
-                orderStore.Update(orderDto);
-                logger.LogInformation("Successfully updated order with ID {OrderId}", updateOrderDto.OrderId);
-                return DatabaseResult<OrderDto>.Success(orderDto);
+                logger.LogWarning(
+                    "Failed to update order {OrderId}: {ErrorMessage}",
+                    updateOrderDto.OrderId,
+                    updateResult.ErrorMessage);
+                return DatabaseResult<OrderDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
             }
 
-            logger.LogWarning("Failed to update order: {ErrorMessage}", updateResult.ErrorMessage);
-            return DatabaseResult<OrderDto>.Failure(updateResult.ErrorMessage!, updateResult.ErrorCode);
+            OrderDto orderDto = updateResult.Value.ToDto();
+            OrderDto? storeResult = orderStore.Update(updateOrderDto);
+
+            if (storeResult == null)
+            {
+                logger.LogWarning("Order {OrderId} updated in database but failed to update in store", updateOrderDto.OrderId);
+            }
+
+            logger.LogInformation("Successfully updated order with ID {OrderId}", updateOrderDto.OrderId);
+            return DatabaseResult<OrderDto>.Success(orderDto);
         }
 
         private DatabaseResult CheckForNull( int orderId, string queryDescription )

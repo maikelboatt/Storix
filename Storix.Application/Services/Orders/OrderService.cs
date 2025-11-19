@@ -28,6 +28,10 @@ namespace Storix.Application.Services.Orders
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetAllOrdersAsync() => await orderReadService.GetAllOrdersAsync();
 
+        public async Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrderListAsync() => await orderReadService.GetSalesOrderListAsync();
+
+        public async Task<DatabaseResult<IEnumerable<PurchaseOrderListDto>>> GetPurchaseOrderListAsync() => await orderReadService.GetPurchaseOrderListAsync();
+
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByTypeAsync( OrderType type ) => await orderReadService.GetOrdersByTypeAsync(type);
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByStatusAsync( OrderStatus status ) =>

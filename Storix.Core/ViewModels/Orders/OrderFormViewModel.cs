@@ -8,7 +8,7 @@ using Storix.Core.InputModel;
 
 namespace Storix.Core.ViewModels.Orders
 {
-    public class OrderViewModel:MvxViewModel<int>, IOrderViewModel
+    public class OrderFormViewModel:MvxViewModel<int>, IOrderViewModel
     {
         private readonly IOrderService _orderService;
         private bool _isEditMode;
@@ -17,7 +17,7 @@ namespace Storix.Core.ViewModels.Orders
         private OrderInputModel _orderInputModel;
 
 
-        public OrderViewModel( IOrderService orderService )
+        public OrderFormViewModel( IOrderService orderService )
         {
             _orderService = orderService;
             _isEditMode = false;

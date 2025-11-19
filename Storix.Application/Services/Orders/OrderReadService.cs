@@ -7,6 +7,7 @@ using Storix.Application.Common;
 using Storix.Application.Common.Errors;
 using Storix.Application.DTO.Orders;
 using Storix.Application.Enums;
+using Storix.Application.Managers.Interfaces;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Stores.Orders;
@@ -20,6 +21,7 @@ namespace Storix.Application.Services.Orders
     /// </summary>
     public class OrderReadService(
         IOrderRepository orderRepository,
+        IOrderItemManager orderItemManager,
         IOrderStore orderStore,
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<OrderReadService> logger ):IOrderReadService
@@ -68,6 +70,92 @@ namespace Storix.Application.Services.Orders
 
             logger.LogWarning("Failed to retrieve orders by type: {ErrorMessage}", result.ErrorMessage);
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrderListAsync()
+        {
+            DatabaseResult<IEnumerable<OrderDto>> result = await GetOrdersByTypeAsync(OrderType.Sale);
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                List<SalesOrderListDto> salesOrderListDtos = [];
+
+                foreach (OrderDto dto in result.Value)
+                {
+                    // Await the async call to get total amount
+                    DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
+                    decimal totalAmount = totalResult.IsSuccess
+                        ? totalResult.Value
+                        : 0m;
+
+                    salesOrderListDtos.Add(
+                        new SalesOrderListDto
+                        {
+                            OrderId = dto.OrderId,
+                            CustomerName = orderStore.GetCustomerName(dto.CustomerId ?? 0),
+                            OrderDate = dto.OrderDate,
+                            Status = dto.Status,
+                            TotalAmount = totalAmount,
+                            DeliveryDate = dto.DeliveryDate,
+                            Notes = dto.Notes,
+                            CreatedBy = dto.CreatedBy
+                        });
+                }
+
+                orderStore.InitializeSalesOrderList(salesOrderListDtos);
+
+                logger.LogInformation(
+                    "Successfully mapped {SalesOrderCount} sales orders to SalesOrderListDto",
+                    salesOrderListDtos.Count);
+
+                return DatabaseResult<IEnumerable<SalesOrderListDto>>.Success(salesOrderListDtos);
+            }
+
+            logger.LogWarning("Failed to retrieve sales orders for list: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<SalesOrderListDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<PurchaseOrderListDto>>> GetPurchaseOrderListAsync()
+        {
+            DatabaseResult<IEnumerable<OrderDto>> result = await GetOrdersByTypeAsync(OrderType.Purchase);
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                List<PurchaseOrderListDto> purchaseOrderListDtos = [];
+
+                foreach (OrderDto dto in result.Value)
+                {
+                    // Await the async call to get total amount
+                    DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
+                    decimal totalAmount = totalResult.IsSuccess
+                        ? totalResult.Value
+                        : 0m;
+
+                    purchaseOrderListDtos.Add(
+                        new PurchaseOrderListDto
+                        {
+                            OrderId = dto.OrderId,
+                            SupplierName = orderStore.GetSupplierName(dto.SupplierId ?? 0),
+                            OrderDate = dto.OrderDate,
+                            Status = dto.Status,
+                            TotalAmount = totalAmount,
+                            DeliveryDate = dto.DeliveryDate,
+                            Notes = dto.Notes,
+                            CreatedBy = dto.CreatedBy
+                        });
+                }
+
+                orderStore.InitializePurchaseOrderList(purchaseOrderListDtos);
+
+                logger.LogInformation(
+                    "Successfully mapped {SalesOrderCount} sales orders to PurchaseOrderListDto",
+                    purchaseOrderListDtos.Count);
+
+                return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Success(purchaseOrderListDtos);
+            }
+
+            logger.LogWarning("Failed to retrieve sales orders for list: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByStatusAsync( OrderStatus status )

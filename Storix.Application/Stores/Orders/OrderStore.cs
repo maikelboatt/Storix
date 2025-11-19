@@ -1,6 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Storix.Application.DTO.Customers;
 using Storix.Application.DTO.Orders;
+using Storix.Application.DTO.Suppliers;
+using Storix.Application.Services.Customers.Interfaces;
+using Storix.Application.Services.Suppliers.Interfaces;
 using Storix.Domain.Enums;
 using Storix.Domain.Models;
 
@@ -8,11 +13,22 @@ namespace Storix.Application.Stores.Orders
 {
     public class OrderStore:IOrderStore
     {
+        private readonly ICustomerCacheReadService _customerCacheReadService;
+        private readonly ISupplierCacheReadService _supplierCacheReadService;
         private readonly Dictionary<int, Order> _orders;
+        private readonly Dictionary<int, SalesOrderListDto> _salesOrderListDtos;
+        private readonly Dictionary<int, PurchaseOrderListDto> _purchaseOrderListDtos;
 
-        public OrderStore( List<Order>? initialOrders = null )
+
+        public OrderStore( ICustomerCacheReadService customerCacheReadService,
+            ISupplierCacheReadService supplierCacheReadService,
+            List<Order>? initialOrders = null )
         {
+            _customerCacheReadService = customerCacheReadService;
+            _supplierCacheReadService = supplierCacheReadService;
             _orders = new Dictionary<int, Order>();
+            _salesOrderListDtos = new Dictionary<int, SalesOrderListDto>();
+            _purchaseOrderListDtos = new Dictionary<int, PurchaseOrderListDto>();
 
             if (initialOrders == null) return;
 
@@ -31,9 +47,65 @@ namespace Storix.Application.Stores.Orders
             }
         }
 
-        public void Clear() => _orders.Clear();
+        public void InitializeSalesOrderList( List<SalesOrderListDto> salesOrderListDtos )
+        {
+            _salesOrderListDtos.Clear();
 
-        public OrderDto? Create( int orderId, OrderDto orderDto )
+            foreach (SalesOrderListDto salesOrder in salesOrderListDtos)
+            {
+                _salesOrderListDtos[salesOrder.OrderId] = salesOrder;
+            }
+        }
+
+        public void InitializePurchaseOrderList( List<PurchaseOrderListDto> purchaseOrderListDtos )
+        {
+            _purchaseOrderListDtos.Clear();
+
+            foreach (PurchaseOrderListDto purchaseOrder in purchaseOrderListDtos)
+            {
+                _purchaseOrderListDtos[purchaseOrder.OrderId] = purchaseOrder;
+            }
+        }
+
+        public string GetCustomerName( int customerId )
+        {
+            CustomerDto? customer = _customerCacheReadService.GetCustomerByIdInCache(customerId);
+            return customer?.Name ?? "Unknown";
+        }
+
+        public string GetSupplierName( int supplierId )
+        {
+            SupplierDto? supplier = _supplierCacheReadService.GetSupplierByIdInCache(supplierId);
+            return supplier?.Name ?? "Unknown";
+        }
+
+        public void Clear()
+        {
+            _orders.Clear();
+            _salesOrderListDtos.Clear();
+            _purchaseOrderListDtos.Clear();
+        }
+
+        #region Events
+
+        /// <summary>
+        ///     Event triggered when an order is added.
+        /// </summary>
+        public event Action<Order> OrderAdded;
+
+        /// <summary>
+        ///     Event triggered when an order is updated.
+        /// </summary>
+        public event Action<Order> OrderUpdated;
+
+        /// <summary>
+        ///     Event triggered when an order is deleted.
+        /// </summary>
+        public event Action<int> OrderDeleted;
+
+        #endregion
+
+        public OrderDto? Create( int orderId, CreateOrderDto orderDto )
         {
             switch (orderDto)
             {
@@ -48,7 +120,7 @@ namespace Storix.Application.Stores.Orders
             Order order = new(
                 orderId,
                 orderDto.Type,
-                orderDto.Status,
+                OrderStatus.Draft,
                 orderDto.SupplierId,
                 orderDto.CustomerId,
                 orderDto.OrderDate,
@@ -58,14 +130,11 @@ namespace Storix.Application.Stores.Orders
             );
 
             _orders[orderId] = order;
+            OrderAdded?.Invoke(order);
             return order.ToDto();
         }
 
-        public OrderDto? GetById( int orderId ) => !_orders.TryGetValue(orderId, out Order? order)
-            ? null
-            : order.ToDto();
-
-        public OrderDto? Update( OrderDto orderDto )
+        public OrderDto? Update( UpdateOrderDto orderDto )
         {
             if (!_orders.TryGetValue(orderDto.OrderId, out Order? existingOrder)) return null;
             Order updatedOrder = existingOrder with
@@ -76,7 +145,16 @@ namespace Storix.Application.Stores.Orders
             };
 
             _orders[orderDto.OrderId] = updatedOrder;
+            OrderUpdated?.Invoke(updatedOrder);
             return updatedOrder.ToDto();
+        }
+
+        public bool Delete( int orderId )
+        {
+            OrderDeleted?.Invoke(orderId);
+            _salesOrderListDtos.Remove(orderId);
+            _purchaseOrderListDtos.Remove(orderId);
+            return _orders.Remove(orderId);
         }
 
         public bool UpdateStatus( int orderId, OrderStatus newStatus )
@@ -92,7 +170,9 @@ namespace Storix.Application.Stores.Orders
             return true;
         }
 
-        public bool Delete( int orderId ) => _orders.Remove(orderId);
+        public OrderDto? GetById( int orderId ) => !_orders.TryGetValue(orderId, out Order? order)
+            ? null
+            : order.ToDto();
 
         public List<OrderDto> GetAll( OrderType? type = null,
             OrderStatus? status = null,
