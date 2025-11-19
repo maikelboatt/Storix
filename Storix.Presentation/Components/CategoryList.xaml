@@ -8,15 +8,14 @@
                   xmlns:resources="clr-namespace:Storix.Presentation.Resources"
                   xmlns:viewModels="clr-namespace:Storix.Core.ViewModels.Categories;assembly=Storix.Core"
                   xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
-                  xmlns:views1="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
                   d:DataContext="{d:DesignInstance Type=viewModels:CategoryListViewModel,
                                                    IsDesignTimeCreatable=True}"
                   d:DesignHeight="auto"
                   d:DesignWidth="auto"
                   mc:Ignorable="d">
-    <views1:MvxWpfView.Resources>
+    <views:MvxWpfView.Resources>
         <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
-    </views1:MvxWpfView.Resources>
+    </views:MvxWpfView.Resources>
     <Grid>
         <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
 
