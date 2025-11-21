@@ -1,14 +1,20 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using FluentValidation;
 using FluentValidation.Results;
+using MvvmCross.ViewModels;
+using Storix.Application.DTO.Customers;
 using Storix.Application.DTO.Orders;
+using Storix.Application.DTO.Suppliers;
 using Storix.Application.Validator.Orders;
-using Storix.Core.ViewModels.Orders;
 using Storix.Domain.Enums;
 
 namespace Storix.Core.InputModel
 {
-    public class OrderInputModel():MvxValidatingViewModel
+    public class OrderInputModel:MvxValidatingViewModel
     {
         private readonly CreateOrderDtoValidator _createOrderValidator = new();
         private readonly UpdateOrderDtoValidator _updateOrderValidator = new();
@@ -16,13 +22,17 @@ namespace Storix.Core.InputModel
         // Backing fields for properties
         private int _orderId;
         private OrderType _type;
-        private OrderStatus _status;
+        private OrderStatus _status = OrderStatus.Draft;
         private int? _supplierId;
         private int? _customerId;
         private DateTime _orderDate = DateTime.Now;
         private DateTime? _deliveryDate;
         private string? _notes;
         private int _createdBy;
+
+        public OrderInputModel()
+        {
+        }
 
         public OrderInputModel( CreateOrderDto? createOrderDto ):this()
         {
@@ -41,6 +51,10 @@ namespace Storix.Core.InputModel
             }
             ValidateAllProperties();
         }
+
+        // Collections for dropdowns
+        public ObservableCollection<CustomerDto> Customers { get; set; } = new();
+        public ObservableCollection<SupplierDto> Suppliers { get; set; } = new();
 
         // Properties with validation
         public int OrderId
@@ -63,6 +77,8 @@ namespace Storix.Core.InputModel
                 if (SetProperty(ref _type, value))
                 {
                     ValidateProperty(value);
+                    RaisePropertyChanged(() => IsSalesOrder);
+                    RaisePropertyChanged(() => IsPurchaseOrder);
                 }
             }
         }
@@ -152,8 +168,10 @@ namespace Storix.Core.InputModel
             }
         }
 
-        // Computed property
+        // Computed properties
         public bool IsOverdue => _deliveryDate.HasValue && _deliveryDate < DateTime.UtcNow;
+        public bool IsSalesOrder => _type == OrderType.Sale;
+        public bool IsPurchaseOrder => _type == OrderType.Purchase;
 
         private void LoadFromDto( CreateOrderDto dto )
         {
@@ -197,11 +215,6 @@ namespace Storix.Core.InputModel
         private void ValidateProperty( object value, [CallerMemberName] string propertyName = "" )
         {
             ClearErrors(propertyName);
-
-            // Pick the correct validator based on whether OrderId is set
-            IValidator validator = _orderId == 0
-                ? _createOrderValidator
-                : _updateOrderValidator;
 
             ValidationResult result;
 

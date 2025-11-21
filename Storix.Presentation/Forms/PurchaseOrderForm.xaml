@@ -1,0 +1,447 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Forms.PurchaseOrderForm"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:purchase="clr-namespace:Storix.Core.ViewModels.Orders.Purchase;assembly=Storix.Core"
+                  xmlns:resources="clr-namespace:Storix.Presentation.Resources"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=purchase:PurchaseOrderFormViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="900"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="100"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           TextAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Creating purchase order..." />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                    <Setter Property="Text" Value="Updating purchase order..." />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section  -->
+                <Grid Grid.Row="0" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock FontFamily="Californian FB"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}">
+                            <Run Text="{Binding FormIcon, Mode=OneWay}" />
+                            <Run Text="{Binding Title, Mode=OneWay}" />
+                        </TextBlock>
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource SecondaryTextColor}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Create a new purchase order from a supplier" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                            <Setter Property="Text" Value="Update the purchase order information below" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!--  Reset Button (Only in Edit Mode)  -->
+                    <Button Grid.Column="1"
+                            Width="110"
+                            Height="36"
+                            Command="{Binding ResetCommand}"
+                            Style="{DynamicResource CancelBtn}"
+                            ToolTip="Reset form to original values"
+                            Visibility="{Binding IsEditMode, Converter={StaticResource ToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="16"
+                                                        Height="16"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Refresh" />
+                            <TextBlock Margin="6,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Text="Reset" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!--  Form Content  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Order Information Section  -->
+                        <TextBlock Margin="0,0,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="📋 Order Information" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Order Number  -->
+                            <resources:CustomTextBox Grid.Column="0"
+                                                     Margin="0,0,10,0"
+                                                     Data="{Binding OrderNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Description="Order Number *"
+                                                     Placeholder="PO-20241119-1234" />
+
+                            <!--  Order Date  -->
+                            <StackPanel Grid.Column="1" Margin="20,10">
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Text="Order Date *" />
+                                <DatePicker SelectedDate="{Binding Input.OrderDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DatePickerStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  Supplier & Expected Date  -->
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Supplier Selection  -->
+                            <StackPanel Grid.Column="0" Margin="20,10">
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Text="Supplier *" />
+                                <ComboBox DisplayMemberPath="Name"
+                                          ItemsSource="{Binding Input.Suppliers}"
+                                          SelectedValue="{Binding Input.SupplierId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="SupplierId"
+                                          Style="{StaticResource ComboBoxStyle}">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="Padding" Value="10,8" />
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!--  Expected Delivery Date  -->
+                            <StackPanel Grid.Column="1" Margin="20,10">
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Text="Expected Delivery Date" />
+                                <DatePicker SelectedDate="{Binding Input.DeliveryDate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource DatePickerStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!--  Order Status (Only in Edit Mode)  -->
+                        <StackPanel Margin="20,10" Visibility="{Binding IsEditMode, Converter={StaticResource ToVisibilityConverter}}">
+                            <TextBlock FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="Order Status" />
+                            <ComboBox ItemsSource="{Binding OrderStatuses}"
+                                      SelectedItem="{Binding Input.Status, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                      Style="{StaticResource ComboBoxStyle}">
+                                <ComboBox.ItemContainerStyle>
+                                    <Style TargetType="ComboBoxItem">
+                                        <Setter Property="Padding" Value="10,8" />
+                                    </Style>
+                                </ComboBox.ItemContainerStyle>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <!--  Order Items Section  -->
+                        <TextBlock Margin="0,20,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="📦 Order Items" />
+
+                        <!--  Add Item Button  -->
+                        <Button Width="150"
+                                Height="36"
+                                Margin="20,0,0,10"
+                                HorizontalAlignment="Left"
+                                Command="{Binding AddOrderItemCommand}"
+                                Style="{DynamicResource CreateBtn}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Width="16"
+                                                            Height="16"
+                                                            VerticalAlignment="Center"
+                                                            Kind="Plus" />
+                                <TextBlock Margin="6,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           Text="Add Item" />
+                            </StackPanel>
+                        </Button>
+
+                        <!--  Order Items DataGrid  -->
+                        <DataGrid Margin="20,10"
+                                  ItemsSource="{Binding OrderItems}"
+                                  Style="{StaticResource DataGridStyle}">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="*" Header="Product">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <ComboBox DisplayMemberPath="Name"
+                                                      ItemsSource="{Binding DataContext.AvailableProducts, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                      SelectedValue="{Binding ProductId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      SelectedValuePath="ProductId"
+                                                      Style="{StaticResource ComboBoxStyle}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <DataGridTextColumn Width="120"
+                                                    Binding="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    Header="Quantity" />
+
+                                <DataGridTextColumn Width="120"
+                                                    Binding="{Binding UnitPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, StringFormat=C2}"
+                                                    Header="Unit Cost" />
+
+                                <DataGridTextColumn Width="120"
+                                                    Binding="{Binding LineTotal, Mode=OneWay, StringFormat=C2}"
+                                                    Header="Line Total"
+                                                    IsReadOnly="True" />
+
+                                <DataGridTemplateColumn Width="80" Header="Actions">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Command="{Binding DataContext.RemoveOrderItemCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{DynamicResource DeleteBtn}"
+                                                    ToolTip="Remove item">
+                                                <iconPacks:PackIconMaterial Width="16"
+                                                                            Height="16"
+                                                                            Kind="Delete" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <!--  Total Amount  -->
+                        <Border Margin="20,10"
+                                Padding="15"
+                                HorizontalAlignment="Right"
+                                Background="{DynamicResource SecondaryBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <TextBlock FontSize="14"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Text="Total Amount" />
+                                <TextBlock FontFamily="Californian FB"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
+                                           Text="{Binding TotalAmount, StringFormat=C2}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Notes Section  -->
+                        <TextBlock Margin="0,20,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="📝 Additional Notes" />
+
+                        <StackPanel Margin="20,10">
+                            <TextBox Height="80"
+                                     AcceptsReturn="True"
+                                     Style="{StaticResource TextBoxStyle}"
+                                     Text="{Binding Input.Notes, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" />
+                        </StackPanel>
+
+                        <!--  Info Panel  -->
+                        <Border Margin="20,10"
+                                Padding="15"
+                                Background="{DynamicResource InfoBackgroundColor}"
+                                BorderBrush="{DynamicResource InfoBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="16"
+                                                                Height="16"
+                                                                Foreground="{DynamicResource InfoIconColor}"
+                                                                Kind="InformationOutline" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource InfoTextColor}"
+                                               Text="Purchase Order Tips" />
+                                </StackPanel>
+                                <TextBlock Margin="0,5,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Purchase orders help track incoming inventory"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Unit costs are typically negotiated with suppliers"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Expected delivery date helps plan inventory levels"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Validation Summary  -->
+                        <Border Margin="20,20,20,10"
+                                Padding="15"
+                                Background="#FEE2E2"
+                                BorderBrush="#EF4444"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{Binding HasErrors, Converter={StaticResource ToVisibilityConverter}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="18"
+                                                                Height="18"
+                                                                Foreground="#DC2626"
+                                                                Kind="AlertCircle" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="#991B1B"
+                                               Text="Please fix the following errors:" />
+                                </StackPanel>
+                                <TextBlock Margin="26,8,0,0"
+                                           FontSize="12"
+                                           Foreground="#991B1B"
+                                           Text="• Order number is required"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="26,2,0,0"
+                                           FontSize="12"
+                                           Foreground="#991B1B"
+                                           Text="• Supplier must be selected"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="26,2,0,0"
+                                           FontSize="12"
+                                           Foreground="#991B1B"
+                                           Text="• At least one order item is required"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,20,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Required Fields Note  -->
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                   Text="* Required fields" />
+                    </StackPanel>
+
+                    <!--  Cancel Button  -->
+                    <Button Grid.Column="1"
+                            Width="120"
+                            Height="40"
+                            Margin="0,0,10,0"
+                            Command="{Binding CancelCommand}"
+                            Style="{DynamicResource CancelBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Close" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Save Button  -->
+                    <Button Grid.Column="2"
+                            Width="140"
+                            Height="40"
+                            Command="{Binding SaveCommand}"
+                            IsDefault="True"
+                            Style="{DynamicResource CreateBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center">
+                                <iconPacks:PackIconMaterial.Style>
+                                    <Style TargetType="iconPacks:PackIconMaterial">
+                                        <Setter Property="Kind" Value="ContentSave" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                                <Setter Property="Kind" Value="Check" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </iconPacks:PackIconMaterial.Style>
+                            </iconPacks:PackIconMaterial>
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="{Binding SaveButtonText}" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>
