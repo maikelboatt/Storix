@@ -11,6 +11,10 @@ namespace Storix.Application.Services.Customers.Interfaces
 
         CustomerDto? GetCustomerByPhoneInCache( string phone );
 
+        List<CustomerDto> GetAllActiveCustomersInCache();
+
+        List<CustomerDto> GetAllCustomersInCache();
+
         IEnumerable<CustomerDto> SearchCustomersInCache( string searchTerm );
 
         bool CustomerExistsInCache( int customerId );

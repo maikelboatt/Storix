@@ -29,6 +29,20 @@ namespace Storix.Application.Services.Customers
             return customerStore.GetByEmail(email);
         }
 
+        public List<CustomerDto> GetAllCustomersInCache()
+        {
+            logger.LogInformation("Retrieving all customers from cache");
+
+            return customerStore.GetAll();
+        }
+
+        public List<CustomerDto> GetAllActiveCustomersInCache()
+        {
+            logger.LogInformation("Retrieving all active customers from cache");
+
+            return customerStore.GetActiveCustomers();
+        }
+
         public CustomerDto? GetCustomerByPhoneInCache( string phone )
         {
             logger.LogInformation("Retrieving customer with Phone: {CustomerPhone} from cache", phone);
