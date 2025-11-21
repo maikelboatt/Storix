@@ -4,53 +4,95 @@ using Storix.Domain.Enums;
 
 namespace Storix.Core.ViewModels.Orders.Purchase
 {
-    public class PurchaseOrderListItemViewModel( PurchaseOrderListDto orderDto ):MvxNotifyPropertyChanged
+    /// <summary>
+    /// ViewModel for a single purchase order item in the list
+    /// </summary>
+    public class PurchaseOrderListItemViewModel:MvxNotifyPropertyChanged
     {
-        private readonly PurchaseOrderListDto _orderListDto = orderDto ?? throw new ArgumentNullException(nameof(orderDto));
+        private int _orderId;
+        private OrderStatus _status;
+        private string _supplierName = string.Empty;
+        private DateTime _orderDate;
+        private DateTime? _deliveryDate;
+        private string? _notes;
+        private int _createdBy;
+        private decimal _totalAmount;
         private bool _isSelected;
 
-        #region Sales Order Properties
+        public PurchaseOrderListItemViewModel( PurchaseOrderListDto dto )
+        {
+            UpdateFromDto(dto);
+        }
 
-        public int OrderId => _orderListDto.OrderId;
-        public string SupplierName => _orderListDto.SupplierName;
-        public DateTime OrderDate => _orderListDto.OrderDate;
-        public OrderStatus Status => _orderListDto.Status;
-        public decimal TotalAmount => _orderListDto.TotalAmount;
-        public DateTime? DeliveryDate => _orderListDto.DeliveryDate;
-        public string? Notes => _orderListDto.Notes;
-        public int CreatedBy => _orderListDto.CreatedBy;
+        public void UpdateFromDto( PurchaseOrderListDto dto )
+        {
+            OrderId = dto.OrderId;
+            Status = dto.Status;
+            SupplierName = dto.SupplierName;
+            OrderDate = dto.OrderDate;
+            DeliveryDate = dto.DeliveryDate;
+            Notes = dto.Notes;
+            CreatedBy = dto.CreatedBy;
+            TotalAmount = dto.TotalAmount;
+        }
 
-        #endregion
+        public int OrderId
+        {
+            get => _orderId;
+            set => SetProperty(ref _orderId, value);
+        }
 
-        #region UI_Specific Properties
+        public OrderStatus Status
+        {
+            get => _status;
+            set => SetProperty(ref _status, value);
+        }
 
-        /// <summary>
-        /// Indicates whether this product is currently selected in the UI.
-        /// Used for checkbox binding in DataGrid.
-        /// </summary>
+        public string SupplierName
+        {
+            get => _supplierName;
+            set => SetProperty(ref _supplierName, value);
+        }
+
+        public DateTime OrderDate
+        {
+            get => _orderDate;
+            set => SetProperty(ref _orderDate, value);
+        }
+
+        public DateTime? DeliveryDate
+        {
+            get => _deliveryDate;
+            set => SetProperty(ref _deliveryDate, value);
+        }
+
+        public string? Notes
+        {
+            get => _notes;
+            set => SetProperty(ref _notes, value);
+        }
+
+        public int CreatedBy
+        {
+            get => _createdBy;
+            set => SetProperty(ref _createdBy, value);
+        }
+
+        public decimal TotalAmount
+        {
+            get => _totalAmount;
+            set => SetProperty(ref _totalAmount, value);
+        }
+
         public bool IsSelected
         {
             get => _isSelected;
             set => SetProperty(ref _isSelected, value);
         }
 
-        #endregion
-
-        #region Helper Methods
-
-        /// <summary>
-        /// Gets the underlying Sales Order entity (useful for edit/delete operations).
-        /// </summary>
-        public PurchaseOrderListDto GetPurchaseOrder() => _orderListDto;
-
-        /// <summary>
-        /// Resets the selection state.
-        /// </summary>
-        public void ClearSelection()
-        {
-            IsSelected = false;
-        }
-
-        #endregion
+        public string StatusDisplay => Status.ToString();
+        public string TotalAmountDisplay => TotalAmount.ToString("C2");
+        public string OrderDateDisplay => OrderDate.ToString("yyyy-MM-dd");
+        public string DeliveryDateDisplay => DeliveryDate?.ToString("yyyy-MM-dd") ?? "N/A";
     }
 }

@@ -15,12 +15,16 @@ namespace Storix.Application.Stores.Orders
     {
         private readonly ICustomerCacheReadService _customerCacheReadService;
         private readonly ISupplierCacheReadService _supplierCacheReadService;
+
+        // Single dictionary for all orders
         private readonly Dictionary<int, Order> _orders;
+
+        // Cached list DTOs for optimized list views
         private readonly Dictionary<int, SalesOrderListDto> _salesOrderListDtos;
         private readonly Dictionary<int, PurchaseOrderListDto> _purchaseOrderListDtos;
 
-
-        public OrderStore( ICustomerCacheReadService customerCacheReadService,
+        public OrderStore(
+            ICustomerCacheReadService customerCacheReadService,
             ISupplierCacheReadService supplierCacheReadService,
             List<Order>? initialOrders = null )
         {
@@ -30,11 +34,12 @@ namespace Storix.Application.Stores.Orders
             _salesOrderListDtos = new Dictionary<int, SalesOrderListDto>();
             _purchaseOrderListDtos = new Dictionary<int, PurchaseOrderListDto>();
 
-            if (initialOrders == null) return;
-
-            foreach (Order order in initialOrders)
+            if (initialOrders != null)
             {
-                _orders[order.OrderId] = order;
+                foreach (Order order in initialOrders)
+                {
+                    _orders[order.OrderId] = order;
+                }
             }
         }
 
@@ -50,7 +55,6 @@ namespace Storix.Application.Stores.Orders
         public void InitializeSalesOrderList( List<SalesOrderListDto> salesOrderListDtos )
         {
             _salesOrderListDtos.Clear();
-
             foreach (SalesOrderListDto salesOrder in salesOrderListDtos)
             {
                 _salesOrderListDtos[salesOrder.OrderId] = salesOrder;
@@ -60,7 +64,6 @@ namespace Storix.Application.Stores.Orders
         public void InitializePurchaseOrderList( List<PurchaseOrderListDto> purchaseOrderListDtos )
         {
             _purchaseOrderListDtos.Clear();
-
             foreach (PurchaseOrderListDto purchaseOrder in purchaseOrderListDtos)
             {
                 _purchaseOrderListDtos[purchaseOrder.OrderId] = purchaseOrder;
@@ -89,24 +92,27 @@ namespace Storix.Application.Stores.Orders
         #region Events
 
         /// <summary>
-        ///     Event triggered when an order is added.
+        /// Event triggered when an order is added (for all order types)
         /// </summary>
-        public event Action<Order> OrderAdded;
+        public event Action<Order>? OrderAdded;
 
         /// <summary>
-        ///     Event triggered when an order is updated.
+        /// Event triggered when an order is updated (for all order types)
         /// </summary>
-        public event Action<Order> OrderUpdated;
+        public event Action<Order>? OrderUpdated;
 
         /// <summary>
-        ///     Event triggered when an order is deleted.
+        /// Event triggered when an order is deleted (for all order types)
         /// </summary>
-        public event Action<int> OrderDeleted;
+        public event Action<int>? OrderDeleted;
 
         #endregion
 
+        #region Write Operations
+
         public OrderDto? Create( int orderId, CreateOrderDto orderDto )
         {
+            // Validation
             switch (orderDto)
             {
                 case { Type: OrderType.Purchase, SupplierId: null }:
@@ -130,13 +136,18 @@ namespace Storix.Application.Stores.Orders
             );
 
             _orders[orderId] = order;
+
+            // Trigger event - listeners can handle async operations
             OrderAdded?.Invoke(order);
+
             return order.ToDto();
         }
 
         public OrderDto? Update( UpdateOrderDto orderDto )
         {
-            if (!_orders.TryGetValue(orderDto.OrderId, out Order? existingOrder)) return null;
+            if (!_orders.TryGetValue(orderDto.OrderId, out Order? existingOrder))
+                return null;
+
             Order updatedOrder = existingOrder with
             {
                 Status = orderDto.Status,
@@ -145,21 +156,62 @@ namespace Storix.Application.Stores.Orders
             };
 
             _orders[orderDto.OrderId] = updatedOrder;
+
+            switch (updatedOrder.Type)
+            {
+                // Update cached list DTOs
+                case OrderType.Sale when _salesOrderListDtos.ContainsKey(orderDto.OrderId):
+                {
+                    // Update the cached sales order list DTO
+                    SalesOrderListDto existingDto = _salesOrderListDtos[orderDto.OrderId];
+                    _salesOrderListDtos[orderDto.OrderId] = existingDto with
+                    {
+                        Status = updatedOrder.Status,
+                        DeliveryDate = updatedOrder.DeliveryDate,
+                        Notes = updatedOrder.Notes
+                    };
+                    break;
+                }
+                case OrderType.Purchase when _purchaseOrderListDtos.ContainsKey(orderDto.OrderId):
+                {
+                    // Update the cached purchase order list DTO
+                    PurchaseOrderListDto existingDto = _purchaseOrderListDtos[orderDto.OrderId];
+                    _purchaseOrderListDtos[orderDto.OrderId] = existingDto with
+                    {
+                        Status = updatedOrder.Status,
+                        DeliveryDate = updatedOrder.DeliveryDate,
+                        Notes = updatedOrder.Notes
+                    };
+                    break;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            // Trigger event
             OrderUpdated?.Invoke(updatedOrder);
+
             return updatedOrder.ToDto();
         }
 
         public bool Delete( int orderId )
         {
-            OrderDeleted?.Invoke(orderId);
+            if (!_orders.Remove(orderId, out Order? order))
+                return false;
+
             _salesOrderListDtos.Remove(orderId);
             _purchaseOrderListDtos.Remove(orderId);
-            return _orders.Remove(orderId);
+
+            // Trigger event
+            OrderDeleted?.Invoke(orderId);
+
+            return true;
         }
 
         public bool UpdateStatus( int orderId, OrderStatus newStatus )
         {
-            if (!_orders.TryGetValue(orderId, out Order? existingOrder)) return false;
+            if (!_orders.TryGetValue(orderId, out Order? existingOrder))
+                return false;
 
             Order updatedOrder = existingOrder with
             {
@@ -167,14 +219,62 @@ namespace Storix.Application.Stores.Orders
             };
 
             _orders[orderId] = updatedOrder;
+
+            switch (updatedOrder.Type)
+            {
+                // Update cached list DTOs
+                case OrderType.Sale when _salesOrderListDtos.ContainsKey(orderId):
+                {
+                    SalesOrderListDto existingDto = _salesOrderListDtos[orderId];
+                    _salesOrderListDtos[orderId] = existingDto with
+                    {
+                        Status = newStatus
+                    };
+                    break;
+                }
+                case OrderType.Purchase when _purchaseOrderListDtos.ContainsKey(orderId):
+                {
+                    PurchaseOrderListDto existingDto = _purchaseOrderListDtos[orderId];
+                    _purchaseOrderListDtos[orderId] = existingDto with
+                    {
+                        Status = newStatus
+                    };
+                    break;
+                }
+            }
+
+            // Trigger event
+            OrderUpdated?.Invoke(updatedOrder);
+
             return true;
         }
+
+        #endregion
+
+        #region Read Operations
 
         public OrderDto? GetById( int orderId ) => !_orders.TryGetValue(orderId, out Order? order)
             ? null
             : order.ToDto();
 
-        public List<OrderDto> GetAll( OrderType? type = null,
+        public List<SalesOrderListDto> GetSalesOrderList()
+        {
+            return _salesOrderListDtos
+                   .Values
+                   .OrderByDescending(o => o.OrderDate)
+                   .ToList();
+        }
+
+        public List<PurchaseOrderListDto> GetPurchaseOrderList()
+        {
+            return _purchaseOrderListDtos
+                   .Values
+                   .OrderByDescending(o => o.OrderDate)
+                   .ToList();
+        }
+
+        public List<OrderDto> GetAll(
+            OrderType? type = null,
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
@@ -233,7 +333,9 @@ namespace Storix.Application.Stores.Orders
 
         public List<OrderDto> GetOverdueOrders() => _orders
                                                     .Values
-                                                    .Where(o => o.IsOverdue && o.Status != OrderStatus.Draft && o.Status != OrderStatus.Active)
+                                                    .Where(o => o.IsOverdue &&
+                                                                o.Status != OrderStatus.Draft &&
+                                                                o.Status != OrderStatus.Active)
                                                     .OrderBy(o => o.DeliveryDate)
                                                     .Select(o => o.ToDto())
                                                     .ToList();
@@ -273,19 +375,21 @@ namespace Storix.Application.Stores.Orders
                                                       .Select(o => o.ToDto())
                                                       .ToList();
 
+        #endregion
+
+        #region Validation & Counts
+
         public bool Exists( int orderId ) => _orders.ContainsKey(orderId);
 
-        public bool SupplierHasOrders( int supplierId, bool activeOnly = false ) => _orders
-                                                                                    .Values
-                                                                                    .Any(o => o.SupplierId == supplierId &&
-                                                                                              (!activeOnly || o.Status is OrderStatus.Draft
-                                                                                                  or OrderStatus.Active));
+        public bool SupplierHasOrders( int supplierId, bool activeOnly = false ) => _orders.Values.Any(o =>
+                                                                                                           o.SupplierId == supplierId &&
+                                                                                                           (!activeOnly || o.Status is OrderStatus.Draft
+                                                                                                               or OrderStatus.Active));
 
-        public bool CustomerHasOrders( int customerId, bool activeOnly = false ) => _orders
-                                                                                    .Values
-                                                                                    .Any(o => o.CustomerId == customerId &&
-                                                                                              (!activeOnly || o.Status is OrderStatus.Draft
-                                                                                                  or OrderStatus.Active));
+        public bool CustomerHasOrders( int customerId, bool activeOnly = false ) => _orders.Values.Any(o =>
+                                                                                                           o.CustomerId == customerId &&
+                                                                                                           (!activeOnly || o.Status is OrderStatus.Draft
+                                                                                                               or OrderStatus.Active));
 
         public int GetCount( OrderType? type = null, OrderStatus? status = null )
         {
@@ -320,5 +424,7 @@ namespace Storix.Application.Stores.Orders
                    .OrderByDescending(o => o.OrderDate)
                    .ToList();
         }
+
+        #endregion
     }
 }
