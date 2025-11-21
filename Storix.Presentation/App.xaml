@@ -24,6 +24,7 @@
                 <ResourceDictionary Source="Styles/ButtonStyle.xaml" />
                 <ResourceDictionary Source="Styles/NavigationButtons.xaml" />
                 <ResourceDictionary Source="Styles/DataGridStyles.xaml" />
+                <ResourceDictionary Source="Styles/OrderFormStyles.xaml" />
                 <ResourceDictionary Source="Styles/CommonCtrls.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
