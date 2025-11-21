@@ -17,5 +17,7 @@ namespace Storix.Application.DTO.Products
         public int CategoryId { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
+
+        public override string ToString() => Name;
     }
 }

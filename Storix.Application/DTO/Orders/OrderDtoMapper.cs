@@ -74,6 +74,30 @@ namespace Storix.Application.DTO.Orders
             dto.CreatedBy
         );
 
+        public static SalesOrderListDto ToSalesOrderListDto( this Order order, string customerName, decimal totalAmount ) => new()
+        {
+            OrderId = order.OrderId,
+            Status = order.Status,
+            CustomerName = customerName,
+            OrderDate = order.OrderDate,
+            DeliveryDate = order.DeliveryDate,
+            Notes = order.Notes,
+            CreatedBy = order.CreatedBy,
+            TotalAmount = totalAmount
+        };
+
+        public static PurchaseOrderListDto ToPurchaseOrderListDto( this Order order, string supplierName, decimal totalAmount ) => new()
+        {
+            OrderId = order.OrderId,
+            Status = order.Status,
+            SupplierName = supplierName,
+            OrderDate = order.OrderDate,
+            DeliveryDate = order.DeliveryDate,
+            Notes = order.Notes,
+            CreatedBy = order.CreatedBy,
+            TotalAmount = totalAmount
+        };
+
         public static Order ToDomain( this UpdateOrderDto dto, Order existingOrder ) => existingOrder with
         {
             Status = dto.Status,

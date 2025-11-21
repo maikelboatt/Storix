@@ -3,7 +3,7 @@ using Storix.Domain.Enums;
 
 namespace Storix.Application.DTO.Orders
 {
-    public class SalesOrderListDto
+    public record SalesOrderListDto
     {
         public int OrderId { get; set; }
         public string CustomerName { get; set; } = string.Empty;
