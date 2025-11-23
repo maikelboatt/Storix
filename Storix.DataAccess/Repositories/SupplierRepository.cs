@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Dapper;
 using Storix.Application.Common;
+using Storix.Application.DataAccess;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.DataAccess.DBAccess;

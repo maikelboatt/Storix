@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using Storix.Application.Common;
+using Storix.Application.DataAccess;
 using Storix.Application.DTO.Orders;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
@@ -415,8 +416,8 @@ namespace Storix.DataAccess.Repositories
                     COUNT(CASE WHEN Type = @Sale THEN 1 END) as SaleOrders,
                     COUNT(CASE WHEN Status = @Completed THEN 1 END) as CompletedOrders,
                     COUNT(CASE WHEN Status = @Cancelled THEN 1 END) as CancelledOrders,
-                    SUM(CASE WHEN Type = @Purchase AND Status = @Completed THEN TotalAmount ELSE 0 END) as TotalPurchaseValue,
-                    SUM(CASE WHEN Type = @Sale AND Status = @Completed THEN TotalAmount ELSE 0 END) as TotalSaleValue
+                    SUM(CASE WHEN Type = @Purchase AND Status = @Completed THEN TotalPrice ELSE 0 END) as TotalPurchaseValue,
+                    SUM(CASE WHEN Type = @Sale AND Status = @Completed THEN TotalPrice ELSE 0 END) as TotalSaleValue
                 FROM [Order]
                 WHERE OrderDate BETWEEN @StartDate AND @EndDate";
 
@@ -440,7 +441,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = @"
-                SELECT ISNULL(SUM(TotalAmount), 0) 
+                SELECT ISNULL(SUM(TotalPrice), 0) 
                 FROM [Order] 
                 WHERE Status = @Status";
 
@@ -459,7 +460,7 @@ namespace Storix.DataAccess.Repositories
         {
             // language=tsql
             const string sql = @"
-                SELECT ISNULL(SUM(TotalAmount), 0) 
+                SELECT ISNULL(SUM(TotalPrice), 0) 
                 FROM [Order] 
                 WHERE Type = @Type";
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
 using Storix.Application.Common;
+using Storix.Application.DataAccess;
 using Storix.Application.DTO;
 using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
