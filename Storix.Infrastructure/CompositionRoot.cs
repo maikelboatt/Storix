@@ -1,9 +1,11 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MvvmCross.Exceptions;
 using MvvmCross.IoC;
 using MvvmCross.ViewModels;
+using Storix.Application.DataAccess;
 using Storix.Application.Services.Products;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Application.Stores;
@@ -45,8 +47,6 @@ namespace Storix.Infrastructure
 
         private static void RegisterDataAccess( IMvxIoCProvider iocProvider, IConfigurationRoot configurationRoot )
         {
-            // IConfigurationRoot? configuration = iocProvider.Resolve<IConfigurationRoot>();
-
             // Register ISqlDataAccess with the connection string
             iocProvider.LazyConstructAndRegisterSingleton<ISqlDataAccess>(() =>
             {
@@ -109,7 +109,7 @@ namespace Storix.Infrastructure
                     .AsInterfaces()
                     .RegisterAsLazySingleton();
 
-                // Register ViewModels
+                // Register ViewModels (including abstract base classes will be ignored)
                 assembly
                     .CreatableTypes()
                     .EndingWith("ViewModel")
@@ -132,35 +132,76 @@ namespace Storix.Infrastructure
 
         private static void RegisterViewModelFactory( IMvxIoCProvider iocProvider )
         {
-            // Register the viewmodel factory function
-            iocProvider.RegisterSingleton<Func<Type, object, MvxViewModel>>(() => ( viewModelType, parameter ) =>
+            // Register async viewmodel factory function
+            iocProvider.RegisterSingleton<Func<Type, object, Task<MvxViewModel>>>(() => async ( viewModelType, parameter ) =>
             {
                 // Resolve the ViewModel instance from the IoC container
                 MvxViewModel viewModel = (MvxViewModel)(iocProvider.Resolve(viewModelType)
                                                         ?? throw new MvxIoCResolveException($"Failed to resolve ViewModel of type: {viewModelType.FullName}"));
 
-                // Invoke the "Prepare" method on the ViewModel if it exists
-                viewModelType
-                    .GetMethod(
-                        "Prepare",
-                        new[]
-                        {
-                            parameter.GetType()
-                        })
-                    ?.Invoke(
-                        viewModel,
-                        new[]
-                        {
-                            parameter
-                        });
+                // Find the Prepare method - search in base classes too!
+                MethodInfo? prepareMethod = FindPrepareMethod(viewModelType, parameter?.GetType() ?? typeof(int));
 
-                // Initialize the ViewModel
-                viewModel
-                    .Initialize()
-                    .GetAwaiter()
-                    .GetResult();
+                if (prepareMethod != null)
+                {
+                    try
+                    {
+                        object convertedParameter = parameter switch
+                        {
+                            null         => 0,
+                            int intParam => intParam,
+                            _            => Convert.ToInt32(parameter)
+                        };
+
+                        prepareMethod.Invoke(
+                            viewModel,
+                            new object[]
+                            {
+                                convertedParameter
+                            });
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new MvxException($"Failed to invoke Prepare method on {viewModelType.Name}: {ex.Message}", ex);
+                    }
+                }
+
+                // Initialize the ViewModel asynchronously
+                await viewModel.Initialize(); // ✅ AWAIT instead of GetResult()
+
                 return viewModel;
             });
+        }
+
+        /// <summary>
+        /// Finds the Prepare method in the ViewModel type hierarchy (including base classes)
+        /// </summary>
+        private static MethodInfo? FindPrepareMethod( Type viewModelType, Type parameterType )
+        {
+            // Search the entire type hierarchy (including base classes)
+            Type? currentType = viewModelType;
+
+            while (currentType != null && currentType != typeof(object))
+            {
+                // Look for Prepare method with the specific parameter type
+                MethodInfo? method = currentType.GetMethod(
+                    "Prepare",
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly,
+                    null,
+                    new[]
+                    {
+                        parameterType
+                    },
+                    null);
+
+                if (method != null)
+                    return method;
+
+                // Move to base class
+                currentType = currentType.BaseType;
+            }
+
+            return null;
         }
     }
 }

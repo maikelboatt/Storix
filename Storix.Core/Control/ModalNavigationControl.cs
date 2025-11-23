@@ -1,50 +1,47 @@
-﻿using MvvmCross.ViewModels;
+﻿using System;
+using MvvmCross.ViewModels;
 using Storix.Application.Stores;
+using Storix.Core.Control;
 
-namespace Storix.Core.Control
+namespace Storix.Infrastructure
 {
-    public class ModalNavigationControl(
-        ModalNavigationStore modalNavigationStore,
-        Func<Type, object, MvxViewModel> viewModelFactory )
-        :IModalNavigationControl
+    /// <summary>
+    /// Controls modal navigation using a custom ViewModel factory
+    /// </summary>
+    public class ModalNavigationControl:IModalNavigationControl
     {
-        public void PopUp<TViewModel>( int? parameter = null ) where TViewModel : IMvxViewModel
+        private readonly ModalNavigationStore _modalNavigationStore;
+        private readonly Func<Type, object, Task<MvxViewModel>> _viewModelFactory; // Changed to Task<MvxViewModel>
+
+        public ModalNavigationControl(
+            ModalNavigationStore modalNavigationStore,
+            Func<Type, object, Task<MvxViewModel>> viewModelFactory ) // Changed parameter type
+        {
+            _modalNavigationStore = modalNavigationStore;
+            _viewModelFactory = viewModelFactory;
+        }
+
+        public async void PopUp<TViewModel>( int? parameter = null ) where TViewModel : IMvxViewModel
         {
             try
             {
-                MvxViewModel viewModel = viewModelFactory(typeof(TViewModel), parameter ?? 0);
-                modalNavigationStore.CurrentModalViewModel = viewModel;
+                // Await the factory
+                MvxViewModel viewModel = await _viewModelFactory(typeof(TViewModel), parameter ?? 0);
+
+                _modalNavigationStore.CurrentModalViewModel = viewModel;
+
+                System.Diagnostics.Debug.WriteLine($"✅ Opened modal: {typeof(TViewModel).Name} with parameter: {parameter ?? 0}");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to open modal: {ex}");
+                System.Diagnostics.Debug.WriteLine($"❌ Failed to open modal {typeof(TViewModel).Name}: {ex}");
                 throw;
             }
         }
 
         public void Close()
         {
-            modalNavigationStore.Close();
+            _modalNavigationStore.Close();
         }
     }
-
-    // public void PopUp<T>( List<Animal> selectedAnimals ) where T : IMvxViewModel
-    // {
-    //     modalNavigationStore.CurrentModalViewModel = viewModelFactory(typeof(T), selectedAnimals);
-    // }
-    //
-    // public void PopUp<T>( InseminationDetailAnimalList inseminationDetailAnimalList ) where T : IMvxViewModel
-    // {
-    //     modalNavigationStore.CurrentModalViewModel = viewModelFactory(typeof(T), inseminationDetailAnimalList);
-    // }
-    //
-    // public void PopUp<T>( IEnumerable<ScheduledNotification> scheduledNotifications ) where T : IMvxViewModel
-    // {
-    //     modalNavigationStore.CurrentModalViewModel = viewModelFactory(typeof(T), scheduledNotifications);
-    // }
-    //
-    // public void PopUp<T>( ScheduledNotification scheduledNotifications ) where T : IMvxViewModel
-    // {
-    //     modalNavigationStore.CurrentModalViewModel = viewModelFactory(typeof(T), scheduledNotifications);
-    // }
 }

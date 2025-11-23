@@ -1,10 +1,17 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Threading.Tasks;
 using Dapper;
 
-namespace Storix.DataAccess.DBAccess
+namespace Storix.Application.DataAccess
 {
     public interface ISqlDataAccess
     {
+        IDbConnection GetConnection();
+
+        Task<IDbConnection> GetOpenConnectionAsync();
+
         /// <summary>
         ///     Executes a SQL query that returns multiple result sets.
         /// </summary>
