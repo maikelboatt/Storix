@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
+using Storix.Application.DTO.OrderItems;
 using Storix.Application.DTO.Orders;
+using Storix.Application.Enums;
+using Storix.Application.Managers.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Stores.Orders;
 using Storix.Domain.Enums;
@@ -16,6 +20,7 @@ namespace Storix.Application.Services.Orders
     /// </summary>
     public class OrderService(
         IOrderReadService orderReadService,
+        IOrderItemManager orderItemManager,
         IOrderCacheReadService orderCacheReadService,
         IOrderWriteService orderWriteService,
         IOrderValidationService orderValidationService,

@@ -2,6 +2,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
+using Storix.Application.DataAccess;
 
 namespace Storix.DataAccess.DBAccess
 {
@@ -12,6 +13,18 @@ namespace Storix.DataAccess.DBAccess
     public class SqlDataAccess( string connectionString, ILogger<SqlDataAccess> logger ):ISqlDataAccess
     {
         private const int DefaultCommandTimeout = 30;
+
+
+        public IDbConnection GetConnection() =>
+            // Return System.Data.SqlClient or Microsoft.Data.SqlClient depending on your project
+            new SqlConnection(connectionString);
+
+        public async Task<IDbConnection> GetOpenConnectionAsync()
+        {
+            SqlConnection connection = new(connectionString);
+            await connection.OpenAsync(); // SqlConnection has OpenAsync
+            return connection;
+        }
 
         /// <summary>
         ///     Executes a SQL query that returns multiple result sets.

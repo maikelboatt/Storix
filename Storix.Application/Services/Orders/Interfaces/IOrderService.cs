@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Storix.Application.Common;
+using Storix.Application.DTO.OrderItems;
 using Storix.Application.DTO.Orders;
 using Storix.Domain.Enums;
 

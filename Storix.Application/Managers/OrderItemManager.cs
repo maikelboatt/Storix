@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
@@ -137,6 +138,52 @@ namespace Storix.Application.Managers
             };
 
             return DatabaseResult<OrderSummaryDto>.Success(summary);
+        }
+
+        // In OrderItemManager implementation
+        public async Task<DatabaseResult<IEnumerable<OrderItemDto>>> GetOrderItemsByOrderIdAsync( int orderId )
+        {
+            if (orderId <= 0)
+            {
+                logger.LogWarning("Invalid order ID {OrderId} provided for retrieving order items", orderId);
+                return DatabaseResult<IEnumerable<OrderItemDto>>.Failure(
+                    "Order ID must be positive",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Domain.Models.OrderItem>> result =
+                await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    () => orderItemRepository.GetByOrderIdAsync(orderId),
+                    $"Retrieving order items for order {orderId}",
+                    false);
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {Count} items for order {OrderId}",
+                    result.Value.Count(),
+                    orderId);
+
+                // Convert to DTOs
+                IEnumerable<OrderItemDto> dtos = result.Value.Select(item => new OrderItemDto
+                {
+                    OrderItemId = item.OrderItemId,
+                    OrderId = item.OrderId,
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice
+                });
+
+                return DatabaseResult<IEnumerable<OrderItemDto>>.Success(dtos);
+            }
+
+            logger.LogWarning(
+                "Failed to retrieve order items for order {OrderId}: {ErrorMessage}",
+                orderId,
+                result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderItemDto>>.Failure(
+                result.ErrorMessage ?? "Failed to retrieve order items",
+                result.ErrorCode);
         }
     }
 }

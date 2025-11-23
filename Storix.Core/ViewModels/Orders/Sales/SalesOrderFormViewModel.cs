@@ -4,6 +4,7 @@ using Storix.Application.DTO.Customers;
 using Storix.Application.DTO.Orders;
 using Storix.Application.Managers.Interfaces;
 using Storix.Application.Services.Customers.Interfaces;
+using Storix.Application.Services.OrderItems.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Core.Control;
@@ -16,6 +17,8 @@ namespace Storix.Core.ViewModels.Orders.Sales
     /// </summary>
     public class SalesOrderFormViewModel:OrderFormViewModelBase
     {
+        private readonly IOrderCoordinatorService _orderCoordinatorService;
+        private readonly IOrderItemService _orderItemService;
         private readonly ICustomerCacheReadService _customerCacheReadService;
 
         protected override OrderType OrderType => OrderType.Sale;
@@ -32,6 +35,8 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
         public SalesOrderFormViewModel(
             IOrderService orderService,
+            IOrderCoordinatorService orderCoordinatorService,
+            IOrderItemService orderItemService,
             IOrderItemManager orderItemManager,
             IProductCacheReadService productCacheReadService,
             ICustomerCacheReadService customerCacheReadService,
@@ -39,11 +44,15 @@ namespace Storix.Core.ViewModels.Orders.Sales
             ILogger<SalesOrderFormViewModel> logger )
             :base(
                 orderService,
+                orderCoordinatorService,
+                orderItemService,
                 orderItemManager,
                 productCacheReadService,
                 modalNavigationControl,
                 logger)
         {
+            _orderCoordinatorService = orderCoordinatorService;
+            _orderItemService = orderItemService;
             _customerCacheReadService = customerCacheReadService;
         }
 

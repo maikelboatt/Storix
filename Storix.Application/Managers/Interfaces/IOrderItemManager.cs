@@ -20,5 +20,7 @@ namespace Storix.Application.Managers.Interfaces
         Task<DatabaseResult<decimal>> GetOrderTotalValueAsync( int orderId );
 
         Task<DatabaseResult<OrderSummaryDto>> GetOrderSummaryAsync( int orderId );
+
+        Task<DatabaseResult<IEnumerable<OrderItemDto>>> GetOrderItemsByOrderIdAsync( int orderId );
     }
 }

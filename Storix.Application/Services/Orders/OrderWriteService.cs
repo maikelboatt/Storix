@@ -59,6 +59,7 @@ namespace Storix.Application.Services.Orders
             // Perform Update
             return await PerformUpdateAsync(updateOrderDto);
         }
+        
 
         public async Task<DatabaseResult> ActivateOrderAsync( int orderId )
         {
@@ -218,7 +219,6 @@ namespace Storix.Application.Services.Orders
         }
 
         #endregion
-
 
         #region Validation Methods
 

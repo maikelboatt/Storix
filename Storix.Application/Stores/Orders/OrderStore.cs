@@ -253,9 +253,26 @@ namespace Storix.Application.Stores.Orders
 
         #region Read Operations
 
-        public OrderDto? GetById( int orderId ) => !_orders.TryGetValue(orderId, out Order? order)
-            ? null
-            : order.ToDto();
+        public OrderDto? GetById( int orderId )
+        {
+
+            bool result = _orders.TryGetValue(orderId, out Order? order);
+
+            if (!result) return null;
+            switch (order?.Type)
+            {
+                case OrderType.Sale when _salesOrderListDtos.ContainsKey(orderId):
+                case OrderType.Purchase when _purchaseOrderListDtos.ContainsKey(orderId):
+                    return order.ToDto();
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            return null;
+            // return  !_orders.TryGetValue(orderId, out Order? order)
+            //      ? null
+            //      : order.ToDto();
+        }
 
         public List<SalesOrderListDto> GetSalesOrderList()
         {
