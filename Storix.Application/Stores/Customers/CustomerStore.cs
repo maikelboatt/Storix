@@ -63,6 +63,10 @@ namespace Storix.Application.Stores.Customers
             _phoneIndex.Clear();
         }
 
+        public event Action<Customer>? CustomerAdded;
+        public event Action<Customer>? CustomerUpdated;
+        public event Action<int>? CustomerDeleted;
+
         public CustomerDto? Create( int customerId, CreateCustomerDto createDto )
         {
             if (string.IsNullOrWhiteSpace(createDto.Name))
@@ -100,6 +104,7 @@ namespace Storix.Application.Stores.Customers
             if (!string.IsNullOrWhiteSpace(customer.Phone))
                 _phoneIndex[customer.Phone] = customerId;
 
+            CustomerAdded?.Invoke(customer);
             return customer.ToDto();
         }
 
@@ -159,6 +164,7 @@ namespace Storix.Application.Stores.Customers
             if (!string.IsNullOrWhiteSpace(updatedCustomer.Phone))
                 _phoneIndex[updatedCustomer.Phone] = updatedCustomer.CustomerId;
 
+            CustomerUpdated?.Invoke(updatedCustomer);
             return updatedCustomer.ToDto();
         }
 
@@ -173,6 +179,7 @@ namespace Storix.Application.Stores.Customers
             if (!string.IsNullOrWhiteSpace(customer.Phone))
                 _phoneIndex.Remove(customer.Phone);
 
+            CustomerDeleted?.Invoke(customerId);
             return true;
         }
 

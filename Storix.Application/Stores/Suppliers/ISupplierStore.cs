@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Storix.Application.DTO.Suppliers;
 using Storix.Domain.Models;
 
@@ -9,6 +10,12 @@ namespace Storix.Application.Stores.Suppliers
         void Initialize( IEnumerable<Supplier> suppliers );
 
         void Clear();
+
+        event Action<Supplier> SupplierAdded;
+
+        event Action<Supplier> SupplierUpdated;
+
+        event Action<int> SupplierDeleted;
 
         SupplierDto? Create( int supplierId, CreateSupplierDto createSupplierDto );
 

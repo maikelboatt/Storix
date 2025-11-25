@@ -63,6 +63,10 @@ namespace Storix.Application.Stores.Suppliers
             _phoneIndex.Clear();
         }
 
+        public event Action<Supplier>? SupplierAdded;
+        public event Action<Supplier>? SupplierUpdated;
+        public event Action<int>? SupplierDeleted;
+
         public SupplierDto? Create( int supplierId, CreateSupplierDto createSupplierDto )
         {
             if (string.IsNullOrWhiteSpace(createSupplierDto.Name))
@@ -97,6 +101,7 @@ namespace Storix.Application.Stores.Suppliers
             if (!string.IsNullOrWhiteSpace(supplier.Phone))
                 _phoneIndex[supplier.Phone] = supplierId;
 
+            SupplierAdded?.Invoke(supplier);
             return supplier.ToDto();
         }
 
@@ -147,6 +152,7 @@ namespace Storix.Application.Stores.Suppliers
             if (!string.IsNullOrWhiteSpace(updatedSupplier.Phone))
                 _phoneIndex[updatedSupplier.Phone] = updatedSupplier.SupplierId;
 
+            SupplierUpdated?.Invoke(updatedSupplier);
             return updatedSupplier.ToDto();
         }
 
@@ -161,6 +167,7 @@ namespace Storix.Application.Stores.Suppliers
             if (!string.IsNullOrWhiteSpace(supplier.Phone))
                 _phoneIndex.Remove(supplier.Phone);
 
+            SupplierDeleted?.Invoke(supplierId);
             return true;
         }
 

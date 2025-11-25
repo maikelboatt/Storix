@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Storix.Application.DTO.Customers;
 using Storix.Domain.Models;
 
@@ -9,6 +10,12 @@ namespace Storix.Application.Stores.Customers
         void Initialize( IEnumerable<Customer> customers );
 
         void Clear();
+
+        event Action<Customer> CustomerAdded;
+
+        event Action<Customer> CustomerUpdated;
+
+        event Action<int> CustomerDeleted;
 
         CustomerDto? Create( int customerId, CreateCustomerDto createDto );
 
