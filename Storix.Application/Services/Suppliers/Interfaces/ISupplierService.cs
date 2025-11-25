@@ -16,7 +16,7 @@ namespace Storix.Application.Services.Suppliers.Interfaces
 
         Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllAsync();
 
-        Task<DatabaseResult<IEnumerable<Supplier>>> GetAllActiveAsync();
+        Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllActiveSuppliersAsync();
 
         Task<DatabaseResult<IEnumerable<Supplier>>> GetAllDeletedAsync();
 

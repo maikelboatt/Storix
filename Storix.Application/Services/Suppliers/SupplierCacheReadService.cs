@@ -67,7 +67,7 @@ namespace Storix.Application.Services.Suppliers
                 try
                 {
                     // Gets only active suppliers from database
-                    DatabaseResult<IEnumerable<Supplier>> result = await readService.GetsAllActiveSuppliersAsync();
+                    DatabaseResult<IEnumerable<SupplierDto>> result = await readService.GetsAllActiveSuppliersAsync();
 
                     if (result is { IsSuccess: true, Value: not null })
                     {

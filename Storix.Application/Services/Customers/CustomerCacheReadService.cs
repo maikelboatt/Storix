@@ -75,7 +75,7 @@ namespace Storix.Application.Services.Customers
                 try
                 {
                     // Gets only active customers from database
-                    DatabaseResult<IEnumerable<Customer>> result = await readService.GetsAllActiveCustomersAsync();
+                    DatabaseResult<IEnumerable<CustomerDto>> result = await readService.GetsAllActiveCustomersAsync();
 
                     if (result is { IsSuccess: true, Value: not null })
                     {

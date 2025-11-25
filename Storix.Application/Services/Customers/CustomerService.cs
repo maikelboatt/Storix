@@ -53,7 +53,7 @@ namespace Storix.Application.Services.Customers
 
         public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync() => await customerReadService.GetAllCustomersAsync();
 
-        public async Task<DatabaseResult<IEnumerable<Customer>>> GetAllActiveAsync() => await customerReadService.GetsAllActiveCustomersAsync();
+        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllActiveCustomersAsync() => await customerReadService.GetsAllActiveCustomersAsync();
 
         public async Task<DatabaseResult<IEnumerable<Customer>>> GetAllDeletedAsync() => await customerReadService.GetsAllDeletedCustomersAsync();
 

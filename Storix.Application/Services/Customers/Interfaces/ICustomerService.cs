@@ -16,7 +16,7 @@ namespace Storix.Application.Services.Customers.Interfaces
 
         Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllAsync();
 
-        Task<DatabaseResult<IEnumerable<Customer>>> GetAllActiveAsync();
+        Task<DatabaseResult<IEnumerable<CustomerDto>>> GetAllActiveCustomersAsync();
 
         Task<DatabaseResult<IEnumerable<Customer>>> GetAllDeletedAsync();
 

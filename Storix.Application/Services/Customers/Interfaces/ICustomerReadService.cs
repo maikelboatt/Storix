@@ -32,7 +32,7 @@ namespace Storix.Application.Services.Customers.Interfaces
         /// Retrieves all active (non-deleted) customers from persistence and initializes the in-memory store (cache) with them.
         /// </summary>
         /// <returns></returns>
-        Task<DatabaseResult<IEnumerable<Customer>>> GetsAllActiveCustomersAsync();
+        Task<DatabaseResult<IEnumerable<CustomerDto>>> GetsAllActiveCustomersAsync();
 
         /// <summary>
         /// Retrieves all deleted customers from persistence.

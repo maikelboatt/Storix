@@ -153,7 +153,7 @@ namespace Storix.Application.Services.Suppliers
         /// and initializes the in-memory store (cache) with them.
         /// </summary>
         /// <returns></returns>
-        public async Task<DatabaseResult<IEnumerable<Supplier>>> GetsAllActiveSuppliersAsync()
+        public async Task<DatabaseResult<IEnumerable<SupplierDto>>> GetsAllActiveSuppliersAsync()
         {
             return await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 async () =>
@@ -169,8 +169,12 @@ namespace Storix.Application.Services.Suppliers
                     // Initialize the in-memory store with active suppliers only.
                     supplierStore.Initialize(activeSuppliers);
 
+                    List<SupplierDto> supplierDtos = activeSuppliers
+                                                     .Select(s => s.ToDto())
+                                                     .ToList();
+
                     logger.LogInformation("Successfully retrieved suppliers: {SupplierCount}", activeSuppliers.Count);
-                    return (IEnumerable<Supplier>)activeSuppliers;
+                    return (IEnumerable<SupplierDto>)supplierDtos;
                 },
                 "Retrieving active suppliers"
             );

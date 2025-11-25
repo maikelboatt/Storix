@@ -153,7 +153,7 @@ namespace Storix.Application.Services.Customers
         /// Retrieves all active (non-deleted) customers from persistence and initializes the in-memory store (cache) with them.
         /// </summary>
         /// <returns></returns>
-        public async Task<DatabaseResult<IEnumerable<Customer>>> GetsAllActiveCustomersAsync()
+        public async Task<DatabaseResult<IEnumerable<CustomerDto>>> GetsAllActiveCustomersAsync()
         {
             return await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 async () =>
@@ -169,8 +169,10 @@ namespace Storix.Application.Services.Customers
                     // Initialize the in-memory store with active customers only.
                     customerStore.Initialize(activeCustomers);
 
+                    IEnumerable<CustomerDto> customerDto = activeCustomers.Select(c => c.ToDto());
+
                     logger.LogInformation("Successfully retrieved customers: {CustomerCount}", activeCustomers.Count);
-                    return (IEnumerable<Customer>)activeCustomers;
+                    return (IEnumerable<CustomerDto>)customerDto;
                 },
                 "Retrieving active customers"
             );

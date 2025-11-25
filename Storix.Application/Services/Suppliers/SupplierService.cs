@@ -52,7 +52,7 @@ namespace Storix.Application.Services.Suppliers
 
         public async Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllAsync() => await supplierReadService.GetAllSuppliersAsync();
 
-        public async Task<DatabaseResult<IEnumerable<Supplier>>> GetAllActiveAsync() => await supplierReadService.GetsAllActiveSuppliersAsync();
+        public async Task<DatabaseResult<IEnumerable<SupplierDto>>> GetAllActiveSuppliersAsync() => await supplierReadService.GetsAllActiveSuppliersAsync();
 
         public async Task<DatabaseResult<IEnumerable<Supplier>>> GetAllDeletedAsync() => await supplierReadService.GetsAllDeletedSuppliersAsync();
 

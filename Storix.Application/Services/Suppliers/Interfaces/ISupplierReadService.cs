@@ -33,7 +33,7 @@ namespace Storix.Application.Services.Suppliers.Interfaces
         /// and initializes the in-memory store (cache) with them.
         /// </summary>
         /// <returns></returns>
-        Task<DatabaseResult<IEnumerable<Supplier>>> GetsAllActiveSuppliersAsync();
+        Task<DatabaseResult<IEnumerable<SupplierDto>>> GetsAllActiveSuppliersAsync();
 
         /// <summary>
         /// Retrieves all deleted suppliers from persistence and initializes the in-memory store (cache) with them.
