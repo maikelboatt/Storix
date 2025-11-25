@@ -3,6 +3,7 @@
                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                   xmlns:categories="clr-namespace:Storix.Core.ViewModels.Categories;assembly=Storix.Core"
                   xmlns:components="clr-namespace:Storix.Presentation.Components"
+                  xmlns:customers="clr-namespace:Storix.Core.ViewModels.Customers;assembly=Storix.Core"
                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
                   xmlns:deletion="clr-namespace:Storix.Presentation.Deletion"
                   xmlns:forms="clr-namespace:Storix.Presentation.Forms"
@@ -13,6 +14,7 @@
                   xmlns:purchase="clr-namespace:Storix.Core.ViewModels.Orders.Purchase;assembly=Storix.Core"
                   xmlns:resources="clr-namespace:Storix.Presentation.Resources"
                   xmlns:sales="clr-namespace:Storix.Core.ViewModels.Orders.Sales;assembly=Storix.Core"
+                  xmlns:suppliers="clr-namespace:Storix.Core.ViewModels.Suppliers;assembly=Storix.Core"
                   xmlns:viewModels="clr-namespace:Storix.Core.ViewModels;assembly=Storix.Core"
                   xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
                   x:Name="Home"
@@ -76,6 +78,14 @@
 
         <DataTemplate DataType="{x:Type purchase:PurchaseOrderListViewModel}">
             <components:PurchaseOrderList />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type suppliers:SupplierListViewModel}">
+            <components:SupplierList />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type customers:CustomerListViewModel}">
+            <components:CustomerList />
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type products:ProductFormViewModel}">

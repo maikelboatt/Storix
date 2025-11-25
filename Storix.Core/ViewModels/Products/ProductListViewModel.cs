@@ -91,6 +91,25 @@ namespace Storix.Core.ViewModels.Products
             ApplyFilter();
         }
 
+        private void ApplyFilter()
+        {
+            string filter = SearchText
+                            ?.Trim()
+                            .ToLowerInvariant() ?? string.Empty;
+
+            List<ProductListItemViewModel> filtered = string.IsNullOrEmpty(filter)
+                ? _allProducts
+                : _allProducts
+                  .Where(p =>
+                             !string.IsNullOrEmpty(p.Name) &&
+                             p.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase) ||
+                             !string.IsNullOrEmpty(p.CategoryName) &&
+                             p.CategoryName.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
+                  .ToList();
+
+            Products = new MvxObservableCollection<ProductListItemViewModel>(filtered);
+        }
+
         #region Store Event Handlers
 
         private void OnProductAdded( Product product )
@@ -156,25 +175,6 @@ namespace Storix.Core.ViewModels.Products
         }
 
         #endregion
-
-        private void ApplyFilter()
-        {
-            string filter = SearchText
-                            ?.Trim()
-                            .ToLowerInvariant() ?? string.Empty;
-
-            List<ProductListItemViewModel> filtered = string.IsNullOrEmpty(filter)
-                ? _allProducts
-                : _allProducts
-                  .Where(p =>
-                             !string.IsNullOrEmpty(p.Name) &&
-                             p.Name.Contains(filter, StringComparison.InvariantCultureIgnoreCase) ||
-                             !string.IsNullOrEmpty(p.CategoryName) &&
-                             p.CategoryName.Contains(filter, StringComparison.InvariantCultureIgnoreCase))
-                  .ToList();
-
-            Products = new MvxObservableCollection<ProductListItemViewModel>(filtered);
-        }
 
         #region Properties
 
