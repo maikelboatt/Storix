@@ -22,7 +22,7 @@ namespace Storix.Core.ViewModels.Categories
         #region UI_Specific Properties
 
         /// <summary>
-        /// Indicates whether this product is currently selected in the UI.
+        /// Indicates whether this category is currently selected in the UI.
         /// Used for checkbox binding in DataGrid.
         /// </summary>
         public bool IsSelected
