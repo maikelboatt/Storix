@@ -17,7 +17,8 @@
         <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
     </views:MvxWpfView.Resources>
     <Grid>
-        <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+        <StackPanel VerticalAlignment="Center"
+                    Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
 
             <loadingSpinnerControl:LoadingSpinner Diameter="100"
                                                   IsLoading="{Binding IsLoading}"
@@ -30,7 +31,8 @@
                        TextAlignment="Center" />
         </StackPanel>
 
-        <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+        <Grid
+            Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
             <Grid Margin="3">
                 <!--  Row definitions for the header and content sections  -->
                 <Grid.RowDefinitions>
@@ -55,37 +57,6 @@
                                                Data="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                                Placeholder="Search Sale orders..." />
 
-                    <!--  Button to create Sales Order  -->
-                    <Button Grid.Column="1"
-                            Width="120"
-                            Margin="10,0"
-                            HorizontalAlignment="Right"
-                            Command="{Binding OpenCreateSalesOrderCommand}"
-                            Style="{DynamicResource OpenBtn}"
-                            ToolTip="Create Sales Order">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
-                                                        Kind="CartPlus"
-                                                        Style="{StaticResource IconButtonIcon}" />
-                            <TextBlock VerticalAlignment="Center" Text="Sale" />
-                        </StackPanel>
-                    </Button>
-
-                    <!--  Button to create Purchase Order  -->
-                    <Button Grid.Column="2"
-                            Width="120"
-                            Margin="10,0"
-                            HorizontalAlignment="Right"
-                            Command="{Binding OpenCreatePurchaseOrderCommand}"
-                            Style="{DynamicResource OpenBtn}"
-                            ToolTip="Create Purchase Order">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
-                                                        Kind="PackageUp"
-                                                        Style="{StaticResource IconButtonIcon}" />
-                            <TextBlock VerticalAlignment="Center" Text="Purchase" />
-                        </StackPanel>
-                    </Button>
 
                     <!--  Button to add new Sales Order  -->
                     <Button Grid.Column="3"
@@ -120,7 +91,8 @@
                         <DataGridTemplateColumn Width="Auto" Header="Select">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox
+                                        IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -188,7 +160,8 @@
                                                 CommandParameter="{Binding OrderId}"
                                                 IsDefault="True"
                                                 Style="{DynamicResource CreateBtn}">
-                                            <iconPacks:PackIconMaterial Kind="OpenInNew" Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="OpenInNew"
+                                                                        Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
                                         <!--  Button to open the update dialog for a member  -->
@@ -196,7 +169,8 @@
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSalesOrderFormCommand}"
                                                 CommandParameter="{Binding OrderId}"
                                                 Style="{DynamicResource EditBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus" Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus"
+                                                                        Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
                                         <!--  Button to open the delete dialog for a member  -->
@@ -204,7 +178,8 @@
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenCategoryDeleteCommand}"
                                                 CommandParameter="{Binding OrderId}"
                                                 Style="{DynamicResource DelBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove" Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove"
+                                                                        Style="{StaticResource IconButtonIcon}" />
                                         </Button>
                                     </StackPanel>
                                 </DataTemplate>

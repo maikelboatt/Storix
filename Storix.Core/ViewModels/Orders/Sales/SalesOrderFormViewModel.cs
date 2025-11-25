@@ -56,12 +56,12 @@ namespace Storix.Core.ViewModels.Orders.Sales
             _customerCacheReadService = customerCacheReadService;
         }
 
-        private int _saleOrderId;
-
-        public override void Prepare( int parameter )
-        {
-            _saleOrderId = parameter;
-        }
+        // private int _saleOrderId;
+        //
+        // public override void Prepare( int parameter )
+        // {
+        //     _saleOrderId = parameter;
+        // }
 
         protected override async Task LoadEntitySpecificDataAsync()
         {

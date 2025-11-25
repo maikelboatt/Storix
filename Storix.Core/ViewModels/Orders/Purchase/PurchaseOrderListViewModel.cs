@@ -49,8 +49,7 @@ namespace Storix.Core.ViewModels.Orders.Purchase
             _orderStore.OrderDeleted += OnOrderDeleted;
 
             // Initialize commands
-            OpenPurchaseOrderFormCommand = new MvxCommand(ExecuteOpenPurchaseOrderForm);
-            OpenPurchaseOrderEditCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderEdit);
+            OpenPurchaseOrderFormCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderForm);
             OpenPurchaseOrderDeleteCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderDelete);
             RefreshCommand = new MvxAsyncCommand(LoadPurchaseOrdersAsync);
         }
@@ -273,20 +272,12 @@ namespace Storix.Core.ViewModels.Orders.Purchase
 
         #region Commands
 
-        public IMvxCommand OpenPurchaseOrderFormCommand { get; }
-        public IMvxCommand<int> OpenPurchaseOrderEditCommand { get; }
+        public IMvxCommand<int> OpenPurchaseOrderFormCommand { get; }
         public IMvxCommand<int> OpenPurchaseOrderDeleteCommand { get; }
         public IMvxAsyncCommand RefreshCommand { get; }
 
-        private void ExecuteOpenPurchaseOrderForm()
+        private void ExecuteOpenPurchaseOrderForm( int orderId )
         {
-            // Pass 0 for create mode
-            _modalNavigationControl.PopUp<PurchaseOrderFormViewModel>(0);
-        }
-
-        private void ExecuteOpenPurchaseOrderEdit( int orderId )
-        {
-            // Pass orderId for edit mode
             _modalNavigationControl.PopUp<PurchaseOrderFormViewModel>(orderId);
         }
 
