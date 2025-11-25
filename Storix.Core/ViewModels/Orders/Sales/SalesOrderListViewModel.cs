@@ -49,8 +49,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
             _orderStore.OrderDeleted += OnOrderDeleted;
 
             // Initialize commands
-            OpenSalesOrderFormCommand = new MvxCommand(ExecuteOpenSalesOrderForm);
-            OpenSalesOrderEditCommand = new MvxCommand<int>(ExecuteOpenSalesOrderEdit);
+            OpenSalesOrderFormCommand = new MvxCommand<int>(ExecuteOpenSalesOrderForm);
             OpenSalesOrderDeleteCommand = new MvxCommand<int>(ExecuteOpenSalesOrderDelete);
             RefreshCommand = new MvxAsyncCommand(LoadSalesOrdersAsync);
         }
@@ -271,20 +270,12 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
         #region Commands
 
-        public IMvxCommand OpenSalesOrderFormCommand { get; }
-        public IMvxCommand<int> OpenSalesOrderEditCommand { get; }
+        public IMvxCommand<int> OpenSalesOrderFormCommand { get; }
         public IMvxCommand<int> OpenSalesOrderDeleteCommand { get; }
         public IMvxAsyncCommand RefreshCommand { get; }
 
-        private void ExecuteOpenSalesOrderForm()
+        private void ExecuteOpenSalesOrderForm( int orderId )
         {
-            // Pass 0 for create mode
-            _modalNavigationControl.PopUp<SalesOrderFormViewModel>(0);
-        }
-
-        private void ExecuteOpenSalesOrderEdit( int orderId )
-        {
-            // Pass orderId for edit mode
             _modalNavigationControl.PopUp<SalesOrderFormViewModel>(orderId);
         }
 
