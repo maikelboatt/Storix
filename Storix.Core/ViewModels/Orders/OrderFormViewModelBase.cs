@@ -40,7 +40,7 @@ namespace Storix.Core.ViewModels.Orders
         protected int CurrentUserId { get; set; } = 1; // TODO: Get from auth service
 
         private OrderInputModel _orderInputModel;
-        private int _orderId = 5;
+        private int _orderId;
         private bool _isEditMode;
         private bool _isLoading;
         private string _orderNumber = string.Empty;
@@ -85,6 +85,7 @@ namespace Storix.Core.ViewModels.Orders
         public override void Prepare( int parameter )
         {
             _orderId = parameter;
+            _logger.LogInformation("🔧 Preparing OrderFormViewModel with OrderId: {OrderId}", _orderId);
         }
 
         public override async Task Initialize()
