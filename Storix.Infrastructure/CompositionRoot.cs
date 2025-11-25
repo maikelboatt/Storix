@@ -153,21 +153,27 @@ namespace Storix.Infrastructure
                             _            => Convert.ToInt32(parameter)
                         };
 
-                        prepareMethod.Invoke(
-                            viewModel,
-                            new object[]
-                            {
-                                convertedParameter
-                            });
+                        System.Diagnostics.Debug.WriteLine($"🔧 Calling Prepare({convertedParameter})");
+
+                        prepareMethod.Invoke(viewModel, [convertedParameter]);
+
+                        System.Diagnostics.Debug.WriteLine($"✅ Prepare called successfully");
                     }
                     catch (Exception ex)
                     {
+                        System.Diagnostics.Debug.WriteLine($"❌ Failed to invoke Prepare: {ex.Message}");
                         throw new MvxException($"Failed to invoke Prepare method on {viewModelType.Name}: {ex.Message}", ex);
                     }
                 }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"⚠️ No Prepare method found for {viewModelType.Name}");
+                }
 
-                // Initialize the ViewModel asynchronously
-                await viewModel.Initialize(); // ✅ AWAIT instead of GetResult()
+                // Initialize the ViewModel
+                System.Diagnostics.Debug.WriteLine($"🔧 Calling Initialize()");
+                await viewModel.Initialize();
+                System.Diagnostics.Debug.WriteLine($"✅ Initialize() completed");
 
                 return viewModel;
             });
@@ -178,29 +184,39 @@ namespace Storix.Infrastructure
         /// </summary>
         private static MethodInfo? FindPrepareMethod( Type viewModelType, Type parameterType )
         {
+            System.Diagnostics.Debug.WriteLine($"🔍 Searching for Prepare method in {viewModelType.Name}");
+            System.Diagnostics.Debug.WriteLine($"🔍 Looking for parameter type: {parameterType.Name}");
+
             // Search the entire type hierarchy (including base classes)
             Type? currentType = viewModelType;
+            int depth = 0;
 
             while (currentType != null && currentType != typeof(object))
             {
-                // Look for Prepare method with the specific parameter type
-                MethodInfo? method = currentType.GetMethod(
-                    "Prepare",
-                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly,
-                    null,
-                    new[]
-                    {
-                        parameterType
-                    },
-                    null);
+                System.Diagnostics.Debug.WriteLine($"🔍 Checking type: {currentType.Name} at depth {depth}");
 
-                if (method != null)
+                // Get all public instance methods named "Prepare" declared only in the current type
+                List<MethodInfo> prepareMethods = currentType
+                                                  .GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                                                  .Where(m => m.Name == "Prepare")
+                                                  .ToList();
+
+                System.Diagnostics.Debug.WriteLine($"    Found {prepareMethods.Count} Prepare methods");
+
+                foreach (MethodInfo method in from method in prepareMethods
+                                              let parameters = method.GetParameters()
+                                              where parameters.Length == 1 && parameters[0].ParameterType == parameterType
+                                              select method)
+                {
+                    System.Diagnostics.Debug.WriteLine($"✅ Found matching Prepare method in {currentType.Name} with parameter type {parameterType.Name}");
                     return method;
+                }
 
-                // Move to base class
+                // Move to the base type
                 currentType = currentType.BaseType;
+                depth++;
             }
-
+            System.Diagnostics.Debug.WriteLine($"❌ No matching Prepare method found for parameter type {parameterType.Name}");
             return null;
         }
     }

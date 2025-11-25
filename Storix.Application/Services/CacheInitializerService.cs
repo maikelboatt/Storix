@@ -29,10 +29,10 @@ namespace Storix.Application.Services
                 orderService.GetAllOrdersAsync(),
                 orderService.GetSalesOrderListAsync(),
                 orderService.GetPurchaseOrderListAsync(),
-                supplierService.GetAllActiveAsync(),
+                supplierService.GetAllActiveSuppliersAsync(),
 
-                customerService.GetAllActiveAsync()
-                // userService.GetAllActiveAsync()
+                customerService.GetAllActiveCustomersAsync()
+                // userService.GetAllActiveSuppliersAsync()
             ];
 
             await Task.WhenAll(tasks);
