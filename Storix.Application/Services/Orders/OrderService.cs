@@ -155,6 +155,8 @@ namespace Storix.Application.Services.Orders
 
         public IEnumerable<OrderDto> GetActiveOrdersInCache() => orderCacheReadService.GetActiveOrdersInCache();
 
+        public IEnumerable<OrderDto> GetFulfilledOrdersInCache() => orderCacheReadService.GetFulfilledOrdersInCache();
+
         public IEnumerable<OrderDto> GetCompletedOrdersInCache() => orderCacheReadService.GetCompletedOrdersInCache();
 
         public IEnumerable<OrderDto> GetCancelledOrdersInCache() => orderCacheReadService.GetCancelledOrdersInCache();
