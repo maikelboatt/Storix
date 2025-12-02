@@ -5,6 +5,7 @@
     /// </summary>
     public enum LocationType
     {
+        Unknown = 0,
         Warehouse = 1,
         Store = 2,
         Transit = 3
