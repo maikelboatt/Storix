@@ -25,6 +25,8 @@ namespace Storix.Application.Stores.Users
         // Read operations (single)
         UserDto? GetById( int userId );
 
+        string? GetUsername( int userId );
+
         UserDto? GetByUsername( string username );
 
         UserDto? GetByEmail( string email );

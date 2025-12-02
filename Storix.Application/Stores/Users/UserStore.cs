@@ -146,6 +146,9 @@ namespace Storix.Application.Stores.Users
                 ? user.ToDto()
                 : null;
 
+        public string? GetUsername( int userId ) => GetById(userId)
+            ?.Username;
+
         public UserDto? GetByUsername( string username )
         {
             if (string.IsNullOrWhiteSpace(username))
