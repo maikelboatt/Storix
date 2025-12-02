@@ -189,6 +189,12 @@ namespace Storix.Application.Stores.Customers
                 ? customer.ToDto()
                 : null;
 
+        public string? GetCustomerName( int customerId )
+        {
+            CustomerDto? customer = GetById(customerId);
+            return customer?.Name;
+        }
+
         public CustomerDto? GetByEmail( string email )
         {
             if (string.IsNullOrWhiteSpace(email))

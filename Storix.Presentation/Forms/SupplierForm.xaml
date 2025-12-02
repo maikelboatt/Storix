@@ -1,0 +1,301 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Forms.SupplierForm"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:resources="clr-namespace:Storix.Presentation.Resources"
+                  xmlns:viewModels="clr-namespace:Storix.Core.ViewModels.Suppliers;assembly=Storix.Core"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=viewModels:SupplierFormViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="700"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="100"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           TextAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Creating supplier..." />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                    <Setter Property="Text" Value="Updating supplier..." />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section  -->
+                <Grid Grid.Row="0" Margin="0,0,0,20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock FontFamily="Californian FB"
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="{Binding Title}" />
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource SecondaryTextColor}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Fill in the details below to add a new supplier" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                            <Setter Property="Text" Value="Update the supplier information below" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!--  Reset Button (Only in Edit Mode)  -->
+                    <Button Grid.Column="1"
+                            Width="110"
+                            Height="36"
+                            Command="{Binding ResetCommand}"
+                            Style="{DynamicResource CancelBtn}"
+                            ToolTip="Reset form to original values"
+                            Visibility="{Binding IsEditMode, Converter={StaticResource ToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="16"
+                                                        Height="16"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Refresh" />
+                            <TextBlock Margin="6,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Text="Reset" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!--  Form Content  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Basic Information Section  -->
+                        <TextBlock Margin="0,0,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="🏢 Supplier Information" />
+
+                        <!--  Supplier Name  -->
+                        <resources:CustomTextBox Data="{Binding Input.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Description="Supplier Name *"
+                                                 Placeholder="e.g., ABC Electronics, XYZ Suppliers" />
+
+                        <!--  Contact Information Section  -->
+                        <TextBlock Margin="0,20,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="📞 Contact Information" />
+
+                        <!--  Email  -->
+                        <resources:CustomTextBox Data="{Binding Input.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Description="Email Address *"
+                                                 Placeholder="supplier@example.com" />
+
+                        <!--  Phone  -->
+                        <resources:CustomTextBox Data="{Binding Input.Phone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Description="Phone Number *"
+                                                 Placeholder="+1 (555) 123-4567" />
+
+                        <!--  Address Section  -->
+                        <TextBlock Margin="0,20,0,15"
+                                   FontFamily="Californian FB"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                   Text="📍 Address Information" />
+
+                        <!--  Address  -->
+                        <StackPanel Margin="20,10">
+                            <TextBlock FontSize="12"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="Street Address *" />
+                            <TextBox Height="80"
+                                     AcceptsReturn="True"
+                                     Style="{StaticResource TextBoxStyle}"
+                                     Text="{Binding Input.Address, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto" />
+                            <TextBlock Margin="0,5,0,0"
+                                       FontSize="11"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="Include street, city, state, and postal code" />
+                        </StackPanel>
+
+                        <!--  Info Panel  -->
+                        <Border Margin="20,10"
+                                Padding="15"
+                                Background="{DynamicResource InfoBackgroundColor}"
+                                BorderBrush="{DynamicResource InfoBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="16"
+                                                                Height="16"
+                                                                Foreground="{DynamicResource InfoIconColor}"
+                                                                Kind="InformationOutline" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource InfoTextColor}"
+                                               Text="Supplier Tips" />
+                                </StackPanel>
+                                <TextBlock Margin="0,5,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Ensure contact information is accurate for purchase orders"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Suppliers are linked to purchase orders and inventory"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Margin="0,2,0,0"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource InfoTextColor}"
+                                           Text="• Maintain up-to-date records for better supplier management"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Validation Summary  -->
+                        <Border Margin="20,20,20,10"
+                                Padding="15"
+                                Background="#FEE2E2"
+                                BorderBrush="#EF4444"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{Binding HasErrors, Converter={StaticResource ToVisibilityConverter}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="18"
+                                                                Height="18"
+                                                                Foreground="#DC2626"
+                                                                Kind="AlertCircle" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="#991B1B"
+                                               Text="Please fix the following errors:" />
+                                </StackPanel>
+                                <TextBlock Margin="26,8,0,0"
+                                           FontSize="12"
+                                           Foreground="#991B1B"
+                                           Text="Check the fields marked with validation errors"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,20,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Required Fields Note  -->
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal">
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                   Text="* Required fields" />
+                    </StackPanel>
+
+                    <!--  Cancel Button  -->
+                    <Button Grid.Column="1"
+                            Width="120"
+                            Height="40"
+                            Margin="0,0,10,0"
+                            Command="{Binding CancelCommand}"
+                            Style="{DynamicResource CancelBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Close" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Save Button  -->
+                    <Button Grid.Column="2"
+                            Width="140"
+                            Height="40"
+                            Command="{Binding SaveCommand}"
+                            IsDefault="True"
+                            Style="{DynamicResource CreateBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center">
+                                <iconPacks:PackIconMaterial.Style>
+                                    <Style TargetType="iconPacks:PackIconMaterial">
+                                        <Setter Property="Kind" Value="ContentSave" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                                                <Setter Property="Kind" Value="Check" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </iconPacks:PackIconMaterial.Style>
+                            </iconPacks:PackIconMaterial>
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="{Binding SaveButtonText}" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>

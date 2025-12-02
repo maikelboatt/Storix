@@ -175,6 +175,9 @@ namespace Storix.Application.Stores.Suppliers
             ? supplier.ToDto()
             : null;
 
+        public string? GetSupplierName( int supplierId ) => GetById(supplierId)
+            ?.Name;
+
         public SupplierDto? GetByEmail( string email )
         {
             if (string.IsNullOrWhiteSpace(email))

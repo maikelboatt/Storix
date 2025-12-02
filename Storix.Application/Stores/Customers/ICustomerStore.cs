@@ -25,6 +25,8 @@ namespace Storix.Application.Stores.Customers
 
         CustomerDto? GetById( int customerId );
 
+        string? GetCustomerName( int customerId );
+
         CustomerDto? GetByEmail( string email );
 
         CustomerDto? GetByPhone( string phone );

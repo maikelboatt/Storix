@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Storix.Application.Services.Categories.Interfaces;
 using Storix.Application.Services.Customers.Interfaces;
+using Storix.Application.Services.Locations.Interfaces;
 using Storix.Application.Services.OrderItems.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Services.Products;
@@ -15,6 +16,7 @@ namespace Storix.Application.Services
         ISupplierService supplierService,
         ICategoryService categoryService,
         ICustomerService customerService,
+        ILocationService locationService,
         IOrderService orderService,
         IOrderItemService orderItemService ):ICacheInitializerService
     {
@@ -30,8 +32,8 @@ namespace Storix.Application.Services
                 orderService.GetSalesOrderListAsync(),
                 orderService.GetPurchaseOrderListAsync(),
                 supplierService.GetAllActiveSuppliersAsync(),
-
-                customerService.GetAllActiveCustomersAsync()
+                customerService.GetAllActiveCustomersAsync(),
+                locationService.GetAllActiveLocationsAsync()
                 // userService.GetAllActiveSuppliersAsync()
             ];
 

@@ -1,0 +1,261 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Deletion.CustomerDeleteConfirmation"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:customers="clr-namespace:Storix.Core.ViewModels.Customers;assembly=Storix.Core"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=customers:CustomerDeleteViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="600"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="80"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           Text="Deleting customer..."
+                           TextAlignment="Center" />
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section with Warning  -->
+                <Border Grid.Row="0"
+                        Margin="0,0,0,20"
+                        Padding="20"
+                        Background="#FEE2E2"
+                        BorderBrush="#EF4444"
+                        BorderThickness="2"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="32"
+                                                        Height="32"
+                                                        Foreground="#DC2626"
+                                                        Kind="AlertCircle" />
+                            <TextBlock Margin="12,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Californian FB"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="#991B1B"
+                                       Text="Delete Customer?" />
+                        </StackPanel>
+                        <TextBlock Margin="0,10,0,0"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#991B1B"
+                                   Text="This action cannot be undone. Please review the details carefully."
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Customer Details  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Customer Overview Card  -->
+                        <Border Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!--  Customer Name  -->
+                                <StackPanel Grid.Row="0">
+                                    <TextBlock FontSize="11"
+                                               Foreground="{DynamicResource SecondaryTextColor}"
+                                               Text="👤 Customer Name" />
+                                    <TextBlock Margin="0,4,0,0"
+                                               FontSize="20"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="{Binding Customer.Name}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!--  Customer Details Grid  -->
+                                <Grid Grid.Row="1" Margin="0,20,0,0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!--  Email  -->
+                                    <StackPanel Grid.Row="0"
+                                                Margin="0,0,0,15"
+                                                Visibility="{Binding HasEmail, Converter={StaticResource ToVisibilityConverter}}">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📧 Email Address" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="{Binding Customer.Email}" />
+                                    </StackPanel>
+
+                                    <!--  Phone  -->
+                                    <StackPanel Grid.Row="1"
+                                                Margin="0,0,0,15"
+                                                Visibility="{Binding HasPhone, Converter={StaticResource ToVisibilityConverter}}">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📞 Phone Number" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="{Binding Customer.Phone}" />
+                                    </StackPanel>
+
+                                    <!--  Address  -->
+                                    <StackPanel Grid.Row="2" Visibility="{Binding HasAddress, Converter={StaticResource ToVisibilityConverter}}">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📍 Delivery Address" />
+                                        <Border Margin="0,4,0,0"
+                                                Padding="12"
+                                                Background="{DynamicResource SecondaryBackgroundColor}"
+                                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <TextBlock FontSize="13"
+                                                       Foreground="{DynamicResource PrimaryTextColor}"
+                                                       Text="{Binding Customer.Address}"
+                                                       TextWrapping="Wrap" />
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <!--  Warning Message  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="15"
+                                Background="#FFFBEB"
+                                BorderBrush="#F59E0B"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="18"
+                                                                Height="18"
+                                                                Foreground="#D97706"
+                                                                Kind="AlertOutline" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="#92400E"
+                                               Text="Important Notice" />
+                                </StackPanel>
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="12"
+                                           Foreground="#78350F"
+                                           TextWrapping="Wrap">
+                                    <Run Text="• All associated sales orders will be affected" />
+                                    <LineBreak />
+                                    <Run Text="• Historical data may be retained for reporting" />
+                                    <LineBreak />
+                                    <Run Text="• This customer will be removed from active records" />
+                                    <LineBreak />
+                                    <Run Text="• Ensure no pending orders exist before deletion" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,25,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <!--  Customer ID  -->
+                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextColor}">
+                            <Run Text="Customer ID:" />
+                            <Run FontWeight="Bold" Text="{Binding Customer.CustomerId}" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!--  Cancel Button  -->
+                    <Button Grid.Column="1"
+                            Width="130"
+                            Height="42"
+                            Margin="0,0,10,0"
+                            Command="{Binding CancelCommand}"
+                            Style="{DynamicResource CancelBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Close" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Delete Button  -->
+                    <Button Grid.Column="2"
+                            Width="150"
+                            Height="42"
+                            Command="{Binding DeleteCommand}">
+                        <Button.Style>
+                            <Style BasedOn="{StaticResource CreateBtn}" TargetType="Button">
+                                <Setter Property="Background" Value="#DC2626" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#B91C1C" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="DeleteForever" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="Delete Customer" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>

@@ -197,20 +197,19 @@ namespace Storix.Core.ViewModels.Customers
 
         #endregion
 
-
         #region Commands
 
         public IMvxCommand<int> OpenCustomerFormCommand { get; }
         public IMvxCommand<int> OpenCustomerDeleteCommand { get; }
 
-        private void ExecuteCustomerDelete( int categoryId )
+        private void ExecuteCustomerDelete( int customerId )
         {
-            // _modalNavigationControl.PopUp<CustomerDeleteViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CustomerDeleteViewModel>(customerId);
         }
 
-        private void ExecuteCustomerForm( int categoryId )
+        private void ExecuteCustomerForm( int customerId )
         {
-            // _modalNavigationControl.PopUp<CustomerFormViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CustomerFormViewModel>(customerId);
         }
 
         #endregion

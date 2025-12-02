@@ -379,7 +379,8 @@ namespace Storix.Application.Services.Suppliers
             // Check email availability if provided (excluding soft-deleted suppliers)
             if (!string.IsNullOrWhiteSpace(updateSupplierDto.Email))
             {
-                DatabaseResult<bool> emailExistsResult = await supplierValidationService.EmailExistsAsync(updateSupplierDto.Email, includeDeleted: false);
+                DatabaseResult<bool> emailExistsResult =
+                    await supplierValidationService.EmailExistsAsync(updateSupplierDto.Email, updateSupplierDto.SupplierId, false);
 
                 if (!emailExistsResult.IsSuccess)
                     return DatabaseResult<SupplierDto>.Failure(emailExistsResult.ErrorMessage!, emailExistsResult.ErrorCode);
@@ -396,7 +397,8 @@ namespace Storix.Application.Services.Suppliers
             // Check phone availability if provided (exclude soft-deleted suppliers)
             if (!string.IsNullOrWhiteSpace(updateSupplierDto.Phone))
             {
-                DatabaseResult<bool> phoneExistsResult = await supplierValidationService.PhoneExistsAsync(updateSupplierDto.Phone, includeDeleted: false);
+                DatabaseResult<bool> phoneExistsResult =
+                    await supplierValidationService.PhoneExistsAsync(updateSupplierDto.Phone, updateSupplierDto.SupplierId, false);
 
                 if (!phoneExistsResult.IsSuccess)
                     return DatabaseResult<SupplierDto>.Failure(phoneExistsResult.ErrorMessage!, phoneExistsResult.ErrorCode);

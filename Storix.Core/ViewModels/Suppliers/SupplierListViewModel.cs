@@ -204,14 +204,14 @@ namespace Storix.Core.ViewModels.Suppliers
         public IMvxCommand<int> OpenSupplierFormCommand { get; }
         public IMvxCommand<int> OpenSupplierDeleteCommand { get; }
 
-        private void ExecuteSupplierDelete( int categoryId )
+        private void ExecuteSupplierDelete( int supplierId )
         {
-            // _modalNavigationControl.PopUp<SupplierDeleteViewModel>(categoryId);
+            _modalNavigationControl.PopUp<SupplierDeleteViewModel>(supplierId);
         }
 
-        private void ExecuteSupplierForm( int categoryId )
+        private void ExecuteSupplierForm( int supplierId )
         {
-            // _modalNavigationControl.PopUp<SupplierFormViewModel>(categoryId);
+            _modalNavigationControl.PopUp<SupplierFormViewModel>(supplierId);
         }
 
         #endregion
