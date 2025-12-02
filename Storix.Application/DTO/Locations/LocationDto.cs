@@ -1,6 +1,6 @@
 ﻿using Storix.Domain.Enums;
 
-namespace Storix.Application.DTO.Location
+namespace Storix.Application.DTO.Locations
 {
     public class LocationDto
     {
@@ -9,5 +9,7 @@ namespace Storix.Application.DTO.Location
         public string? Description { get; set; }
         public LocationType Type { get; set; }
         public string? Address { get; set; }
+
+        public override string ToString() => Name;
     }
 }

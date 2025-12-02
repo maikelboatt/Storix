@@ -1,6 +1,6 @@
 ﻿using Storix.Domain.Enums;
 
-namespace Storix.Application.DTO.Location
+namespace Storix.Application.DTO.Locations
 {
     public class UpdateLocationDto
     {
