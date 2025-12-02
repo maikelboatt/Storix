@@ -17,8 +17,7 @@
         <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
     </views:MvxWpfView.Resources>
     <Grid>
-        <StackPanel VerticalAlignment="Center"
-                    Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+        <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
 
             <loadingSpinnerControl:LoadingSpinner Diameter="100"
                                                   IsLoading="{Binding IsLoading}"
@@ -31,8 +30,7 @@
                        TextAlignment="Center" />
         </StackPanel>
 
-        <Grid
-            Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
             <Grid Margin="3">
                 <!--  Row definitions for the header and content sections  -->
                 <Grid.RowDefinitions>
@@ -69,7 +67,7 @@
                             ToolTip="Add New Supplier">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconMaterial Margin="0,0,5,0"
-                                                        Kind="CartPlus"
+                                                        Kind="Warehouse"
                                                         Style="{StaticResource IconButtonIcon}" />
                             <TextBlock VerticalAlignment="Center" Text="Supplier" />
                         </StackPanel>
@@ -90,8 +88,7 @@
                         <DataGridTemplateColumn Width="Auto" Header="Select">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -137,8 +134,7 @@
                                                 CommandParameter="{Binding SupplierId}"
                                                 IsDefault="True"
                                                 Style="{DynamicResource CreateBtn}">
-                                            <iconPacks:PackIconMaterial Kind="OpenInNew"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="OpenInNew" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
                                         <!--  Button to open the update dialog for a member  -->
@@ -146,8 +142,7 @@
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSupplierFormCommand}"
                                                 CommandParameter="{Binding SupplierId}"
                                                 Style="{DynamicResource EditBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
                                         <!--  Button to open the delete dialog for a member  -->
@@ -155,8 +150,7 @@
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSupplierDeleteCommand}"
                                                 CommandParameter="{Binding SupplierId}"
                                                 Style="{DynamicResource DelBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
                                     </StackPanel>
                                 </DataTemplate>
