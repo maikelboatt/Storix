@@ -281,9 +281,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
         private void ExecuteOpenSalesOrderDelete( int orderId )
         {
-            // TODO: Create SalesOrderDeleteViewModel
-            // _modalNavigationControl.PopUp<SalesOrderDeleteViewModel>(orderId);
-            _logger.LogWarning("Delete not implemented for order {OrderId}", orderId);
+            _modalNavigationControl.PopUp<SalesOrderDeleteViewModel>(orderId);
         }
 
         #endregion
