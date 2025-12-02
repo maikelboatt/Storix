@@ -8,6 +8,7 @@
                   xmlns:deletion="clr-namespace:Storix.Presentation.Deletion"
                   xmlns:forms="clr-namespace:Storix.Presentation.Forms"
                   xmlns:local="clr-namespace:Storix.Presentation.Views"
+                  xmlns:locations="clr-namespace:Storix.Core.ViewModels.Locations;assembly=Storix.Core"
                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                   xmlns:modalDialogControl="clr-namespace:ModalDialogControl;assembly=ModalDialogControl"
                   xmlns:products="clr-namespace:Storix.Core.ViewModels.Products;assembly=Storix.Core"
@@ -88,6 +89,10 @@
             <components:CustomerList />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type locations:LocationListViewModel}">
+            <components:LocationList />
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type products:ProductFormViewModel}">
             <forms:ProductForm />
         </DataTemplate>
@@ -104,12 +109,44 @@
             <forms:PurchaseOrderForm />
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type suppliers:SupplierFormViewModel}">
+            <forms:SupplierForm />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type customers:CustomerFormViewModel}">
+            <forms:CustomerForm />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type locations:LocationFormViewModel}">
+            <forms:LocationForm />
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type products:ProductDeleteViewModel}">
             <deletion:ProductDeleteConfirmation />
         </DataTemplate>
 
         <DataTemplate DataType="{x:Type categories:CategoryDeleteViewModel}">
             <deletion:CategoryDeleteConfirmation />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type sales:SalesOrderDeleteViewModel}">
+            <deletion:OrderDeleteConfirmation />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type purchase:PurchaseOrderDeleteViewModel}">
+            <deletion:OrderDeleteConfirmation />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type suppliers:SupplierDeleteViewModel}">
+            <deletion:SupplierDeleteConfirmation />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type customers:CustomerDeleteViewModel}">
+            <deletion:CustomerDeleteConfirmation />
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type locations:LocationDeleteViewModel}">
+            <deletion:LocationDeleteConfirmation />
         </DataTemplate>
 
     </views:MvxWpfView.Resources>
