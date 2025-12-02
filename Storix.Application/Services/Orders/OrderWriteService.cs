@@ -59,7 +59,7 @@ namespace Storix.Application.Services.Orders
             // Perform Update
             return await PerformUpdateAsync(updateOrderDto);
         }
-        
+
 
         public async Task<DatabaseResult> ActivateOrderAsync( int orderId )
         {
@@ -77,6 +77,25 @@ namespace Storix.Application.Services.Orders
                 orderStore.UpdateStatus(orderId, OrderStatus.Active);
                 logger.LogInformation("Order {OrderId} activated successfully", orderId);
             }
+
+            return result;
+        }
+
+        public async Task<DatabaseResult> FulfillOrderAsync( int orderId )
+        {
+            DatabaseResult checkForNull = CheckForNull(orderId, nameof(FulfillOrderAsync));
+            if (!checkForNull.IsSuccess) return checkForNull;
+
+            DatabaseResult validationResult = await orderValidationService.ValidateForFulfillment(orderId);
+            if (!validationResult.IsSuccess)
+                return validationResult;
+
+            DatabaseResult result = await orderRepository.FulfillOrderAsync(orderId);
+
+            if (!result.IsSuccess) return result;
+
+            orderStore.UpdateStatus(orderId, OrderStatus.Fulfilled);
+            logger.LogInformation("Order {OrderId} fulfilled successfully", orderId);
 
             return result;
         }

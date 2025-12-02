@@ -44,7 +44,7 @@ namespace Storix.DataAccess.Repositories
             string sql = activeOnly
                 ? @"SELECT COUNT(1) FROM [Order] 
                     WHERE SupplierId = @SupplierId 
-                    AND Status IN (@Draft, @Active)"
+                    AND Status IN (@Draft, @Active, @Fulfilled)"
                 : "SELECT COUNT(1) FROM [Order] WHERE SupplierId = @SupplierId";
 
             return await sqlDataAccess.ExecuteScalarAsync<bool>(
@@ -53,7 +53,8 @@ namespace Storix.DataAccess.Repositories
                 {
                     SupplierId = supplierId,
                     Draft = (int)OrderStatus.Draft,
-                    Active = (int)OrderStatus.Active
+                    Active = (int)OrderStatus.Active,
+                    Fulfilled = (int)OrderStatus.Fulfilled
                 });
         }
 
@@ -66,7 +67,7 @@ namespace Storix.DataAccess.Repositories
             string sql = activeOnly
                 ? @"SELECT COUNT(1) FROM [Order] 
                     WHERE CustomerId = @CustomerId 
-                    AND Status IN (@Draft, @Active)"
+                    AND Status IN (@Draft, @Active, @Fulfilled)"
                 : "SELECT COUNT(1) FROM [Order] WHERE CustomerId = @CustomerId";
 
             return await sqlDataAccess.ExecuteScalarAsync<bool>(
@@ -75,7 +76,8 @@ namespace Storix.DataAccess.Repositories
                 {
                     CustomerId = customerId,
                     Draft = (int)OrderStatus.Draft,
-                    Active = (int)OrderStatus.Active
+                    Active = (int)OrderStatus.Active,
+                    Fulfilled = (int)OrderStatus.Fulfilled
                 });
         }
 
@@ -86,6 +88,15 @@ namespace Storix.DataAccess.Repositories
         {
             Order? order = await GetByIdAsync(orderId);
             return order is { Status: OrderStatus.Draft };
+        }
+
+        /// <summary>
+        ///     Checks if an order can be fulfilled (only Active orders can be fulfilled).
+        /// </summary>
+        public async Task<bool> CanBeFulfilled( int orderId )
+        {
+            Order? order = await GetByIdAsync(orderId);
+            return order is { Status: OrderStatus.Active };
         }
 
         /// <summary>
@@ -103,7 +114,7 @@ namespace Storix.DataAccess.Repositories
         public async Task<bool> CanBeCompleted( int orderId )
         {
             Order? order = await GetByIdAsync(orderId);
-            return order is { Status: OrderStatus.Active };
+            return order is { Status: OrderStatus.Fulfilled };
         }
 
         #endregion
@@ -591,6 +602,42 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
+        ///     Fulfills an order by setting its status from Active to Fulfilled.
+        /// </summary>
+        public async Task<DatabaseResult> FulfillOrderAsync( int orderId )
+        {
+            try
+            {
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET Status = @Fulfiled 
+                    WHERE OrderId = @OrderId AND Status = @Active";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        OrderId = orderId,
+                        Fulfilled = (int)OrderStatus.Fulfilled,
+                        Active = (int)OrderStatus.Active
+                    });
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found or is not in Active status",
+                        DatabaseErrorCode.InvalidInput);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure(
+                    $"Error fulfilling order: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
+            }
+        }
+
+        /// <summary>
         ///     Completes an order by setting its status to Completed.
         /// </summary>
         public async Task<DatabaseResult> CompleteOrderAsync( int orderId )
@@ -601,7 +648,7 @@ namespace Storix.DataAccess.Repositories
                 const string sql = @"
                     UPDATE [Order] 
                     SET Status = @Completed 
-                    WHERE OrderId = @OrderId AND Status = @Active";
+                    WHERE OrderId = @OrderId AND Status = @Fulfilled";
 
                 int affectedRows = await sqlDataAccess.ExecuteAsync(
                     sql,
@@ -609,13 +656,13 @@ namespace Storix.DataAccess.Repositories
                     {
                         OrderId = orderId,
                         Completed = (int)OrderStatus.Completed,
-                        Active = (int)OrderStatus.Active
+                        Fulfilled = (int)OrderStatus.Fulfilled
                     });
 
                 return affectedRows > 0
                     ? DatabaseResult.Success()
                     : DatabaseResult.Failure(
-                        $"Order with ID {orderId} not found or is not in Active status",
+                        $"Order with ID {orderId} not found or is not in Fulfilled status",
                         DatabaseErrorCode.InvalidInput);
             }
             catch (Exception ex)

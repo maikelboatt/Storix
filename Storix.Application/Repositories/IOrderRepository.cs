@@ -58,6 +58,11 @@ namespace Storix.Application.Repositories
         Task<bool> CanBeActivated( int orderId );
 
         /// <summary>
+        ///     Checks if an order can be fulfilled (only Active orders can be fulfilled).
+        /// </summary>
+        Task<bool> CanBeFulfilled( int orderId );
+
+        /// <summary>
         ///     Checks if an order can be cancelled (only Draft and Active orders can be cancelled).
         /// </summary>
         Task<bool> CanBeCancelled( int orderId );
@@ -155,6 +160,11 @@ namespace Storix.Application.Repositories
         ///     Activates an Order by setting its status from Draft to Active.
         /// </summary>
         Task<DatabaseResult> ActivateOrderAsync( int orderId );
+
+        /// <summary>
+        ///     Fulfills an order by setting its status from Active to Fulfilled.
+        /// </summary>
+        Task<DatabaseResult> FulfillOrderAsync( int orderId );
 
         /// <summary>
         ///     Complete an order by setting its status to completed.

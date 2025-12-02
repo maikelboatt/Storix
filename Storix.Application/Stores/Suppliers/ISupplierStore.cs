@@ -25,6 +25,8 @@ namespace Storix.Application.Stores.Suppliers
 
         SupplierDto? GetById( int supplierId );
 
+        string? GetSupplierName( int supplierId );
+
         SupplierDto? GetByEmail( string email );
 
         SupplierDto? GetByPhone( string phone );

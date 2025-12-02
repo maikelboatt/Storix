@@ -63,6 +63,31 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult.Success();
         }
 
+        public async Task<DatabaseResult> ValidateForFulfillment( int orderId )
+        {
+            DatabaseResult<bool> existsResult = await OrderExistsAsync(orderId);
+
+            if (!existsResult.IsSuccess || !existsResult.Value)
+            {
+                logger.LogWarning("Attempted to fulfill non-existent order {OrderId}", orderId);
+                return DatabaseResult.Failure($"Order {orderId} does not exist.", DatabaseErrorCode.NotFound);
+            }
+
+            DatabaseResult<bool> canFulfillResult = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.CanBeFulfilled(orderId),
+                $"Validating order {orderId} for fulfillment");
+
+            if (!canFulfillResult.IsSuccess)
+                return DatabaseResult.Failure(canFulfillResult.ErrorMessage!, canFulfillResult.ErrorCode);
+
+            if (canFulfillResult.Value) return DatabaseResult.Success();
+
+            logger.LogWarning("Order {OrderId} cannot  be fulfilled - not in Active status", orderId);
+            return DatabaseResult.Failure("Only Active orders can be fulfilled", DatabaseErrorCode.InvalidInput);
+
+        }
+
+
         public async Task<DatabaseResult> ValidateForCompletion( int orderId )
         {
             DatabaseResult<bool> existsResult = await OrderExistsAsync(orderId);

@@ -25,7 +25,7 @@ namespace Storix.Core.InputModel
         private OrderStatus _status = OrderStatus.Draft;
         private int? _supplierId;
         private int? _customerId;
-        private DateTime _orderDate = DateTime.Now;
+        private DateTime _orderDate;
         private DateTime? _deliveryDate;
         private string? _notes;
         private int _createdBy;

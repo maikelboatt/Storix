@@ -9,6 +9,8 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         Task<DatabaseResult> ValidateForActivation( int orderId );
 
+        Task<DatabaseResult> ValidateForFulfillment( int orderId );
+
         Task<DatabaseResult> ValidateForCompletion( int orderId );
 
         Task<DatabaseResult> ValidForCancellation( int orderId );

@@ -378,6 +378,13 @@ namespace Storix.Application.Stores.Orders
                                                    .Select(o => o.ToDto())
                                                    .ToList();
 
+        public List<OrderDto> GetFulfilledOrders() => _orders
+                                                      .Values
+                                                      .Where(o => o.Status == OrderStatus.Fulfilled)
+                                                      .OrderByDescending(o => o.OrderDate)
+                                                      .Select(o => o.ToDto())
+                                                      .ToList();
+
         public List<OrderDto> GetCompletedOrders() => _orders
                                                       .Values
                                                       .Where(o => o.Status == OrderStatus.Completed)
@@ -401,12 +408,12 @@ namespace Storix.Application.Stores.Orders
         public bool SupplierHasOrders( int supplierId, bool activeOnly = false ) => _orders.Values.Any(o =>
                                                                                                            o.SupplierId == supplierId &&
                                                                                                            (!activeOnly || o.Status is OrderStatus.Draft
-                                                                                                               or OrderStatus.Active));
+                                                                                                               or OrderStatus.Active or OrderStatus.Fulfilled));
 
         public bool CustomerHasOrders( int customerId, bool activeOnly = false ) => _orders.Values.Any(o =>
                                                                                                            o.CustomerId == customerId &&
                                                                                                            (!activeOnly || o.Status is OrderStatus.Draft
-                                                                                                               or OrderStatus.Active));
+                                                                                                               or OrderStatus.Active or OrderStatus.Fulfilled));
 
         public int GetCount( OrderType? type = null, OrderStatus? status = null )
         {

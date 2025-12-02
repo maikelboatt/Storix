@@ -1,0 +1,347 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Deletion.OrderDeleteConfirmation"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:orders="clr-namespace:Storix.Core.ViewModels.Orders;assembly=Storix.Core"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=orders:OrderDeleteViewModelBase,
+                                                   IsDesignTimeCreatable=False}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="650"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="80"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           Text="Deleting order..."
+                           TextAlignment="Center" />
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section with Warning  -->
+                <Border Grid.Row="0"
+                        Margin="0,0,0,20"
+                        Padding="20"
+                        Background="#FEE2E2"
+                        BorderBrush="#EF4444"
+                        BorderThickness="2"
+                        CornerRadius="12">
+                    <StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="32"
+                                                        Height="32"
+                                                        Foreground="#DC2626"
+                                                        Kind="AlertCircle" />
+                            <TextBlock Margin="12,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Californian FB"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="#991B1B">
+                                <Run Text="Delete " />
+                                <Run Text="{Binding OrderTypeDisplay, Mode=OneWay}" />
+                                <Run Text=" Order?" />
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBlock Margin="0,10,0,0"
+                                   HorizontalAlignment="Center"
+                                   FontSize="14"
+                                   Foreground="#991B1B"
+                                   Text="This action cannot be undone. Please review the details carefully."
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Order Details  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Order Overview Card  -->
+                        <Border Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!--  Order Header with Status Badge  -->
+                                <StackPanel Grid.Row="0" Orientation="Horizontal">
+                                    <TextBlock VerticalAlignment="Center"
+                                               FontSize="20"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}">
+                                        <Run Text="{Binding OrderTypeDisplay, Mode=OneWay}" />
+                                        <Run Text=" Order #" />
+                                        <Run Text="{Binding Order.OrderId, Mode=OneWay}" />
+                                    </TextBlock>
+
+                                    <Border Margin="15,0,0,0"
+                                            Padding="10,5"
+                                            VerticalAlignment="Center"
+                                            Background="{Binding StatusColor, Mode=OneWay}"
+                                            CornerRadius="12">
+                                        <TextBlock FontSize="12"
+                                                   FontWeight="Bold"
+                                                   Foreground="White"
+                                                   Text="{Binding StatusDisplay, Mode=OneWay}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <!--  Notes Section  -->
+                                <Border Grid.Row="1"
+                                        Margin="0,15,0,0"
+                                        Padding="12"
+                                        Background="{DynamicResource InfoBackgroundColor}"
+                                        BorderBrush="{DynamicResource InfoBorderColor}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Visibility="{Binding HasNotes, Converter={StaticResource ToVisibilityConverter}}">
+                                    <StackPanel>
+                                        <TextBlock FontSize="11"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📝 Order Notes" />
+                                        <TextBlock Margin="0,5,0,0"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="{Binding Order.Notes}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!--  Order Details Grid  -->
+                                <Grid Grid.Row="2" Margin="0,20,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!--  Order Date  -->
+                                    <StackPanel Grid.Row="0"
+                                                Grid.Column="0"
+                                                Margin="0,0,10,15">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📅 Order Date" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="{Binding Order.OrderDate, StringFormat='{}{0:MMMM dd, yyyy}'}" />
+                                    </StackPanel>
+
+                                    <!--  Delivery Date  -->
+                                    <StackPanel Grid.Row="0"
+                                                Grid.Column="1"
+                                                Margin="10,0,0,15"
+                                                Visibility="{Binding HasDeliveryDate, Converter={StaticResource ToVisibilityConverter}}">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="🚚 Delivery Date" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#10B981"
+                                                   Text="{Binding Order.DeliveryDate, StringFormat='{}{0:MMMM dd, yyyy}'}" />
+                                    </StackPanel>
+
+                                    <!--  Customer/Supplier  -->
+                                    <StackPanel Grid.Row="1"
+                                                Grid.Column="0"
+                                                Margin="0,0,10,15">
+                                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextColor}">
+                                            <Run Text="👤 " />
+                                            <Run Text="{Binding OrderEntityName, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextColor}">
+                                            <Run Text="{Binding CustomerName, Mode=OneWay}" />
+                                            <Run Text="{Binding SupplierName, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <!--  Created By  -->
+                                    <StackPanel Grid.Row="1"
+                                                Grid.Column="1"
+                                                Margin="10,0,0,15">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="👨‍💼 Created By" />
+                                        <TextBlock Margin="0,4,0,0"
+                                                   FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="{Binding CreatedByName}" />
+                                    </StackPanel>
+
+                                    <!--  Order Type Badge  -->
+                                    <StackPanel Grid.Row="2"
+                                                Grid.Column="0"
+                                                Margin="0,0,10,0">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📦 Order Type" />
+                                        <Border Margin="0,4,0,0"
+                                                Padding="8,4"
+                                                HorizontalAlignment="Left"
+                                                Background="#DBEAFE"
+                                                CornerRadius="6">
+                                            <TextBlock FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="#1E40AF"
+                                                       Text="{Binding Order.Type}" />
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <!--  Warning Message  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="15"
+                                Background="#FFFBEB"
+                                BorderBrush="#F59E0B"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="18"
+                                                                Height="18"
+                                                                Foreground="#D97706"
+                                                                Kind="AlertOutline" />
+                                    <TextBlock Margin="8,0,0,0"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="#92400E"
+                                               Text="Important Notice" />
+                                </StackPanel>
+                                <TextBlock Margin="0,8,0,0"
+                                           FontSize="12"
+                                           Foreground="#78350F"
+                                           TextWrapping="Wrap">
+                                    <Run Text="• All associated order items and line details will be affected" />
+                                    <LineBreak />
+                                    <Run Text="• Inventory adjustments related to this order will be reviewed" />
+                                    <LineBreak />
+                                    <Run Text="• Historical data may be retained for reporting purposes" />
+                                    <LineBreak />
+                                    <Run Text="• This order will be removed from active records" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,25,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                        <!--  Order ID  -->
+                        <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextColor}">
+                            <Run Text="Order ID:" />
+                            <Run FontWeight="Bold" Text="{Binding Order.OrderId}" />
+                        </TextBlock>
+
+                        <!--  Entity ID  -->
+                        <TextBlock Margin="0,5,0,0"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource SecondaryTextColor}">
+                            <Run Text="{Binding OrderEntityName, Mode=OneWay}" />
+                            <Run Text=" ID:" />
+                            <Run FontWeight="Bold" Text="{Binding Order.CustomerId}" />
+                            <Run FontWeight="Bold" Text="{Binding Order.SupplierId}" />
+                        </TextBlock>
+                    </StackPanel>
+
+                    <!--  Cancel Button  -->
+                    <Button Grid.Column="1"
+                            Width="130"
+                            Height="42"
+                            Margin="0,0,10,0"
+                            Command="{Binding CancelCommand}"
+                            Style="{DynamicResource CancelBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Close" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Cancel" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Delete Button  -->
+                    <Button Grid.Column="2"
+                            Width="150"
+                            Height="42"
+                            Command="{Binding DeleteCommand}">
+                        <Button.Style>
+                            <Style BasedOn="{StaticResource CreateBtn}" TargetType="Button">
+                                <Setter Property="Background" Value="#DC2626" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#B91C1C" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="DeleteForever" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="Delete Order" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>

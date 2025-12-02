@@ -14,6 +14,8 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         Task<DatabaseResult> ActivateOrderAsync( int orderId );
 
+        Task<DatabaseResult> FulfillOrderAsync( int orderId );
+
         Task<DatabaseResult> CompleteOrderAsync( int orderId );
 
         Task<DatabaseResult> CancelOrderAsync( int orderId, string? reason = null );

@@ -68,6 +68,8 @@ namespace Storix.Application.Stores.Orders
 
         List<OrderDto> GetActiveOrders();
 
+        List<OrderDto> GetFulfilledOrders();
+
         List<OrderDto> GetCompletedOrders();
 
         List<OrderDto> GetCancelledOrders();

@@ -96,6 +96,8 @@ namespace Storix.Application.Services.Orders
 
         public async Task<DatabaseResult> ActivateOrderAsync( int orderId ) => await orderWriteService.ActivateOrderAsync(orderId);
 
+        public async Task<DatabaseResult> FulfillOrderAsync( int orderId ) => await orderWriteService.FulfillOrderAsync(orderId);
+
         public async Task<DatabaseResult> CompleteOrderAsync( int orderId ) => await orderWriteService.CompleteOrderAsync(orderId);
 
         public async Task<DatabaseResult> CancelOrderAsync( int orderId, string? reason = null ) => await orderWriteService.CancelOrderAsync(orderId, reason);

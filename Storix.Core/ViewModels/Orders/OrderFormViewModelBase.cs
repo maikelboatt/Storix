@@ -246,7 +246,6 @@ namespace Storix.Core.ViewModels.Orders
 
         #endregion
 
-
         #region Abstract Methods
 
         protected abstract Task LoadEntitySpecificDataAsync();
@@ -292,8 +291,11 @@ namespace Storix.Core.ViewModels.Orders
                         Notes = orderDto.Notes
                     };
 
-                    Input = new OrderInputModel(updateDto);
-                    Input.OrderId = _orderId; // Ensure OrderId is set for edit mode
+                    Input = new OrderInputModel(updateDto)
+                    {
+                        OrderId = _orderId, // Ensure OrderId is set for edit mode
+                        OrderDate = orderDto.OrderDate
+                    };
 
                     // OrderNumber is not in OrderDto, so we generate it or retrieve it separately
                     // For now, generate a placeholder - you may need to add OrderNumber to your Order domain model
@@ -382,7 +384,7 @@ namespace Storix.Core.ViewModels.Orders
             CreateOrderDto createDto = Input.ToCreateDto();
             DatabaseResult<OrderDto> result = await _orderService.CreateOrderAsync(createDto);
 
-            if (result.IsSuccess && result.Value != null)
+            if (result is { IsSuccess: true, Value: not null })
             {
                 // Create order items
                 IEnumerable<CreateOrderItemDto> orderItems = OrderItems.Select(item => new CreateOrderItemDto

@@ -43,6 +43,8 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         IEnumerable<OrderDto> GetActiveOrdersInCache();
 
+        IEnumerable<OrderDto> GetFulfilledOrdersInCache();
+
         IEnumerable<OrderDto> GetCompletedOrdersInCache();
 
         IEnumerable<OrderDto> GetCancelledOrdersInCache();
