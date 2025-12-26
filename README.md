@@ -314,7 +314,7 @@ await orderService.CreateOrderAsync(order, items);
 
 1. **Clone repository**
    ```bash
-   git clone https://github.com/yourusername/storix.git
+   git clone https://github.com/maikelboatt/storix.git
    cd storix
    ```
 
@@ -490,7 +490,7 @@ MIT License - see [LICENSE](LICENSE)
 ## Author
 
 **Maikel Boatt**  
-GitHub: [@yourusername](https://github.com/maikelboatt)  
+GitHub: [@maikelboatt](https://github.com/maikelboatt)  
 Email: boattmaikel@gmail.com
 
 ---
