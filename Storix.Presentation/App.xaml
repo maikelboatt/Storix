@@ -9,6 +9,7 @@
             <resources:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
             <resources:EditModeToTextConverter x:Key="EditModeToTextConverter" />
             <resources:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+            <resources:InverseNullToVisibilityConverter x:Key="InverseNullToVisibilityConverter" />
             <resources:NullToBoolConverter x:Key="NullToBoolConverter" />
             <resources:ErrorConverter x:Key="ErrorConverter" />
             <resources:IntToVisibilityConverter x:Key="IntToVisibilityConverter" />
