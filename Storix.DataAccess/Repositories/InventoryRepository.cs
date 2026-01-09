@@ -366,6 +366,7 @@ namespace Storix.DataAccess.Repositories
                 const string sql = @"
                     UPDATE Inventory 
                     SET ReservedStock = ReservedStock + @Quantity,
+                        CurrentStock = CurrentStock - @Quantity,
                         LastUpdated = @LastUpdated
                     WHERE InventoryId = @InventoryId 
                     AND (CurrentStock - ReservedStock) >= @Quantity";
@@ -404,6 +405,7 @@ namespace Storix.DataAccess.Repositories
                 const string sql = @"
                     UPDATE Inventory 
                     SET ReservedStock = ReservedStock - @Quantity,
+                        CurrentStock = CurrentStock + @Quantity,
                         LastUpdated = @LastUpdated
                     WHERE InventoryId = @InventoryId 
                     AND ReservedStock >= @Quantity";

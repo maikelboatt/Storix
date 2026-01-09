@@ -8,6 +8,7 @@ using Storix.Application.Common.Errors;
 using Storix.Application.Enums;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Inventories.Interfaces;
+using Storix.Application.Stores.Inventories;
 using Storix.Domain.Enums;
 using Storix.Domain.Models;
 
@@ -20,6 +21,7 @@ namespace Storix.Application.Services.Inventories
         IInventoryRepository inventoryRepository,
         IInventoryMovementRepository inventoryMovementRepository,
         IInventoryTransactionRepository inventoryTransactionRepository,
+        IInventoryStore inventoryStore,
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<InventoryReadService> logger ):IInventoryReadService
     {
@@ -149,6 +151,7 @@ namespace Storix.Application.Services.Inventories
             if (result is { IsSuccess: true, Value: not null })
             {
                 logger.LogInformation("Successfully retrieved {Count} inventory records", result.Value.Count());
+                inventoryStore.Initialize(result.Value);
                 return DatabaseResult<IEnumerable<Inventory>>.Success(result.Value);
             }
 

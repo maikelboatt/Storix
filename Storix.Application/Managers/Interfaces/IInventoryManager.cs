@@ -98,6 +98,18 @@ namespace Storix.Application.Managers.Interfaces
 
         Task<DatabaseResult<int>> GetTotalInventoryCountAsync();
 
-        int GetTotalStockForProduct( int productId );
+        int GetCurrentStockForProduct( int productId );
+
+        Dictionary<int, int> GetAllProductStockLevels();
+
+        public int GetProductStockAtLocation( int productId, int locationId );
+
+        public int GetAvailableStockForProduct( int productId );
+
+        public int GetReservedStockForProduct( int productId );
+
+        public int GetAvailableStockAtLocation( int productId, int locationId );
+
+        Dictionary<int, int> GetStockByLocationInCache();
     }
 }

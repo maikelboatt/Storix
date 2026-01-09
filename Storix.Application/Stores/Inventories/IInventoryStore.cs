@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Storix.Application.Stores.Inventory
+namespace Storix.Application.Stores.Inventories
 {
     public interface IInventoryStore
     {
@@ -47,6 +47,7 @@ namespace Storix.Application.Stores.Inventory
 
         int GetTotalStockForProduct( int productId );
 
+
         int GetAvailableStockForProduct( int productId );
 
         int GetReservedStockForProduct( int productId );
@@ -63,9 +64,9 @@ namespace Storix.Application.Stores.Inventory
 
         bool HasAvailableStock( int productId, int locationId, int requiredQuantity );
 
-        int GetAvailableStock( int productId, int locationId );
+        int GetAvailableStockAtLocation( int productId, int locationId );
 
-        int GetCurrentStock( int productId, int locationId );
+        int GetCurrentStockAtLocation( int productId, int locationId );
 
         int GetReservedStock( int productId, int locationId );
     }

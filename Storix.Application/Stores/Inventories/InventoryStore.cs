@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Storix.Application.Stores.Inventory;
 using Storix.Domain.Models;
 
-namespace Storix.Application.Stores.Inventory
+namespace Storix.Application.Stores.Inventories
 {
     /// <summary>
     ///     In-memory cache for inventory records.
@@ -12,14 +11,14 @@ namespace Storix.Application.Stores.Inventory
     /// </summary>
     public class InventoryStore:IInventoryStore
     {
-        private readonly Dictionary<int, Domain.Models.Inventory> _inventory;
+        private readonly Dictionary<int, Inventory> _inventory;
         private readonly Dictionary<int, List<int>> _productIndex;      // ProductId -> List of InventoryIds
         private readonly Dictionary<int, List<int>> _locationIndex;     // LocationId -> List of InventoryIds
         private readonly Dictionary<string, int> _productLocationIndex; // "ProductId-LocationId" -> InventoryId
 
-        public InventoryStore( List<Domain.Models.Inventory>? initialInventory = null )
+        public InventoryStore( List<Inventory>? initialInventory = null )
         {
-            _inventory = new Dictionary<int, Domain.Models.Inventory>();
+            _inventory = new Dictionary<int, Inventory>();
             _productIndex = new Dictionary<int, List<int>>();
             _locationIndex = new Dictionary<int, List<int>>();
             _productLocationIndex = new Dictionary<string, int>();
@@ -30,14 +29,14 @@ namespace Storix.Application.Stores.Inventory
             }
         }
 
-        public void Initialize( IEnumerable<Domain.Models.Inventory> inventoryItems )
+        public void Initialize( IEnumerable<Inventory> inventoryItems )
         {
             _inventory.Clear();
             _productIndex.Clear();
             _locationIndex.Clear();
             _productLocationIndex.Clear();
 
-            foreach (Domain.Models.Inventory item in inventoryItems)
+            foreach (Inventory item in inventoryItems)
             {
                 AddToIndexes(item);
             }
@@ -51,13 +50,13 @@ namespace Storix.Application.Stores.Inventory
             _productLocationIndex.Clear();
         }
 
-        public event Action<Domain.Models.Inventory>? InventoryAdded;
-        public event Action<Domain.Models.Inventory>? InventoryUpdated;
+        public event Action<Inventory>? InventoryAdded;
+        public event Action<Inventory>? InventoryUpdated;
         public event Action<int>? InventoryDeleted;
 
         #region CRUD Operations
 
-        public Domain.Models.Inventory? Create( Domain.Models.Inventory inventory )
+        public Inventory? Create( Inventory inventory )
         {
             if (inventory.InventoryId <= 0)
             {
@@ -82,9 +81,9 @@ namespace Storix.Application.Stores.Inventory
             return inventory;
         }
 
-        public Domain.Models.Inventory? Update( Domain.Models.Inventory inventory )
+        public Inventory? Update( Inventory inventory )
         {
-            if (!_inventory.TryGetValue(inventory.InventoryId, out Domain.Models.Inventory? existingInventory))
+            if (!_inventory.TryGetValue(inventory.InventoryId, out Inventory? existingInventory))
             {
                 return null; // Inventory not found in cache
             }
@@ -108,7 +107,7 @@ namespace Storix.Application.Stores.Inventory
 
         public bool Delete( int inventoryId )
         {
-            if (!_inventory.Remove(inventoryId, out Domain.Models.Inventory? inventory))
+            if (!_inventory.Remove(inventoryId, out Inventory? inventory))
                 return false;
 
             RemoveFromIndexes(inventory);
@@ -120,59 +119,57 @@ namespace Storix.Application.Stores.Inventory
 
         #region Lookups
 
-        public Domain.Models.Inventory? GetById( int inventoryId ) => _inventory.TryGetValue(inventoryId, out Domain.Models.Inventory? inventory)
+        public Inventory? GetById( int inventoryId ) => _inventory.TryGetValue(inventoryId, out Inventory? inventory)
             ? inventory
             : null;
 
-        public Domain.Models.Inventory? GetByProductAndLocation( int productId, int locationId )
+        public Inventory? GetByProductAndLocation( int productId, int locationId )
         {
             string key = GetProductLocationKey(productId, locationId);
 
             if (_productLocationIndex.TryGetValue(key, out int inventoryId))
             {
-                return _inventory.TryGetValue(inventoryId, out Domain.Models.Inventory? inventory)
-                    ? inventory
-                    : null;
+                return _inventory.GetValueOrDefault(inventoryId);
             }
 
             return null;
         }
 
-        public List<Domain.Models.Inventory> GetByProductId( int productId )
+        public List<Inventory> GetByProductId( int productId )
         {
             if (!_productIndex.TryGetValue(productId, out List<int>? inventoryIds))
             {
-                return new List<Domain.Models.Inventory>();
+                return new List<Inventory>();
             }
 
             return inventoryIds
-                   .Select(id => _inventory.TryGetValue(id, out Domain.Models.Inventory? inv)
+                   .Select(id => _inventory.TryGetValue(id, out Inventory? inv)
                                ? inv
                                : null)
                    .Where(inv => inv != null)
-                   .Cast<Domain.Models.Inventory>()
+                   .Cast<Inventory>()
                    .OrderBy(inv => inv.LocationId)
                    .ToList();
         }
 
-        public List<Domain.Models.Inventory> GetByLocationId( int locationId )
+        public List<Inventory> GetByLocationId( int locationId )
         {
             if (!_locationIndex.TryGetValue(locationId, out List<int>? inventoryIds))
             {
-                return new List<Domain.Models.Inventory>();
+                return new List<Inventory>();
             }
 
             return inventoryIds
-                   .Select(id => _inventory.TryGetValue(id, out Domain.Models.Inventory? inv)
+                   .Select(id => _inventory.TryGetValue(id, out Inventory? inv)
                                ? inv
                                : null)
                    .Where(inv => inv != null)
-                   .Cast<Domain.Models.Inventory>()
+                   .Cast<Inventory>()
                    .OrderBy(inv => inv.ProductId)
                    .ToList();
         }
 
-        public List<Domain.Models.Inventory> GetAll()
+        public List<Inventory> GetAll()
         {
             return _inventory
                    .Values
@@ -181,7 +178,7 @@ namespace Storix.Application.Stores.Inventory
                    .ToList();
         }
 
-        public List<Domain.Models.Inventory> GetLowStockItems( int threshold = 10 )
+        public List<Inventory> GetLowStockItems( int threshold = 10 )
         {
             return _inventory
                    .Values
@@ -191,7 +188,7 @@ namespace Storix.Application.Stores.Inventory
                    .ToList();
         }
 
-        public List<Domain.Models.Inventory> GetOutOfStockItems()
+        public List<Inventory> GetOutOfStockItems()
         {
             return _inventory
                    .Values
@@ -200,13 +197,13 @@ namespace Storix.Application.Stores.Inventory
                    .ToList();
         }
 
-        public List<Domain.Models.Inventory> Search(
+        public List<Inventory> Search(
             int? productId = null,
             int? locationId = null,
             int? minStock = null,
             int? maxStock = null )
         {
-            IEnumerable<Domain.Models.Inventory> query = _inventory.Values;
+            IEnumerable<Inventory> query = _inventory.Values;
 
             if (productId.HasValue)
             {
@@ -260,7 +257,7 @@ namespace Storix.Application.Stores.Inventory
             }
 
             return inventoryIds
-                   .Select(id => _inventory.TryGetValue(id, out Domain.Models.Inventory? inv)
+                   .Select(id => _inventory.TryGetValue(id, out Inventory? inv)
                                ? inv.CurrentStock
                                : 0)
                    .Sum();
@@ -274,7 +271,7 @@ namespace Storix.Application.Stores.Inventory
             }
 
             return inventoryIds
-                   .Select(id => _inventory.TryGetValue(id, out Domain.Models.Inventory? inv)
+                   .Select(id => _inventory.TryGetValue(id, out Inventory? inv)
                                ? inv.AvailableStock
                                : 0)
                    .Sum();
@@ -288,7 +285,7 @@ namespace Storix.Application.Stores.Inventory
             }
 
             return inventoryIds
-                   .Select(id => _inventory.TryGetValue(id, out Domain.Models.Inventory? inv)
+                   .Select(id => _inventory.TryGetValue(id, out Inventory? inv)
                                ? inv.ReservedStock
                                : 0)
                    .Sum();
@@ -332,31 +329,31 @@ namespace Storix.Application.Stores.Inventory
 
         public bool IsInStock( int productId, int locationId )
         {
-            Domain.Models.Inventory? inventory = GetByProductAndLocation(productId, locationId);
+            Inventory? inventory = GetByProductAndLocation(productId, locationId);
             return inventory?.IsInStock ?? false;
         }
 
         public bool HasAvailableStock( int productId, int locationId, int requiredQuantity )
         {
-            Domain.Models.Inventory? inventory = GetByProductAndLocation(productId, locationId);
+            Inventory? inventory = GetByProductAndLocation(productId, locationId);
             return inventory != null && inventory.AvailableStock >= requiredQuantity;
         }
 
-        public int GetAvailableStock( int productId, int locationId )
+        public int GetAvailableStockAtLocation( int productId, int locationId )
         {
-            Domain.Models.Inventory? inventory = GetByProductAndLocation(productId, locationId);
+            Inventory? inventory = GetByProductAndLocation(productId, locationId);
             return inventory?.AvailableStock ?? 0;
         }
 
-        public int GetCurrentStock( int productId, int locationId )
+        public int GetCurrentStockAtLocation( int productId, int locationId )
         {
-            Domain.Models.Inventory? inventory = GetByProductAndLocation(productId, locationId);
+            Inventory? inventory = GetByProductAndLocation(productId, locationId);
             return inventory?.CurrentStock ?? 0;
         }
 
         public int GetReservedStock( int productId, int locationId )
         {
-            Domain.Models.Inventory? inventory = GetByProductAndLocation(productId, locationId);
+            Inventory? inventory = GetByProductAndLocation(productId, locationId);
             return inventory?.ReservedStock ?? 0;
         }
 
@@ -364,7 +361,7 @@ namespace Storix.Application.Stores.Inventory
 
         #region Private Helper Methods
 
-        private void AddToIndexes( Domain.Models.Inventory inventory )
+        private void AddToIndexes( Inventory inventory )
         {
             // Add to main dictionary
             _inventory[inventory.InventoryId] = inventory;
@@ -390,7 +387,7 @@ namespace Storix.Application.Stores.Inventory
             _productLocationIndex[productLocationKey] = inventory.InventoryId;
         }
 
-        private void RemoveFromIndexes( Domain.Models.Inventory inventory )
+        private void RemoveFromIndexes( Inventory inventory )
         {
             // Remove from product index
             if (_productIndex.TryGetValue(inventory.ProductId, out List<int>? productInventoryIds))

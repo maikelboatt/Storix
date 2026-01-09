@@ -2,7 +2,7 @@
 
 namespace Storix.Application.Services.Inventories.Interfaces
 {
-    public interface IInventoryCacheService
+    public interface IInventoryCacheReadService
     {
         Domain.Models.Inventory? GetInventoryByIdInCache( int inventoryId );
 
@@ -22,7 +22,19 @@ namespace Storix.Application.Services.Inventories.Interfaces
 
         int GetInventoryCountInCache();
 
-        int GetTotalStockForProductInCache( int productId );
+        Dictionary<int, int> GetAllProductStockLevelsInCache();
+
+        int GetCurrentStockForProductInCache( int productId );
+
+        public int GetProductStockAtLocationInCache( int productId, int locationId );
+
+        int GetAvailableStockForProductInCache( int productId );
+
+        int GetAvailableStockAtLocationInCache( int productId, int locationId );
+
+        int GetReservedStockForProductInCache( int productId );
+
+        Dictionary<int, int> GetStockByLocationInCache();
 
         void RefreshStoreCache();
     }
