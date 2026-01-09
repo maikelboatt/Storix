@@ -194,11 +194,8 @@ namespace Storix.Application.Stores.Locations
                 ? location.ToDto()
                 : null;
 
-        public string? GetLocationName( int locationId )
-        {
-            LocationDto? location = GetById(locationId);
-            return location?.Name;
-        }
+        public string? GetLocationName( int locationId ) => GetById(locationId)
+            ?.Name;
 
         public LocationDto? GetByName( string name )
         {

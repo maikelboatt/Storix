@@ -61,22 +61,36 @@ namespace Storix.Application.Services.Products
         }
 
         /// <summary>
+        /// Gets all active products from cache (fast).
+        /// </summary>
+        public List<ProductListDto> GetProductListFromCache()
+        {
+            logger.LogDebug("Retrieving product list from cache");
+            return productStore.GetProductListDto();
+        }
+
+        /// <summary>
         ///     Gets active products by category from cache (fast).
         /// </summary>
-        public List<ProductDto> GetProductsByCategoryFromCache( int categoryId )
+        public List<ProductListDto> GetProductListByCategoryFromCache( int categoryId )
         {
             logger.LogDebug("Retrieving active products from cache for category {CategoryId}", categoryId);
-            return productStore.GetByCategory(categoryId);
+            return productStore.GetProductListByCategory(categoryId);
         }
 
         /// <summary>
         ///     Gets active products by supplier from cache (fast).
         /// </summary>
-        public List<ProductDto> GetProductsBySupplierFromCache( int supplierId )
+        public List<ProductListDto> GetProductListBySupplierFromCache( int supplierId )
         {
             logger.LogDebug("Retrieving active products from cache for supplier {SupplierId}", supplierId);
-            return productStore.GetBySupplier(supplierId);
+            return productStore.GetProductListBySupplier(supplierId);
         }
+
+        /// <summary>
+        /// Get Supplier name from cache
+        /// </summary>
+        public string GetSupplierNameFromCache( int categoryId ) => productStore.GetSupplierName(categoryId);
 
         /// <summary>
         ///     Checks if a product exists in the active cache (fast).
@@ -89,6 +103,11 @@ namespace Storix.Application.Services.Products
             return productStore
                 .GetTop5BestSellersAsync(topCounts);
         }
+
+        /// <summary>
+        /// Get Category name from cache
+        /// </summary>
+        public string GetCategoryNameFromCache( int categoryId ) => productStore.GetCategoryName(categoryId);
 
         /// <summary>
         ///     Gets the count of active products in cache (fast).

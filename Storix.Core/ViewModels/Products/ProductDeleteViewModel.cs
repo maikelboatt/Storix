@@ -2,6 +2,7 @@
 using MvvmCross.Commands;
 using MvvmCross.ViewModels;
 using Storix.Application.DTO.Products;
+using Storix.Application.Services.Dialog;
 using Storix.Application.Services.Products;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Core.Control;
@@ -15,6 +16,7 @@ namespace Storix.Core.ViewModels.Products
     public class ProductDeleteViewModel:MvxViewModel<int>, IProductViewModel
     {
         private readonly IProductService _productService;
+        private readonly IDialogService _dialogService;
         private readonly IProductCacheReadService _productCacheReadService;
         private readonly IModalNavigationControl _modalNavigationControl;
         private readonly ILogger<ProductDeleteViewModel> _logger;
@@ -27,11 +29,13 @@ namespace Storix.Core.ViewModels.Products
 
         public ProductDeleteViewModel(
             IProductService productService,
+            IDialogService dialogService,
             IProductCacheReadService productCacheReadService,
             IModalNavigationControl modalNavigationControl,
             ILogger<ProductDeleteViewModel> logger )
         {
             _productService = productService ?? throw new ArgumentNullException(nameof(productService));
+            _dialogService = dialogService;
             _productCacheReadService = productCacheReadService ?? throw new ArgumentNullException(nameof(productCacheReadService));
             _modalNavigationControl = modalNavigationControl ?? throw new ArgumentNullException(nameof(modalNavigationControl));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -204,9 +208,7 @@ namespace Storix.Core.ViewModels.Products
                     Product.ProductId,
                     Product.Name);
 
-                // TODO: Show error message to user
-                // You might want to add an error message property or use a message service
-                // ErrorMessage = "Failed to delete product. Please try again.";
+                _dialogService.ShowError("Failed to delete product. Please try again.");
             }
             finally
             {

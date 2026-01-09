@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Storix.Application.Common;
 using Storix.Application.DTO.Categories;
 using Storix.Application.DTO.Products;
 using Storix.Application.DTO.Suppliers;
 using Storix.Application.Services.Categories.Interfaces;
+using Storix.Application.Services.Inventories.Interfaces;
 using Storix.Application.Services.Suppliers.Interfaces;
 using Storix.Domain.Models;
 
@@ -20,19 +19,26 @@ namespace Storix.Application.Stores.Products
     {
         private readonly ICategoryCacheReadService _categoryCacheReadService;
         private readonly ISupplierCacheReadService _supplierCacheReadService;
+        private readonly IInventoryCacheReadService _inventoryCacheReadService;
         private readonly Dictionary<int, Product> _products;
         private readonly Dictionary<int, ProductListDto> _productListDtos;
         private readonly Dictionary<int, TopProductDto> _topProductDtos;
 
-        public ProductStore( ICategoryCacheReadService categoryCacheReadService,
+        private readonly Dictionary<int, int> _productStockCache;
+
+        public ProductStore(
+            ICategoryCacheReadService categoryCacheReadService,
             ISupplierCacheReadService supplierCacheReadService,
+            IInventoryCacheReadService inventoryCacheReadService,
             List<Product>? initialProducts = null )
         {
             _categoryCacheReadService = categoryCacheReadService;
             _supplierCacheReadService = supplierCacheReadService;
+            _inventoryCacheReadService = inventoryCacheReadService;
             _products = new Dictionary<int, Product>();
             _productListDtos = new Dictionary<int, ProductListDto>();
             _topProductDtos = new Dictionary<int, TopProductDto>();
+            _productStockCache = new Dictionary<int, int>();
 
             if (initialProducts == null) return;
 
@@ -61,6 +67,7 @@ namespace Storix.Application.Stores.Products
             foreach (ProductListDto productListDto in productListDtos)
             {
                 _productListDtos[productListDto.ProductId] = productListDto;
+                _productStockCache[productListDto.ProductId] = productListDto.CurrentStock;
             }
         }
 
@@ -90,6 +97,7 @@ namespace Storix.Application.Stores.Products
         {
             _products.Clear();
             _topProductDtos.Clear();
+            _productStockCache.Clear();
         }
 
         #region Events
@@ -97,20 +105,24 @@ namespace Storix.Application.Stores.Products
         /// <summary>
         ///     Event triggered when a product is added.
         /// </summary>
-        public event Action<Product> ProductAdded;
+        public event Action<Product>? ProductAdded;
 
         /// <summary>
         ///     Event triggered when a product is updated.
         /// </summary>
-        public event Action<Product> ProductUpdated;
+        public event Action<Product>? ProductUpdated;
 
         /// <summary>
         ///     Event triggered when a product is deleted.
         /// </summary>
-        public event Action<int> ProductDeleted;
+        public event Action<int>? ProductDeleted;
+
+        /// <summary>
+        ///    Event triggered when product stock changes at any location
+        /// </summary>
+        public event Action<int, int>? ProductStockChanged; // (ProductId, TotalStock)
 
         #endregion
-
 
         #region Write Operations
 
@@ -141,7 +153,7 @@ namespace Storix.Application.Stores.Products
                 productId,
                 createDto.Name.Trim(),
                 createDto.SKU.Trim(),
-                createDto.Description?.Trim() ?? string.Empty,
+                createDto.Description.Trim(),
                 createDto.Barcode?.Trim(),
                 createDto.Price,
                 createDto.Cost,
@@ -149,10 +161,7 @@ namespace Storix.Application.Stores.Products
                 createDto.MaxStockLevel,
                 createDto.SupplierId,
                 createDto.CategoryId,
-                DateTime.UtcNow,
-                null,
-                false,
-                null
+                DateTime.UtcNow
             );
 
             _products[productId] = product;
@@ -192,7 +201,7 @@ namespace Storix.Application.Stores.Products
             {
                 Name = updateDto.Name.Trim(),
                 SKU = updateDto.SKU.Trim(),
-                Description = updateDto.Description?.Trim() ?? string.Empty,
+                Description = updateDto.Description.Trim(),
                 Barcode = updateDto.Barcode?.Trim(),
                 Price = updateDto.Price,
                 Cost = updateDto.Cost,
@@ -213,10 +222,77 @@ namespace Storix.Application.Stores.Products
             // Remove from active cache (soft delete removes from cache, hard delete calls this too)
             ProductDeleted?.Invoke(productId);
             _productListDtos.Remove(productId);
+            _productStockCache.Remove(productId);
             return _products.Remove(productId);
         }
 
         #endregion
+
+        #region Stock Update Methods
+
+        /// <summary>
+        /// Updates the cached stock for a product and notifies subscribers.
+        /// Call this after inventory adjustments to keep UI in sync.
+        /// </summary>
+        /// <param name="productId">The product ID</param>
+        /// <param name="totalStock">New total stock across all locations</param>
+        public void UpdateProductStock( int productId, int totalStock )
+        {
+            // Update stock cache
+            _productStockCache[productId] = totalStock;
+
+            // Update ProductListDto if it exists
+            if (_productListDtos.TryGetValue(productId, out ProductListDto? productListDto))
+            {
+                // Create updated DTO with new stock
+                ProductListDto updatedDto = productListDto with
+                {
+                    CurrentStock = totalStock
+                };
+                _productListDtos[productId] = updatedDto;
+            }
+
+            // Notify subscribers (ViewModels listening for changes)
+            ProductStockChanged?.Invoke(productId, totalStock);
+        }
+
+        /// <summary>
+        /// Gets the current total stock for a product (cached value).
+        /// </summary>
+        /// <param name="productId">The product ID</param>
+        /// <returns>Total stock across all locations, or 0 if not found</returns>
+        public int GetProductTotalStock( int productId )
+        {
+            if (_productStockCache.TryGetValue(productId, out int stock))
+            {
+                return stock;
+            }
+
+            // Fallback to inventory cache read service
+            return _inventoryCacheReadService.GetCurrentStockForProductInCache(productId);
+        }
+
+        /// <summary>
+        /// Gets the product name (helper for order items and displays).
+        /// </summary>
+        /// <param name="productId">The product ID</param>
+        /// <returns>Product name or null if not found</returns>
+        public string? GetProductName( int productId ) => _products.TryGetValue(productId, out Product? product)
+            ? product.Name
+            : null;
+
+        /// <summary>
+        /// Gets the product SKU (helper for order items and displays).
+        /// </summary>
+        /// <param name="productId">The product ID</param>
+        /// <returns>Product SKU or null if not found</returns>
+        public string? GetProductSku( int productId ) => _products.TryGetValue(productId, out Product? product)
+            ? product.SKU
+            : null;
+
+        #endregion
+
+        #region Read Operations
 
         public ProductDto? GetById( int productId ) =>
             // Only searches active products
@@ -296,7 +372,6 @@ namespace Storix.Application.Stores.Products
                    .Take(topCounts)
                    .Select(p => p.Value)
                    .ToList();
-
         }
 
         public List<ProductListDto> GetProductListDto()
@@ -308,6 +383,36 @@ namespace Storix.Application.Stores.Products
 
         public List<ProductDto> GetByCategory( int categoryId ) => GetAll(categoryId);
 
+        public List<ProductListDto> GetProductListByCategory( int categoryId )
+        {
+            List<ProductDto> products = GetByCategory(categoryId);
+
+            List<ProductListDto> productListDtos = [];
+            productListDtos.AddRange(
+                from dto in products
+                let supplierName = GetSupplierName(dto.SupplierId)
+                let currentStock = GetProductTotalStock(dto.ProductId)
+                let categoryName = GetCategoryName(categoryId)
+                select dto.ToListDto(categoryName, supplierName, currentStock));
+
+            return productListDtos;
+        }
+
+        public List<ProductListDto> GetProductListBySupplier( int supplierId )
+        {
+            List<ProductDto> products = GetBySupplier(supplierId);
+
+            List<ProductListDto> productListDtos = [];
+            productListDtos.AddRange(
+                from dto in products
+                let categoryName = GetCategoryName(dto.CategoryId)
+                let currentStock = GetProductTotalStock(dto.ProductId)
+                let supplierName = GetSupplierName(supplierId)
+                select dto.ToListDto(categoryName, supplierName, currentStock));
+
+            return productListDtos;
+        }
+
         public List<ProductDto> GetBySupplier( int supplierId ) => GetAll(supplierId: supplierId);
 
         public List<ProductDto> GetActiveProducts()
@@ -318,6 +423,10 @@ namespace Storix.Application.Stores.Products
                    .Select(p => p.ToDto())
                    .ToList();
         }
+
+        #endregion
+
+        #region Validation
 
         public bool Exists( int productId ) =>
             // Only checks active products
@@ -337,6 +446,10 @@ namespace Storix.Application.Stores.Products
                                             p.Barcode.Equals(barcode, StringComparison.OrdinalIgnoreCase) &&
                                             p.ProductId != excludeProductId);
         }
+
+        #endregion
+
+        #region Statistics
 
         public int GetCount( int? categoryId = null, int? supplierId = null )
         {
@@ -406,5 +519,7 @@ namespace Storix.Application.Stores.Products
                    .OrderBy(p => p.Name)
                    .ToList();
         }
+
+        #endregion
     }
 }

@@ -30,6 +30,10 @@ namespace Storix.Application.Stores.Products
         /// </summary>
         event Action<int> ProductDeleted;
 
+        /// <summary>
+        /// Event triggered when product stock changes at any location
+        /// </summary>
+        event Action<int, int> ProductStockChanged; // (ProductId, TotalStock)
 
         ProductDto? Create( int productId, CreateProductDto createDto );
 
@@ -40,6 +44,27 @@ namespace Storix.Application.Stores.Products
         string GetCategoryName( int categoryId );
 
         string GetSupplierName( int supplierId );
+
+        /// <summary>
+        /// Updates the cached stock information for a product
+        /// Call this after inventory adjustments to keep UI in sync
+        /// </summary>
+        void UpdateProductStock( int productId, int totalStock );
+
+        /// <summary>
+        /// Gets the current total stock for a product across all locations
+        /// </summary>
+        int GetProductTotalStock( int productId );
+
+        /// <summary>
+        /// Gets the product name (helper for order items)
+        /// </summary>
+        string? GetProductName( int productId );
+
+        /// <summary>
+        /// Gets the product SKU (helper for order items)
+        /// </summary>
+        string? GetProductSku( int productId );
 
         ProductDto? GetById( int productId );
 
@@ -63,6 +88,11 @@ namespace Storix.Application.Stores.Products
         List<TopProductDto> GetTop5BestSellersAsync( int topCounts );
 
         List<ProductListDto> GetProductListDto();
+
+        List<ProductListDto> GetProductListByCategory( int categoryId );
+
+        List<ProductListDto> GetProductListBySupplier( int supplierId );
+
 
         bool Exists( int productId );
 

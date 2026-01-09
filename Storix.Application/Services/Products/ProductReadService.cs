@@ -9,6 +9,7 @@ using Storix.Application.Common.Errors;
 using Storix.Application.DTO;
 using Storix.Application.DTO.Products;
 using Storix.Application.Enums;
+using Storix.Application.Managers.Interfaces;
 using Storix.Application.Repositories;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Application.Stores.Products;
@@ -21,6 +22,7 @@ namespace Storix.Application.Services.Products
     /// </summary>
     public class ProductReadService(
         IProductRepository productRepository,
+        IInventoryManager inventoryManager,
         IProductStore productStore,
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<ProductReadService> logger ):IProductReadService
@@ -193,6 +195,7 @@ namespace Storix.Application.Services.Products
         {
             DatabaseResult<IEnumerable<ProductWithDetailsDto>> result = await GetProductsWithDetailsAsync(false);
 
+
             if (result is { IsSuccess: true, Value: not null })
             {
                 IEnumerable<ProductListDto> productListDtos = result
@@ -209,7 +212,7 @@ namespace Storix.Application.Services.Products
                                                                   MaxStockLevel = dto.MaxStockLevel,
                                                                   CategoryName = dto.CategoryName,
                                                                   SupplierName = dto.SupplierName,
-                                                                  CurrentStock = dto.AvailableStock,
+                                                                  CurrentStock = inventoryManager.GetCurrentStockForProduct(dto.ProductId),
                                                                   IsLowStock = dto.TotalStock < dto.MinStockLevel
                                                               });
 

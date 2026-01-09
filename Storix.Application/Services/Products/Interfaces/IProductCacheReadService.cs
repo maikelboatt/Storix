@@ -29,16 +29,25 @@ namespace Storix.Application.Services.Products.Interfaces
         IEnumerable<ProductDto> GetActiveProductsFromCache();
 
         /// <summary>
+        /// Gets all active products from cache (fast).
+        /// </summary>
+        List<ProductListDto> GetProductListFromCache();
+
+        /// <summary>
         ///     Gets active products by category from cache (fast).
         /// </summary>
-        List<ProductDto> GetProductsByCategoryFromCache( int categoryId );
+        List<ProductListDto> GetProductListByCategoryFromCache( int categoryId );
 
         /// <summary>
         ///     Gets active products by supplier from cache (fast).
         /// </summary>
-        List<ProductDto> GetProductsBySupplierFromCache( int supplierId );
+        List<ProductListDto> GetProductListBySupplierFromCache( int supplierId );
 
         List<TopProductDto> GetTopBestSellersFromCache( int topCounts );
+
+        string GetCategoryNameFromCache( int categoryId );
+
+        string GetSupplierNameFromCache( int categoryId );
 
         /// <summary>
         ///     Checks if a product exists in the active cache (fast).
