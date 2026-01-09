@@ -1,13 +1,19 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Collections.ObjectModel;
+using Microsoft.Extensions.Logging;
 using MvvmCross.ViewModels;
 using Storix.Application.DTO.Customers;
+using Storix.Application.DTO.Locations;
 using Storix.Application.DTO.Orders;
 using Storix.Application.Managers.Interfaces;
 using Storix.Application.Services.Customers.Interfaces;
+using Storix.Application.Services.Dialog;
+using Storix.Application.Services.Inventories.Interfaces;
+using Storix.Application.Services.Locations.Interfaces;
 using Storix.Application.Services.OrderItems.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Core.Control;
+using Storix.Core.Helper;
 using Storix.Domain.Enums;
 
 namespace Storix.Core.ViewModels.Orders.Sales
@@ -19,6 +25,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
     {
         private readonly IOrderCoordinatorService _orderCoordinatorService;
         private readonly IOrderItemService _orderItemService;
+        private readonly ILocationCacheReadService _locationCacheReadService;
         private readonly ICustomerCacheReadService _customerCacheReadService;
 
         protected override OrderType OrderType => OrderType.Sale;
@@ -37,31 +44,35 @@ namespace Storix.Core.ViewModels.Orders.Sales
             IOrderService orderService,
             IOrderCoordinatorService orderCoordinatorService,
             IOrderItemService orderItemService,
+            IOrderFulfillmentService orderFulfillmentService,
+            IDialogService dialogService,
             IOrderItemManager orderItemManager,
+            IInventoryCacheReadService inventoryCacheReadService,
             IProductCacheReadService productCacheReadService,
+            ILocationCacheReadService locationCacheReadService,
             ICustomerCacheReadService customerCacheReadService,
+            IOrderFulfillmentHelper orderFulfillmentHelper,
             IModalNavigationControl modalNavigationControl,
             ILogger<SalesOrderFormViewModel> logger )
             :base(
                 orderService,
                 orderCoordinatorService,
                 orderItemService,
+                orderFulfillmentService,
+                dialogService,
                 orderItemManager,
+                inventoryCacheReadService,
                 productCacheReadService,
+                locationCacheReadService,
+                orderFulfillmentHelper,
                 modalNavigationControl,
                 logger)
         {
             _orderCoordinatorService = orderCoordinatorService;
             _orderItemService = orderItemService;
+            _locationCacheReadService = locationCacheReadService;
             _customerCacheReadService = customerCacheReadService;
         }
-
-        // private int _saleOrderId;
-        //
-        // public override void Prepare( int parameter )
-        // {
-        //     _saleOrderId = parameter;
-        // }
 
         protected override async Task LoadEntitySpecificDataAsync()
         {
@@ -75,11 +86,19 @@ namespace Storix.Core.ViewModels.Orders.Sales
                     Input.Customers.Add(customer);
                 }
 
-                _logger.LogInformation("Loaded {Count} customers for sales order", Input.Customers.Count);
+                List<LocationDto> locations = _locationCacheReadService.GetAllActiveLocationsInCache();
+                Input.Locations.Clear();
+
+                foreach (LocationDto location in locations)
+                {
+                    Input.Locations.Add(location);
+                }
+
+                _logger.LogInformation("Loaded {Count} and {LocationCount} customers for sales order  ", Input.Customers.Count, Input.Locations.Count);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading customers");
+                _logger.LogError(ex, "Error loading customers and Locations");
             }
         }
 
@@ -118,6 +137,24 @@ namespace Storix.Core.ViewModels.Orders.Sales
             // Ensure this is treated as a sales order
             Input.Type = OrderType.Sale;
             Input.SupplierId = null;
+        }
+
+        protected override async Task PopulateInputCollectionsAsync()
+        {
+            // Populate locations
+            List<LocationDto> locations = _locationCacheReadService.GetAllActiveLocationsInCache();
+            Input.Locations = new ObservableCollection<LocationDto>(locations);
+
+            // Populate customers
+            List<CustomerDto> customers = _customerCacheReadService.GetAllActiveCustomersInCache();
+            Input.Customers = new ObservableCollection<CustomerDto>(customers);
+
+            _logger.LogInformation(
+                "Populated Input collections: {LocationCount} locations, {CustomerCount} customers",
+                Input.Locations.Count,
+                Input.Customers.Count);
+
+            await Task.CompletedTask;
         }
 
         protected override string GenerateOrderNumber()

@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MvvmCross.Commands;
 using MvvmCross.ViewModels;
@@ -11,14 +7,19 @@ using Storix.Application.Common;
 using Storix.Application.DTO.OrderItems;
 using Storix.Application.DTO.Orders;
 using Storix.Application.DTO.Products;
-using Storix.Application.Enums;
 using Storix.Application.Managers.Interfaces;
+using Storix.Application.Services.Dialog;
+using Storix.Application.Services.Inventories.Interfaces;
+using Storix.Application.Services.Locations.Interfaces;
 using Storix.Application.Services.OrderItems.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
 using Storix.Application.Services.Products.Interfaces;
 using Storix.Core.Control;
+using Storix.Core.Helper;
 using Storix.Core.InputModel;
+using Storix.Core.ViewModels.Orders.Fulfillment;
 using Storix.Domain.Enums;
+using Storix.Domain.Models;
 
 namespace Storix.Core.ViewModels.Orders
 {
@@ -31,8 +32,13 @@ namespace Storix.Core.ViewModels.Orders
         protected readonly IOrderService _orderService;
         private readonly IOrderCoordinatorService _orderCoordinatorService;
         protected readonly IOrderItemManager _orderItemManager;
+        private readonly IInventoryCacheReadService _inventoryCacheReadService;
         protected readonly IOrderItemService _orderItemService;
+        private readonly IOrderFulfillmentService _orderFulfillmentService;
+        private readonly IDialogService _dialogService;
         protected readonly IProductCacheReadService _productCacheReadService;
+        private readonly ILocationCacheReadService _locationCacheReadService;
+        private readonly IOrderFulfillmentHelper _orderFulfillmentHelper;
         protected readonly IModalNavigationControl _modalNavigationControl;
         protected readonly ILogger _logger;
 
@@ -46,25 +52,38 @@ namespace Storix.Core.ViewModels.Orders
         private string _orderNumber = string.Empty;
         private decimal _totalAmount;
 
+        private OrderStatus _originalStatus;
+
         protected OrderFormViewModelBase(
             IOrderService orderService,
             IOrderCoordinatorService orderCoordinatorService,
             IOrderItemService orderItemService,
+            IOrderFulfillmentService orderFulfillmentService,
+            IDialogService dialogService,
             IOrderItemManager orderItemManager,
+            IInventoryCacheReadService inventoryCacheReadService,
             IProductCacheReadService productCacheReadService,
+            ILocationCacheReadService locationCacheReadService,
+            IOrderFulfillmentHelper orderFulfillmentHelper,
             IModalNavigationControl modalNavigationControl,
             ILogger logger )
         {
             _orderService = orderService;
             _orderCoordinatorService = orderCoordinatorService;
             _orderItemService = orderItemService;
+            _orderFulfillmentService = orderFulfillmentService;
+            _dialogService = dialogService;
             _orderItemManager = orderItemManager;
+            _inventoryCacheReadService = inventoryCacheReadService;
             _productCacheReadService = productCacheReadService;
+            _locationCacheReadService = locationCacheReadService;
+            _orderFulfillmentHelper = orderFulfillmentHelper;
             _modalNavigationControl = modalNavigationControl;
             _logger = logger;
 
             _orderInputModel = new OrderInputModel();
 
+            // Initialise commands
             SaveCommand = new MvxAsyncCommand(ExecuteSaveCommandAsync, () => CanSave);
             CancelCommand = new MvxCommand(ExecuteCancelCommand, () => CanCancel);
             AddOrderItemCommand = new MvxCommand(AddOrderItem);
@@ -79,6 +98,7 @@ namespace Storix.Core.ViewModels.Orders
                 SaveCommand.RaiseCanExecuteChanged();
             };
         }
+
 
         #region Lifecycle Methods
 
@@ -254,6 +274,8 @@ namespace Storix.Core.ViewModels.Orders
 
         protected abstract void LoadEntitySpecificDataForEdit( OrderDto orderDto );
 
+        protected abstract Task PopulateInputCollectionsAsync();
+
         protected abstract string GenerateOrderNumber();
 
         #endregion
@@ -282,11 +304,14 @@ namespace Storix.Core.ViewModels.Orders
                 OrderDto? orderDto = _orderService.GetOrderById(_orderId);
                 if (orderDto != null)
                 {
+                    _originalStatus = orderDto.Status;
+
                     // Create UpdateOrderDto from OrderDto
                     UpdateOrderDto updateDto = new()
                     {
                         OrderId = orderDto.OrderId,
                         Status = orderDto.Status,
+                        LocationId = orderDto.LocationId,
                         DeliveryDate = orderDto.DeliveryDate,
                         Notes = orderDto.Notes
                     };
@@ -297,8 +322,11 @@ namespace Storix.Core.ViewModels.Orders
                         OrderDate = orderDto.OrderDate
                     };
 
+                    await PopulateInputCollectionsAsync();
+
+                    Input.LocationId = orderDto.LocationId;
+
                     // OrderNumber is not in OrderDto, so we generate it or retrieve it separately
-                    // For now, generate a placeholder - you may need to add OrderNumber to your Order domain model
                     OrderNumber = $"{(orderDto.Type == OrderType.Sale ? "SO" : "PO")}-{orderDto.OrderId:D6}";
 
                     // Load entity-specific data (customer/supplier)
@@ -361,9 +389,31 @@ namespace Storix.Core.ViewModels.Orders
                 if (IsEditMode)
                 {
                     await PerformUpdateAsync();
+
+                    // Check if status changed to Fulfilled
+                    if (Input.Status == OrderStatus.Fulfilled &&
+                        _originalStatus != OrderStatus.Fulfilled)
+                    {
+
+                        _logger.LogInformation(
+                            "Order {OrderNumber} status changed to Fulfilled - opening fulfillment dialog",
+                            OrderNumber);
+
+                        _modalNavigationControl.Close();
+
+                        // Open fulfillment modal
+                        await ShowFulfillmentModalAsync();
+                        return;
+                    }
                 }
                 else
                 {
+                    // Check stock before creating new sales order
+                    if (Input.Type == OrderType.Sale)
+                    {
+                        if (!ValidateStockAvailability())
+                            return;
+                    }
                     await PerformCreateAsync();
                 }
 
@@ -376,6 +426,106 @@ namespace Storix.Core.ViewModels.Orders
             finally
             {
                 IsLoading = false;
+            }
+        }
+
+        private bool ValidateStockAvailability()
+        {
+            // Check if location is selected
+            if (Input.LocationId <= 0)
+            {
+                _dialogService.ShowWarning("Please select a location before creating the order.");
+                return false;
+            }
+
+            // Get location names for better error messages
+            string locationName = Input.Locations?.FirstOrDefault(l => l.LocationId == Input.LocationId)
+                                       ?.Name ?? $"Location ID {Input.LocationId}";
+
+            List<string> stockErrors = new();
+
+            foreach (OrderItemRowViewModel orderItem in OrderItems)
+            {
+                // Skip items without product selected
+                if (orderItem.ProductId <= 0)
+                    continue;
+
+                // Quick check against available products
+                Inventory? inventory = _inventoryCacheReadService.GetInventoryByProductAndLocationInCache(
+                    orderItem.ProductId,
+                    Input.LocationId);
+
+                if (inventory == null)
+                {
+                    _logger.LogWarning(
+                        "No inventory found for product {ProductId} ({ProductName}) at location {LocationId}",
+                        orderItem.ProductId,
+                        orderItem.ProductName,
+                        Input.LocationId);
+
+                    stockErrors.Add($"• {orderItem.ProductName}: Not available at this location");
+                    continue; // Check other items instead of returning
+                }
+
+                int availableQuantity = inventory.AvailableStock;
+
+                if (availableQuantity < orderItem.Quantity)
+                {
+                    _logger.LogWarning(
+                        "Insufficient stock for product {ProductId} {ProductName}. Available: {Available}, Requested: {Requested}",
+                        orderItem.ProductId,
+                        orderItem.ProductName,
+                        availableQuantity,
+                        orderItem.Quantity);
+
+                    stockErrors.Add($". {orderItem.ProductName}: Available {availableQuantity}, Requested {orderItem.Quantity}");
+                }
+            }
+
+            // Show all errors at once if any were found
+            if (stockErrors.Count != 0)
+            {
+                string message = $"Inventory at location '{locationName}' has insufficient stock:\n\n" +
+                                 string.Join("\n", stockErrors) +
+                                 "\n\nPlease adjust quantities or select a different location.";
+
+                _dialogService.ShowWarning(message, "Insufficient Stock");
+                return false;
+            }
+
+            _logger.LogInformation("Stock validation passed for location {LocationId}", Input.LocationId);
+            return true;
+        }
+
+        private async Task ShowFulfillmentModalAsync()
+        {
+            await _orderFulfillmentHelper.HandleFulfillmentFlowAsync(
+                _orderId,
+                _orderNumber,
+                OrderType,
+                _originalStatus,
+                RevertOrderStatusAsync);
+        }
+
+        private async Task RevertOrderStatusAsync()
+        {
+            try
+            {
+                UpdateOrderDto revertDto = new()
+                {
+                    OrderId = _orderId,
+                    Status = _originalStatus,
+                    LocationId = Input.LocationId,
+                    DeliveryDate = Input.DeliveryDate,
+                    Notes = Input.Notes
+                };
+
+                await _orderService.UpdateOrderAsync(revertDto);
+                _logger.LogInformation("Reverted order {OrderId} status to {Status}", _orderId, _originalStatus);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reverting order status");
             }
         }
 
@@ -422,6 +572,8 @@ namespace Storix.Core.ViewModels.Orders
             DatabaseResult<OrderDto> result = await _orderCoordinatorService.UpdateOrderWithItemsAsync(
                 updateDto,
                 orderItemDtos);
+
+            // DatabaseResult<OrderDto> result = await _orderService.UpdateOrderAsync(updateDto);
 
             if (!result.IsSuccess)
             {
@@ -474,6 +626,72 @@ namespace Storix.Core.ViewModels.Orders
                 OrderItems.Remove(item);
             }
         }
+
+        // private async Task ExecuteCompleteFulfillmentAsync()
+        // {
+        //     if (SelectedLocationId <= 0)
+        //     {
+        //         _logger.LogWarning("No location selected for fulfillment");
+        //         return;
+        //     }
+        //
+        //     IsLoading = true;
+        //
+        //     try
+        //     {
+        //         DatabaseResult result;
+        //
+        //         if (OrderType == OrderType.Purchase)
+        //         {
+        //             result = await _orderFulfillmentService.FulfillPurchaseOrderAsync(
+        //                 _orderId,
+        //                 SelectedLocationId,
+        //                 CurrentUserId);
+        //         }
+        //         else // Sales Order
+        //         {
+        //             result = await _orderFulfillmentService.FulfillSalesOrderAsync(
+        //                 _orderId,
+        //                 SelectedLocationId,
+        //                 CurrentUserId);
+        //         }
+        //
+        //         if (result.IsSuccess)
+        //         {
+        //             _logger.LogInformation("Successfully fulfilled order {OrderId}", _orderId);
+        //
+        //             // Update order status to Completed
+        //             await UpdateOrderStatusToCompletedAsync();
+        //
+        //             _modalNavigationControl.Close();
+        //         }
+        //         else
+        //         {
+        //             _logger.LogError("Failed to fulfill order: {ErrorMessage}", result.ErrorMessage);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error completing fulfillment");
+        //     }
+        //     finally
+        //     {
+        //         IsLoading = false;
+        //     }
+        // }
+
+        // private async Task UpdateOrderStatusToCompletedAsync()
+        // {
+        //     UpdateOrderDto completedDto = new()
+        //     {
+        //         OrderId = _orderId,
+        //         Status = OrderStatus.Completed,
+        //         DeliveryDate = DateTime.Now,
+        //         Notes = Input.Notes
+        //     };
+        //
+        //     await _orderService.UpdateOrderAsync(completedDto);
+        // }
 
         protected void CalculateTotalAmount()
         {

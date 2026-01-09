@@ -113,10 +113,17 @@
                                    Foreground="{DynamicResource PrimaryTextColor}"
                                    Text="📂 Category Information" />
 
-                        <!--  Category Name  -->
-                        <resources:CustomTextBox Data="{Binding Input.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                 Description="Category Name *"
-                                                 Placeholder="e.g., Electronics, Furniture, Office Supplies" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="270" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Category Name  -->
+                            <resources:CustomTextBox Data="{Binding Input.Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Description="Category Name *"
+                                                     Placeholder="e.g., Electronics, Furniture, Office Supplies" />
+                        </Grid>
 
                         <!--  Parent Category  -->
                         <StackPanel Margin="20,10">

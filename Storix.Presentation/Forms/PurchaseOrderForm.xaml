@@ -171,6 +171,31 @@
                             </StackPanel>
                         </Grid>
 
+                        <Grid Margin="0,10,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Location Selection  -->
+                            <StackPanel Grid.Column="0" Margin="20,10">
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                           Text="Location *" />
+                                <ComboBox DisplayMemberPath="Name"
+                                          ItemsSource="{Binding Input.Locations}"
+                                          SelectedValue="{Binding Input.LocationId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="LocationId"
+                                          Style="{StaticResource ComboBoxStyle}">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="Padding" Value="10,8" />
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                            </StackPanel>
+                        </Grid>
+
                         <!--  Order Status (Only in Edit Mode)  -->
                         <StackPanel Margin="20,10" Visibility="{Binding IsEditMode, Converter={StaticResource ToVisibilityConverter}}">
                             <TextBlock FontSize="12"
