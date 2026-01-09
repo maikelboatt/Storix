@@ -50,6 +50,7 @@ namespace Storix.Application.Services.Orders
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             int skip = 0,
             int take = 100 )
         {
@@ -64,6 +65,7 @@ namespace Storix.Application.Services.Orders
                 status,
                 supplierId,
                 customerId,
+                locationId,
                 skip,
                 take);
         }
@@ -92,6 +94,114 @@ namespace Storix.Application.Services.Orders
             return orderStore.GetByCustomer(customerId);
         }
 
+        public IEnumerable<OrderDto> GetOrdersByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached orders for Location={LocationId}", locationId);
+            return orderStore.GetByLocation(locationId);
+        }
+
+        public List<SalesOrderListDto> GetSalesOrderListByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached sales order list for Location={LocationId}", locationId);
+            return orderStore.GetSalesOrderListByLocation(locationId);
+        }
+
+        public List<PurchaseOrderListDto> GetPurchaseOrderListByCustomerInCache( int customerId )
+        {
+            logger.LogInformation("Retrieving cached purchase order list for Customer={CustomerId}", customerId);
+            return orderStore.GetPurchaseOrderListByCustomer(customerId);
+        }
+
+        public List<PurchaseOrderListDto> GetPurchaseOrderListByUserInCache( int userId )
+        {
+            logger.LogInformation("Retrieving cached purchase order list for User={UserId}", userId);
+            return orderStore.GetPurchaseOrderListByUser(userId);
+        }
+
+        public List<PurchaseOrderListDto> GetPurchaseOrderListByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached purchase order list for Location={LocationId}", locationId);
+            return orderStore.GetPurchaseOrderListByLocation(locationId);
+        }
+
+        public IEnumerable<OrderDto> GetOrderListBySupplierInCache( int supplierId )
+        {
+            logger.LogInformation("Retrieving cached orders for Supplier={SupplierId}", supplierId);
+            return orderStore.GetBySupplier(supplierId);
+        }
+
+        public IEnumerable<OrderDto> GetOrderListByCustomerInCache( int customerId )
+        {
+            logger.LogInformation("Retrieving cached orders for Customer={CustomerId}", customerId);
+            return orderStore.GetByCustomer(customerId);
+        }
+
+        public IEnumerable<OrderDto> GetOrderListLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached orders for Location={LocationId}", locationId);
+            return orderStore.GetByLocation(locationId);
+        }
+
+        public string GetSupplierNameInCache( int supplierId )
+        {
+            logger.LogInformation("Retrieving cached supplier name for Supplier={SupplierId}", supplierId);
+            return orderStore.GetSupplierName(supplierId);
+        }
+
+        public string GetCustomerNameInCache( int customerId )
+        {
+            logger.LogInformation("Retrieving cached customer name for Customer={CustomerId}", customerId);
+            return orderStore.GetCustomerName(customerId);
+        }
+
+        public string GetLocationNameInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached location name for Location={LocationId}", locationId);
+            return orderStore.GetLocationName(locationId);
+        }
+
+        public IEnumerable<OrderDto> GetOrdersByLocationAndStatusInCache( int locationId, OrderStatus orderStatus )
+        {
+            logger.LogInformation("Retrieving cached orders for Location={LocationId} with Status={Status}", locationId, orderStatus);
+            return orderStore.GetByLocationAndStatus(locationId, orderStatus);
+        }
+
+        public IEnumerable<OrderDto> GetOrdersByLocationAndTypeInCache( int locationId, OrderType orderType )
+        {
+            logger.LogInformation("Retrieving cached orders for Location={LocationId} with Type={Type}", locationId, orderType);
+            return orderStore.GetByLocationAndType(locationId, orderType);
+        }
+
+        public IEnumerable<OrderDto> GetActiveOrderByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached active orders for Location={LocationId}.", locationId);
+            return orderStore.GetActiveOrdersByLocation(locationId);
+        }
+
+        public IEnumerable<OrderDto> GetSalesOrdersByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached sales orders for Location={LocationId}", locationId);
+            return orderStore.GetSalesOrdersByLocation(locationId);
+        }
+
+        public IEnumerable<OrderDto> GetPurchaseOrdersByLocationInCache( int locationId )
+        {
+            logger.LogInformation("Retrieving cached purchase orders for Location={LocationId}", locationId);
+            return orderStore.GetPurchaseOrdersByLocation(locationId);
+        }
+
+        public List<SalesOrderListDto> GetSalesOrderListByCustomerInCache( int customerId )
+        {
+            logger.LogInformation("Retrieving cached sales order list for Customer={CustomerId}", customerId);
+            return orderStore.GetSalesOrderListByCustomer(customerId);
+        }
+
+        public List<SalesOrderListDto> GetSalesOrderListByUserInCache( int userId )
+        {
+            logger.LogInformation("Retrieving cached sales order list for User={UserId}", userId);
+            return orderStore.GetSalesOrderListByUser(userId);
+        }
+
         public IEnumerable<OrderDto> GetOverdueOrdersInCache()
         {
             logger.LogInformation("Retrieving cached overdue orders");
@@ -113,6 +223,12 @@ namespace Storix.Application.Services.Orders
         public IEnumerable<OrderDto> GetCompletedOrdersInCache() => orderStore.GetCompletedOrders();
 
         public IEnumerable<OrderDto> GetCancelledOrdersInCache() => orderStore.GetCancelledOrders();
+
+        public decimal GetTotalRevenueByLocationAsync( int locationId )
+        {
+            logger.LogInformation("Calculating total revenue for Location={LocationId}", locationId);
+            return orderStore.GetTotalRevenueByLocation(locationId);
+        }
 
         public bool OrderExistsInCache( int orderId ) => orderStore.Exists(orderId);
 

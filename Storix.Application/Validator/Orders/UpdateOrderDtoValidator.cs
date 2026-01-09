@@ -18,6 +18,11 @@ namespace Storix.Application.Validator.Orders
                 .IsInEnum()
                 .WithMessage("Invalid order status");
 
+            RuleFor(o => o.LocationId)
+                .GreaterThan(0)
+                .WithMessage("Valid location ID is required");
+
+
             RuleFor(o => o.DeliveryDate)
                 .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
                 .WithMessage("Delivery date cannot be in the past")

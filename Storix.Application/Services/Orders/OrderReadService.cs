@@ -17,7 +17,7 @@ using Storix.Domain.Models;
 namespace Storix.Application.Services.Orders
 {
     /// <summary>
-    ///     Service responsible for order read operations
+    /// Service responsible for order read operations
     /// </summary>
     public class OrderReadService(
         IOrderRepository orderRepository,
@@ -26,6 +26,8 @@ namespace Storix.Application.Services.Orders
         IDatabaseErrorHandlerService databaseErrorHandlerService,
         ILogger<OrderReadService> logger ):IOrderReadService
     {
+        #region Basic Read Operations
+
         public OrderDto? GetOrderById( int orderId )
         {
             if (orderId <= 0)
@@ -35,14 +37,15 @@ namespace Storix.Application.Services.Orders
             }
 
             logger.LogInformation("Retrieving order with ID {OrderId} from store", orderId);
-
             return orderStore.GetById(orderId);
         }
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetAllOrdersAsync()
         {
             DatabaseResult<IEnumerable<Order>> result =
-                await databaseErrorHandlerService.HandleDatabaseOperationAsync(orderRepository.GetAllAsync, "Retrieving all orders");
+                await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                    orderRepository.GetAllAsync,
+                    "Retrieving all orders");
 
             if (result is { IsSuccess: true, Value: not null })
             {
@@ -56,11 +59,15 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        #endregion
+
+        #region Query by Type and Status
+
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByTypeAsync( OrderType type )
         {
             DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
                 () => orderRepository.GetByTypeAsync(type),
-                "$Retrieving orders by type {type}");
+                $"Retrieving orders by type {type}");
 
             if (result is { IsSuccess: true, Value: not null })
             {
@@ -72,6 +79,26 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByStatusAsync( OrderStatus status )
+        {
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByStatusAsync(status),
+                $"Retrieving orders by status {status}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation("Successfully retrieved {OrderCount} {Status} orders", result.Value.Count(), status);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders by status: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        #endregion
+
+        #region Sales and Purchase Order Lists
+
         public async Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrderListAsync()
         {
             DatabaseResult<IEnumerable<OrderDto>> result = await GetOrdersByTypeAsync(OrderType.Sale);
@@ -82,7 +109,6 @@ namespace Storix.Application.Services.Orders
 
                 foreach (OrderDto dto in result.Value)
                 {
-                    // Await the async call to get total amount
                     DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
                     decimal totalAmount = totalResult.IsSuccess
                         ? totalResult.Value
@@ -93,6 +119,7 @@ namespace Storix.Application.Services.Orders
                         {
                             OrderId = dto.OrderId,
                             CustomerName = orderStore.GetCustomerName(dto.CustomerId ?? 0),
+                            LocationName = orderStore.GetLocationName(dto.LocationId),
                             OrderDate = dto.OrderDate,
                             Status = dto.Status,
                             TotalAmount = totalAmount,
@@ -103,11 +130,7 @@ namespace Storix.Application.Services.Orders
                 }
 
                 orderStore.InitializeSalesOrderList(salesOrderListDtos);
-
-                logger.LogInformation(
-                    "Successfully mapped {SalesOrderCount} sales orders to SalesOrderListDto",
-                    salesOrderListDtos.Count);
-
+                logger.LogInformation("Successfully mapped {SalesOrderCount} sales orders to SalesOrderListDto", salesOrderListDtos.Count);
                 return DatabaseResult<IEnumerable<SalesOrderListDto>>.Success(salesOrderListDtos);
             }
 
@@ -125,7 +148,6 @@ namespace Storix.Application.Services.Orders
 
                 foreach (OrderDto dto in result.Value)
                 {
-                    // Await the async call to get total amount
                     DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
                     decimal totalAmount = totalResult.IsSuccess
                         ? totalResult.Value
@@ -136,6 +158,7 @@ namespace Storix.Application.Services.Orders
                         {
                             OrderId = dto.OrderId,
                             SupplierName = orderStore.GetSupplierName(dto.SupplierId ?? 0),
+                            LocationName = orderStore.GetLocationName(dto.LocationId),
                             OrderDate = dto.OrderDate,
                             Status = dto.Status,
                             TotalAmount = totalAmount,
@@ -146,33 +169,17 @@ namespace Storix.Application.Services.Orders
                 }
 
                 orderStore.InitializePurchaseOrderList(purchaseOrderListDtos);
-
-                logger.LogInformation(
-                    "Successfully mapped {SalesOrderCount} sales orders to PurchaseOrderListDto",
-                    purchaseOrderListDtos.Count);
-
+                logger.LogInformation("Successfully mapped {PurchaseOrderCount} purchase orders to PurchaseOrderListDto", purchaseOrderListDtos.Count);
                 return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Success(purchaseOrderListDtos);
             }
 
-            logger.LogWarning("Failed to retrieve sales orders for list: {ErrorMessage}", result.ErrorMessage);
+            logger.LogWarning("Failed to retrieve purchase orders for list: {ErrorMessage}", result.ErrorMessage);
             return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByStatusAsync( OrderStatus status )
-        {
-            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
-                () => orderRepository.GetByStatusAsync(status),
-                "$Retrieving orders by status {status}");
+        #endregion
 
-            if (result is { IsSuccess: true, Value: not null })
-            {
-                logger.LogInformation("Successfully retrieved {OrderCount} {Status} orders", result.Value.Count(), status);
-                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
-            }
-
-            logger.LogWarning("Failed to retrieve orders by status: {ErrorMessage}", result.ErrorMessage);
-            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
-        }
+        #region Query by Supplier, Customer, and Date
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersBySupplierAsync( int supplierId )
         {
@@ -190,10 +197,7 @@ namespace Storix.Application.Services.Orders
 
             if (result.IsSuccess && result.Value != null)
             {
-                logger.LogInformation(
-                    "Successfully retrieved {OrderCount} orders for supplier {SupplierId}",
-                    result.Value.Count(),
-                    supplierId);
+                logger.LogInformation("Successfully retrieved {OrderCount} orders for supplier {SupplierId}", result.Value.Count(), supplierId);
                 return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
             }
 
@@ -217,10 +221,7 @@ namespace Storix.Application.Services.Orders
 
             if (result is { IsSuccess: true, Value: not null })
             {
-                logger.LogInformation(
-                    "Successfully retrieved {OrderCount} orders for customer {CustomerId}",
-                    result.Value.Count(),
-                    customerId);
+                logger.LogInformation("Successfully retrieved {OrderCount} orders for customer {CustomerId}", result.Value.Count(), customerId);
                 return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
             }
 
@@ -244,6 +245,303 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        #endregion
+
+        #region ✅ NEW: Location-Based Queries
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByLocationAsync(locationId),
+                $"Retrieving orders for location {locationId}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation("Successfully retrieved {OrderCount} orders for location {LocationId}", result.Value.Count(), locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders for location: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndStatusAsync( int locationId, OrderStatus status )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByLocationIdAndStatusAsync(locationId, status),
+                $"Retrieving {status} orders for location {locationId}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} {Status} orders for location {LocationId}",
+                    result.Value.Count(),
+                    status,
+                    locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders for location and status: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndTypeAsync( int locationId, OrderType type )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByLocationIdAndTypeAsync(locationId, type),
+                $"Retrieving {type} orders for location {locationId}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} {Type} orders for location {LocationId}",
+                    result.Value.Count(),
+                    type,
+                    locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders for location and type: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetActiveOrdersByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetActiveOrdersByLocationAsync(locationId),
+                $"Retrieving active orders for location {locationId}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} active orders for location {LocationId}",
+                    result.Value.Count(),
+                    locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve active orders for location: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndDateRangeAsync(
+            int locationId,
+            DateTime startDate,
+            DateTime endDate )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByLocationAndDateRangeAsync(locationId, startDate, endDate),
+                $"Retrieving orders for location {locationId} from {startDate:d} to {endDate:d}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} orders for location {LocationId} in date range",
+                    result.Value.Count(),
+                    locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders for location and date range: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOverdueOrdersByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetOverdueOrdersByLocationAsync(locationId),
+                $"Retrieving overdue orders for location {locationId}");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} overdue orders for location {LocationId}",
+                    result.Value.Count(),
+                    locationId);
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve overdue orders for location: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrdersByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<SalesOrderListDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<OrderDto>> ordersResult = await GetOrdersByLocationAndTypeAsync(locationId, OrderType.Sale);
+
+            if (ordersResult is { IsSuccess: true, Value: not null })
+            {
+                List<SalesOrderListDto> salesOrderListDtos = [];
+
+                foreach (OrderDto dto in ordersResult.Value)
+                {
+                    DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
+                    decimal totalAmount = totalResult.IsSuccess
+                        ? totalResult.Value
+                        : 0m;
+
+                    salesOrderListDtos.Add(
+                        new SalesOrderListDto
+                        {
+                            OrderId = dto.OrderId,
+                            CustomerName = orderStore.GetCustomerName(dto.CustomerId ?? 0),
+                            LocationName = orderStore.GetLocationName(dto.LocationId),
+                            OrderDate = dto.OrderDate,
+                            Status = dto.Status,
+                            TotalAmount = totalAmount,
+                            DeliveryDate = dto.DeliveryDate,
+                            Notes = dto.Notes,
+                            CreatedBy = dto.CreatedBy
+                        });
+                }
+
+                logger.LogInformation(
+                    "Successfully mapped {SalesOrderCount} sales orders for location {LocationId}",
+                    salesOrderListDtos.Count,
+                    locationId);
+                return DatabaseResult<IEnumerable<SalesOrderListDto>>.Success(salesOrderListDtos);
+            }
+
+            logger.LogWarning("Failed to retrieve sales orders for location: {ErrorMessage}", ordersResult.ErrorMessage);
+            return DatabaseResult<IEnumerable<SalesOrderListDto>>.Failure(ordersResult.ErrorMessage!, ordersResult.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<PurchaseOrderListDto>>> GetPurchaseOrdersByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<OrderDto>> ordersResult = await GetOrdersByLocationAndTypeAsync(locationId, OrderType.Purchase);
+
+            if (ordersResult is { IsSuccess: true, Value: not null })
+            {
+                List<PurchaseOrderListDto> purchaseOrderListDtos = [];
+
+                foreach (OrderDto dto in ordersResult.Value)
+                {
+                    DatabaseResult<decimal> totalResult = await orderItemManager.GetOrderTotalValueAsync(dto.OrderId);
+                    decimal totalAmount = totalResult.IsSuccess
+                        ? totalResult.Value
+                        : 0m;
+
+                    purchaseOrderListDtos.Add(
+                        new PurchaseOrderListDto
+                        {
+                            OrderId = dto.OrderId,
+                            SupplierName = orderStore.GetSupplierName(dto.SupplierId ?? 0),
+                            LocationName = orderStore.GetLocationName(dto.LocationId),
+                            OrderDate = dto.OrderDate,
+                            Status = dto.Status,
+                            TotalAmount = totalAmount,
+                            DeliveryDate = dto.DeliveryDate,
+                            Notes = dto.Notes,
+                            CreatedBy = dto.CreatedBy
+                        });
+                }
+
+                logger.LogInformation(
+                    "Successfully mapped {PurchaseOrderCount} purchase orders for location {LocationId}",
+                    purchaseOrderListDtos.Count,
+                    locationId);
+                return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Success(purchaseOrderListDtos);
+            }
+
+            logger.LogWarning("Failed to retrieve purchase orders for location: {ErrorMessage}", ordersResult.ErrorMessage);
+            return DatabaseResult<IEnumerable<PurchaseOrderListDto>>.Failure(ordersResult.ErrorMessage!, ordersResult.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationIdsAsync( IEnumerable<int> locationIds )
+        {
+            if (locationIds == null || !locationIds.Any())
+            {
+                logger.LogWarning("No location IDs provided");
+                return DatabaseResult<IEnumerable<OrderDto>>.Failure(
+                    "At least one location ID must be provided.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetByLocationIdsAsync(locationIds),
+                $"Retrieving orders for {locationIds.Count()} locations");
+
+            if (result is { IsSuccess: true, Value: not null })
+            {
+                logger.LogInformation(
+                    "Successfully retrieved {OrderCount} orders for {LocationCount} locations",
+                    result.Value.Count(),
+                    locationIds.Count());
+                return DatabaseResult<IEnumerable<OrderDto>>.Success(result.Value.ToDto());
+            }
+
+            logger.LogWarning("Failed to retrieve orders for multiple locations: {ErrorMessage}", result.ErrorMessage);
+            return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        #endregion
+
+        #region Overdue Orders
+
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOverdueOrdersAsync()
         {
             DatabaseResult<IEnumerable<Order>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -259,6 +557,10 @@ namespace Storix.Application.Services.Orders
             logger.LogWarning("Failed to retrieve overdue orders: {ErrorMessage}", result.ErrorMessage);
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
+
+        #endregion
+
+        #region Query by Creator
 
         public async Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrderByCreatedByAsync( int createdBy )
         {
@@ -282,11 +584,17 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
-        public async Task<DatabaseResult<IEnumerable<OrderDto>>> SearchOrdersAsync( string? searchTerm = null,
+        #endregion
+
+        #region Search and Pagination
+
+        public async Task<DatabaseResult<IEnumerable<OrderDto>>> SearchOrdersAsync(
+            string? searchTerm = null,
             OrderType? type = null,
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             DateTime? startDate = null,
             DateTime? endDate = null )
         {
@@ -297,6 +605,7 @@ namespace Storix.Application.Services.Orders
                     status,
                     supplierId,
                     customerId,
+                    locationId,
                     startDate,
                     endDate),
                 "Searching orders");
@@ -336,6 +645,10 @@ namespace Storix.Application.Services.Orders
             return DatabaseResult<IEnumerable<OrderDto>>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        #endregion
+
+        #region Count Operations
+
         public async Task<DatabaseResult<int>> GetTotalOrderCountsAsync()
         {
             DatabaseResult<int> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -369,6 +682,40 @@ namespace Storix.Application.Services.Orders
                 : DatabaseResult<int>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
 
+        public async Task<DatabaseResult<int>> GetOrderCountByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<int>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<int> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetOrderCountByLocationAsync(locationId),
+                $"Getting order count for location {locationId}");
+
+            return result.IsSuccess
+                ? DatabaseResult<int>.Success(result.Value)
+                : DatabaseResult<int>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<Dictionary<int, int>>> GetOrderCountsByLocationAsync()
+        {
+            DatabaseResult<Dictionary<int, int>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                orderRepository.GetOrderCountsByLocationAsync,
+                "Getting order counts for all locations");
+
+            return result.IsSuccess
+                ? DatabaseResult<Dictionary<int, int>>.Success(result.Value)
+                : DatabaseResult<Dictionary<int, int>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        #endregion
+
+        #region Statistics
+
         public async Task<DatabaseResult<OrderStatisticsDto?>> GetOrderStatisticsAsync( DateTime startDate, DateTime endDate )
         {
             DatabaseResult<OrderStatisticsDto?> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
@@ -379,5 +726,45 @@ namespace Storix.Application.Services.Orders
                 ? DatabaseResult<OrderStatisticsDto?>.Success(result.Value)
                 : DatabaseResult<OrderStatisticsDto?>.Failure(result.ErrorMessage!, result.ErrorCode);
         }
+
+        public async Task<DatabaseResult<decimal>> GetTotalRevenueByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<decimal>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<decimal> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetTotalRevenueByLocationAsync(locationId),
+                $"Getting total revenue for location {locationId}");
+
+            return result.IsSuccess
+                ? DatabaseResult<decimal>.Success(result.Value)
+                : DatabaseResult<decimal>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        public async Task<DatabaseResult<Dictionary<OrderStatus, int>>> GetOrderStatusCountByLocationAsync( int locationId )
+        {
+            if (locationId <= 0)
+            {
+                logger.LogWarning("Invalid location ID {LocationId} provided", locationId);
+                return DatabaseResult<Dictionary<OrderStatus, int>>.Failure(
+                    "Location ID must be a positive integer.",
+                    DatabaseErrorCode.InvalidInput);
+            }
+
+            DatabaseResult<Dictionary<OrderStatus, int>> result = await databaseErrorHandlerService.HandleDatabaseOperationAsync(
+                () => orderRepository.GetOrderStatusCountByLocationAsync(locationId),
+                $"Getting order status distribution for location {locationId}");
+
+            return result.IsSuccess
+                ? DatabaseResult<Dictionary<OrderStatus, int>>.Success(result.Value)
+                : DatabaseResult<Dictionary<OrderStatus, int>>.Failure(result.ErrorMessage!, result.ErrorCode);
+        }
+
+        #endregion
     }
 }

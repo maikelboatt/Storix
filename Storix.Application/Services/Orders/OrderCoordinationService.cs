@@ -275,6 +275,7 @@ namespace Storix.Application.Services.Orders
                 const string updateSql = @"
                     UPDATE [Order]
                     SET Status = @Status,
+                        LocationId = @LocationId,
                         DeliveryDate = @DeliveryDate,
                         Notes = @Notes
                     WHERE OrderId = @OrderId";
@@ -285,6 +286,7 @@ namespace Storix.Application.Services.Orders
                     {
                         updateOrderDto.OrderId,
                         updateOrderDto.Status,
+                        updateOrderDto.LocationId,
                         updateOrderDto.DeliveryDate,
                         updateOrderDto.Notes
                     },
@@ -294,6 +296,7 @@ namespace Storix.Application.Services.Orders
                 Order updatedOrder = existingOrder with
                 {
                     Status = updateOrderDto.Status,
+                    LocationId = (int)updateOrderDto.LocationId!,
                     DeliveryDate = updateOrderDto.DeliveryDate,
                     Notes = updateOrderDto.Notes
                 };

@@ -82,6 +82,43 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
+        /// Checks if a location has any orders.
+        /// </summary>
+        public async Task<bool> LocationHasOrdersAsync( int locationId, bool activeOnly = false )
+        {
+            // language=tsql
+            string sql = activeOnly
+                ? @"SELECT COUNT(1) FROM [Order] 
+                    WHERE LocationId = @LocationId 
+                    AND Status IN (@Draft, @Active, @Fulfilled)"
+                : "SELECT COUNT(1) FROM [Order] WHERE LocationId = @LocationId";
+
+            return await sqlDataAccess.ExecuteScalarAsync<bool>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active,
+                    Fulfilled = (int)OrderStatus.Fulfilled
+                });
+        }
+
+        /// <summary>
+        /// Checks if a location can be deleted (no active orders).
+        /// </summary>
+        public async Task<bool> CanDeleteLocationAsync( int locationId ) => !await LocationHasOrdersAsync(locationId, true);
+
+        /// <summary>
+        ///     Checks if an order can be reverted to draft (only active orders can be reverted to draft).
+        /// </summary>
+        public async Task<bool> CanBeRevertedToDraft( int orderId )
+        {
+            Order? order = await GetByIdAsync(orderId);
+            return order is { Status: OrderStatus.Active };
+        }
+
+        /// <summary>
         ///     Checks if an order can be activated (only Draft orders can be activated).
         /// </summary>
         public async Task<bool> CanBeActivated( int orderId )
@@ -159,6 +196,36 @@ namespace Storix.DataAccess.Repositories
                 {
                     Status = (int)status
                 });
+        }
+
+        /// <summary>
+        /// Gets the count of orders by location.
+        /// </summary>
+        public async Task<int> GetOrderCountByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = "SELECT COUNT(*) FROM [Order] WHERE LocationId = @LocationId";
+            return await sqlDataAccess.ExecuteScalarAsync<int>(
+                sql,
+                new
+                {
+                    LocationId = locationId
+                });
+        }
+
+        /// <summary>
+        ///  Gets order counts for all locations.
+        /// </summary>
+        public async Task<Dictionary<int, int>> GetOrderCountsByLocationAsync()
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT LocationId, COUNT(*) AS OrderCount
+                FROM [Order]
+                GROUP BY LocationId";
+
+            IEnumerable<(int LocationId, int OrderCount)> results = await sqlDataAccess.QueryAsync<(int LocationId, int OrderCount)>(sql);
+            return results.ToDictionary(x => x.LocationId, x => x.OrderCount);
         }
 
         #endregion
@@ -263,6 +330,112 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
+        ///     Gets sale orders by location ID.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE Location = @LocationId 
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    Locationid = locationId
+                });
+        }
+
+        /// <summary>
+        /// Gets orders by location and status.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetByLocationIdAndStatusAsync( int locationId, OrderStatus status )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId = @LocationId 
+                AND Status = @Status
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    Status = (int)status
+                });
+        }
+
+        /// <summary>
+        /// Gets orders by location and type.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetByLocationIdAndTypeAsync( int locationId, OrderType type )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId = @LocationId 
+                AND Type = @Type
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    Type = (int)type
+                });
+        }
+
+        /// <summary>
+        /// Gets active orders by location (Draft, Active, Fulfilled).
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetActiveOrdersByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId = @LocationId 
+                AND Status IN (@Draft, @Active, @Fulfilled)
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active,
+                    Fulfilled = (int)OrderStatus.Fulfilled
+                });
+        }
+
+        /// <summary>
+        /// Gets orders by multiple location IDs.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetByLocationIdsAsync( IEnumerable<int> locationIds )
+        {
+            if (!locationIds.Any())
+                return Enumerable.Empty<Order>();
+
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId IN @LocationIds
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationIds = locationIds
+                });
+        }
+
+        /// <summary>
         ///     Gets orders by date range.
         /// </summary>
         public async Task<IEnumerable<Order>> GetByDateRangeAsync( DateTime startDate, DateTime endDate )
@@ -283,6 +456,32 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
+        /// Gets orders by location and date range.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetByLocationAndDateRangeAsync(
+            int locationId,
+            DateTime startDate,
+            DateTime endDate )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId = @LocationId
+                AND OrderDate BETWEEN @StartDate AND @EndDate 
+                ORDER BY OrderDate DESC";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    StartDate = startDate,
+                    EndDate = endDate
+                });
+        }
+
+
+        /// <summary>
         ///     Gets overdue orders (DeliveryDate passed but status is still Draft or Active).
         /// </summary>
         public async Task<IEnumerable<Order>> GetOverdueOrdersAsync()
@@ -298,6 +497,30 @@ namespace Storix.DataAccess.Repositories
                 sql,
                 new
                 {
+                    CurrentDate = DateTime.UtcNow.Date,
+                    Draft = (int)OrderStatus.Draft,
+                    Active = (int)OrderStatus.Active
+                });
+        }
+
+        /// <summary>
+        /// Gets overdue orders by location.
+        /// </summary>
+        public async Task<IEnumerable<Order>> GetOverdueOrdersByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT * FROM [Order] 
+                WHERE LocationId = @LocationId
+                AND DeliveryDate < @CurrentDate 
+                AND Status IN (@Draft, @Active)
+                ORDER BY DeliveryDate";
+
+            return await sqlDataAccess.QueryAsync<Order>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
                     CurrentDate = DateTime.UtcNow.Date,
                     Draft = (int)OrderStatus.Draft,
                     Active = (int)OrderStatus.Active
@@ -356,6 +579,7 @@ namespace Storix.DataAccess.Repositories
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             DateTime? startDate = null,
             DateTime? endDate = null )
         {
@@ -391,6 +615,12 @@ namespace Storix.DataAccess.Repositories
             {
                 sql.Append(" AND CustomerId = @CustomerId");
                 parameters.Add("CustomerId", customerId.Value);
+            }
+
+            if (locationId > 0)
+            {
+                sql.Append(" AND LocationId = @LocationId");
+                parameters.Add("LocationId", locationId);
             }
 
             if (startDate.HasValue)
@@ -446,6 +676,51 @@ namespace Storix.DataAccess.Repositories
         }
 
         /// <summary>
+        /// Gets total revenue by location (from completed sale orders).
+        /// </summary>
+        public async Task<decimal> GetTotalRevenueByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT ISNULL(SUM(oi.TotalPrice), 0)
+                FROM [Order] o
+                INNER JOIN OrderItem oi ON o.OrderId = oi.OrderId
+                WHERE o.LocationId = @LocationId
+                AND o.Type = @Sale
+                AND o.Status = @Completed";
+
+            return await sqlDataAccess.ExecuteScalarAsync<decimal>(
+                sql,
+                new
+                {
+                    LocationId = locationId,
+                    Sale = (int)OrderType.Sale,
+                    Completed = (int)OrderStatus.Completed
+                });
+        }
+
+        /// <summary>
+        /// Gets order status distribution by location.
+        /// </summary>
+        public async Task<Dictionary<OrderStatus, int>> GetOrderStatusCountByLocationAsync( int locationId )
+        {
+            // language=tsql
+            const string sql = @"
+                SELECT Status, COUNT(*) AS Count
+                FROM [Order]
+                WHERE LocationId = @LocationId
+                GROUP BY Status";
+
+            IEnumerable<(int Status, int Count)> results = await sqlDataAccess.QueryAsync<(int Status, int Count)>(
+                sql,
+                new
+                {
+                    LocationId = locationId
+                });
+            return results.ToDictionary(x => (OrderStatus)x.Status, x => x.Count);
+        }
+
+        /// <summary>
         ///     Gets the total value of orders by status.
         /// </summary>
         public async Task<decimal> GetTotalValueByStatusAsync( OrderStatus status )
@@ -496,12 +771,12 @@ namespace Storix.DataAccess.Repositories
             // language=tsql
             const string sql = @"
                 INSERT INTO [Order] (
-                    Type, Status, SupplierId, CustomerId, 
-                    OrderDate, DeliveryDate, Notes, CreatedBy
+                    Type, Status, SupplierId, CustomerId, OrderDate,
+                     DeliveryDate, Notes, CreatedBy,LocationId
                 )
                 VALUES (
-                    @Type, @Status, @SupplierId, @CustomerId,
-                    @OrderDate, @DeliveryDate, @Notes, @CreatedBy
+                    @Type, @Status, @SupplierId, @CustomerId,@OrderDate,
+                    @DeliveryDate, @Notes, @CreatedBy,@LocationId
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);";
 
@@ -522,6 +797,7 @@ namespace Storix.DataAccess.Repositories
             const string sql = @"
                 UPDATE [Order] 
                 SET Status = @Status,
+                    LocationId = @LocationId,
                     DeliveryDate = @DeliveryDate,
                     Notes = @Notes
                 WHERE OrderId = @OrderId";
@@ -561,6 +837,82 @@ namespace Storix.DataAccess.Repositories
             {
                 return DatabaseResult.Failure(
                     $"Error updating order status: {ex.Message}",
+                    DatabaseErrorCode.UnexpectedError);
+            }
+        }
+
+        /// <summary>
+        /// ✅ NEW: Transfers an order to a different location.
+        /// </summary>
+        public async Task<DatabaseResult> TransferOrderToLocationAsync( int orderId, int newLocationId )
+        {
+            try
+            {
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order] 
+                    SET LocationId = @NewLocationId,
+                        Notes = ISNULL(Notes, '') + CHAR(13) + CHAR(10) + 
+                                'Transferred to location ID: ' + CAST(@NewLocationId AS VARCHAR(10)) + 
+                                ' on ' + CONVERT(VARCHAR, GETUTCDATE(), 120)
+                    WHERE OrderId = @OrderId
+                    AND Status IN (@Draft, @Active)";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        OrderId = orderId,
+                        NewLocationId = newLocationId,
+                        Draft = (int)OrderStatus.Draft,
+                        Active = (int)OrderStatus.Active
+                    });
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order {orderId} not found or cannot be transferred (must be Draft or Active)",
+                        DatabaseErrorCode.InvalidInput);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure($"Error transferring order: {ex.Message}", DatabaseErrorCode.UnexpectedError);
+            }
+        }
+
+        /// <summary>
+        ///     Reverts an order to draft by setting its status from Active to Draft.
+        /// </summary>
+        public async Task<DatabaseResult> RevertToDraftOrderAsync( int orderId )
+        {
+            try
+            {
+                // language=tsql
+                const string sql = @"
+                    UPDATE [Order]
+                    SET Status = @Draft
+                    WHERE OrderId = @OrderId AND Status = @Active";
+
+                int affectedRows = await sqlDataAccess.ExecuteAsync(
+                    sql,
+                    new
+                    {
+                        OrderId = orderId,
+                        Draft = (int)OrderStatus.Draft,
+                        Active = (int)OrderStatus.Active
+                    }
+                );
+
+                return affectedRows > 0
+                    ? DatabaseResult.Success()
+                    : DatabaseResult.Failure(
+                        $"Order with ID {orderId} not found or is not in Active status",
+                        DatabaseErrorCode.InvalidInput);
+            }
+            catch (Exception ex)
+            {
+                return DatabaseResult.Failure(
+                    $"Error reverting order to draft: {ex.Message}",
                     DatabaseErrorCode.UnexpectedError);
             }
         }
@@ -611,7 +963,7 @@ namespace Storix.DataAccess.Repositories
                 // language=tsql
                 const string sql = @"
                     UPDATE [Order] 
-                    SET Status = @Fulfiled 
+                    SET Status = @Fulfilled 
                     WHERE OrderId = @OrderId AND Status = @Active";
 
                 int affectedRows = await sqlDataAccess.ExecuteAsync(

@@ -7,6 +7,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using MvvmCross.ViewModels;
 using Storix.Application.DTO.Customers;
+using Storix.Application.DTO.Locations;
 using Storix.Application.DTO.Orders;
 using Storix.Application.DTO.Suppliers;
 using Storix.Application.Validator.Orders;
@@ -25,6 +26,7 @@ namespace Storix.Core.InputModel
         private OrderStatus _status = OrderStatus.Draft;
         private int? _supplierId;
         private int? _customerId;
+        private int _locationId;
         private DateTime _orderDate;
         private DateTime? _deliveryDate;
         private string? _notes;
@@ -53,8 +55,9 @@ namespace Storix.Core.InputModel
         }
 
         // Collections for dropdowns
-        public ObservableCollection<CustomerDto> Customers { get; set; } = new();
-        public ObservableCollection<SupplierDto> Suppliers { get; set; } = new();
+        public ObservableCollection<CustomerDto> Customers { get; set; } = [];
+        public ObservableCollection<SupplierDto> Suppliers { get; set; } = [];
+        public ObservableCollection<LocationDto> Locations { get; set; } = [];
 
         // Properties with validation
         public int OrderId
@@ -113,6 +116,18 @@ namespace Storix.Core.InputModel
             set
             {
                 if (SetProperty(ref _customerId, value))
+                {
+                    ValidateProperty(value!);
+                }
+            }
+        }
+
+        public int LocationId
+        {
+            get => _locationId;
+            set
+            {
+                if (SetProperty(ref _locationId, value))
                 {
                     ValidateProperty(value!);
                 }
@@ -178,6 +193,7 @@ namespace Storix.Core.InputModel
             _type = dto.Type;
             _supplierId = dto.SupplierId;
             _customerId = dto.CustomerId;
+            _locationId = dto.LocationId;
             _orderDate = dto.OrderDate;
             _deliveryDate = dto.DeliveryDate;
             _notes = dto.Notes;
@@ -188,6 +204,7 @@ namespace Storix.Core.InputModel
         {
             _orderId = dto.OrderId;
             _status = dto.Status;
+            _locationId = dto.LocationId ?? 0;
             _deliveryDate = dto.DeliveryDate;
             _notes = dto.Notes;
         }
@@ -198,6 +215,7 @@ namespace Storix.Core.InputModel
             Type = _type,
             SupplierId = _supplierId,
             CustomerId = _customerId,
+            LocationId = _locationId,
             OrderDate = _orderDate,
             DeliveryDate = _deliveryDate,
             Notes = _notes,
@@ -208,6 +226,7 @@ namespace Storix.Core.InputModel
         {
             OrderId = _orderId,
             Status = _status,
+            LocationId = _locationId,
             DeliveryDate = _deliveryDate,
             Notes = _notes
         };

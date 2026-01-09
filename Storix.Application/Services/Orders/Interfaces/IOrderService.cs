@@ -26,11 +26,40 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByCustomerAsync( int customerId );
 
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAsync( int locationId );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndStatusAsync( int locationId, OrderStatus status );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndTypeAsync( int locationId, OrderType type );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetActiveOrdersByLocationAsync( int locationId );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationAndDateRangeAsync(
+            int locationId,
+            DateTime startDate,
+            DateTime endDate );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOverdueOrdersByLocationAsync( int locationId );
+
+        Task<DatabaseResult<IEnumerable<SalesOrderListDto>>> GetSalesOrdersByLocationAsync( int locationId );
+
+        Task<DatabaseResult<IEnumerable<PurchaseOrderListDto>>> GetPurchaseOrdersByLocationAsync( int locationId );
+
+        Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByLocationIdsAsync( IEnumerable<int> locationIds );
+
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrdersByDateRangeAsync( DateTime startDate, DateTime endDate );
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOrderByCreatedByAsync( int createdBy );
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> GetOverdueOrdersAsync();
+
+        Task<DatabaseResult<int>> GetOrderCountByLocationAsync( int locationId );
+
+        Task<DatabaseResult<Dictionary<int, int>>> GetOrderCountsByLocationAsync();
+
+        Task<DatabaseResult<decimal>> GetTotalRevenueByLocationAsync( int locationId );
+
+        Task<DatabaseResult<Dictionary<OrderStatus, int>>> GetOrderStatusCountByLocationAsync( int locationId );
 
         Task<DatabaseResult<IEnumerable<OrderDto>>> SearchOrdersAsync(
             string? searchTerm = null,
@@ -38,6 +67,7 @@ namespace Storix.Application.Services.Orders.Interfaces
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             DateTime? startDate = null,
             DateTime? endDate = null );
 
@@ -55,13 +85,17 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         Task<DatabaseResult<OrderDto>> UpdateOrderAsync( UpdateOrderDto updateOrderDto );
 
-        Task<DatabaseResult> ActivateOrderAsync( int orderId );
+        Task<DatabaseResult> TransferOrderToLocationAsync( int orderId, int newLocationId, string? reason = null );
 
-        Task<DatabaseResult> FulfillOrderAsync( int orderId );
+        Task<DatabaseResult> RevertToDraftOrderAsync( int orderId, OrderStatus originalStatus );
 
-        Task<DatabaseResult> CompleteOrderAsync( int orderId );
+        Task<DatabaseResult> ActivateOrderAsync( int orderId, OrderStatus originalStatus );
 
-        Task<DatabaseResult> CancelOrderAsync( int orderId, string? reason = null );
+        Task<DatabaseResult> FulfillOrderAsync( int orderId, OrderStatus originalStatus );
+
+        Task<DatabaseResult> CompleteOrderAsync( int orderId, OrderStatus originalStatus );
+
+        Task<DatabaseResult> CancelOrderAsync( int orderId, OrderStatus originalStatus, string? reason = null );
 
         Task<DatabaseResult> DeleteOrderAsync( int orderId );
 
@@ -86,6 +120,7 @@ namespace Storix.Application.Services.Orders.Interfaces
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             int skip = 0,
             int take = 100 );
 
@@ -123,9 +158,28 @@ namespace Storix.Application.Services.Orders.Interfaces
 
         bool CustomerHasOrdersInCache( int customerId, bool activeOnly = false );
 
-        /// <summary>
-        /// Refreshes the order cache from database asynchronously.
-        /// </summary>
+        IEnumerable<OrderDto> GetOrdersByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetOrdersByLocationAndStatusInCache( int locationId, OrderStatus orderStatus );
+
+        IEnumerable<OrderDto> GetOrdersByLocationAndTypeInCache( int locationId, OrderType orderType );
+
+        IEnumerable<OrderDto> GetActiveOrderByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetSalesOrdersByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetPurchaseOrdersByLocationInCache( int locationId );
+
+        Task<DatabaseResult<bool>> LocationHasOrdersAsync( int locationId, bool activeOnly = false );
+
+        Task<DatabaseResult<bool>> CanDeleteLocationAsync( int locationId );
+
+        Task<DatabaseResult> ValidateLocationForOrderAsync( int locationId, OrderType orderType );
+
+        Task<DatabaseResult> ValidateOrderTransferAsync( int orderId, int newLocationId );
+
+        Task<DatabaseResult<bool>> CanTransferOrderToLocationAsync( int orderId, int newLocationId );
+
         void RefreshStoreCache();
     }
 }

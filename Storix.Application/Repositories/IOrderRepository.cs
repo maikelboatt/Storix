@@ -10,33 +10,6 @@ namespace Storix.Application.Repositories
 {
     public interface IOrderRepository
     {
-        Task<IEnumerable<Order>> SearchAsync( string? searchTerm = null,
-            OrderType? type = null,
-            OrderStatus? status = null,
-            int? supplierId = null,
-            int? customerId = null,
-            DateTime? startDate = null,
-            DateTime? endDate = null );
-
-        /// <summary>
-        ///     Permanently deletes an order by ID.
-        ///     WARNING: Orders should typically NOT be deleted. Use status changes instead.
-        ///     This method should only be used for cleaning up test data or by administrators.
-        /// </summary>
-        Task<DatabaseResult> DeleteAsync( int orderId );
-
-        Task<OrderStatisticsDto?> GetOrderStatisticsAsync( DateTime startDate, DateTime endDate );
-
-        /// <summary>
-        ///     Gets the total value of orders by the status.
-        /// </summary>
-        Task<decimal> GetTotalValueByStatusAsync( OrderStatus status );
-
-        /// <summary>
-        ///     Gets the total value of orders by the type.
-        /// </summary>
-        Task<decimal> GetTotalValueByTypeAsync( OrderType type );
-
         /// <summary>
         ///     Check if an order exists by ID.
         /// </summary>
@@ -51,6 +24,21 @@ namespace Storix.Application.Repositories
         ///     Checks if a customer has orders (active or historical).
         /// </summary>
         Task<bool> CustomerHasOrdersAsync( int customerId, bool activeOnly = false );
+
+        /// <summary>
+        /// Checks if a location has any orders.
+        /// </summary>
+        Task<bool> LocationHasOrdersAsync( int locationId, bool activeOnly = false );
+
+        /// <summary>
+        /// Checks if a location can be deleted (no active orders).
+        /// </summary>
+        Task<bool> CanDeleteLocationAsync( int locationId );
+
+        /// <summary>
+        ///     Checks if an order can be reverted to draft (only active orders can be reverted to draft).
+        /// </summary>
+        Task<bool> CanBeRevertedToDraft( int orderId );
 
         /// <summary>
         ///     Checks if an order can be activated (only Draft orders can be activated).
@@ -70,22 +58,15 @@ namespace Storix.Application.Repositories
         /// <summary>
         ///     Checks if an order can be completed (only Active orders can be completed).
         /// </summary>
-        /// <param name="orderId" ></param>
-        /// <returns></returns>
         Task<bool> CanBeCompleted( int orderId );
 
         /// <summary>
-        ///     Gets a paged list of orders.
-        /// </summary>
-        Task<IEnumerable<Order>> GetPagedAsync( int pageNumber, int pageSize );
-
-        /// <summary>
-        ///     Gets the total counts of orders.
+        ///     Gets the total count of orders.
         /// </summary>
         Task<int> GetTotalCountAsync();
 
         /// <summary>
-        ///     Gets the counts of orders by type.
+        ///     Gets the count of orders by type.
         /// </summary>
         Task<int> GetCountByTypeAsync( OrderType type );
 
@@ -95,22 +76,32 @@ namespace Storix.Application.Repositories
         Task<int> GetCountByStatusAsync( OrderStatus status );
 
         /// <summary>
+        /// Gets the count of orders by location.
+        /// </summary>
+        Task<int> GetOrderCountByLocationAsync( int locationId );
+
+        /// <summary>
+        ///  Gets order counts for all locations.
+        /// </summary>
+        Task<Dictionary<int, int>> GetOrderCountsByLocationAsync();
+
+        /// <summary>
         ///     Gets an order by its ID.
         /// </summary>
         Task<Order?> GetByIdAsync( int orderId );
 
         /// <summary>
-        ///     Gets all order.
+        ///     Gets all orders.
         /// </summary>
         Task<IEnumerable<Order>> GetAllAsync();
 
         /// <summary>
-        ///     Gets orders by Type (Purchase or Sale)
+        ///     Gets orders by Type (Purchase or Sale).
         /// </summary>
         Task<IEnumerable<Order>> GetByTypeAsync( OrderType type );
 
         /// <summary>
-        ///     Gets orders by Status (Draft, Active, Completed, Cancelled)
+        ///     Gets orders by Status (Draft, Active, Completed, Cancelled).
         /// </summary>
         Task<IEnumerable<Order>> GetByStatusAsync( OrderStatus status );
 
@@ -125,9 +116,42 @@ namespace Storix.Application.Repositories
         Task<IEnumerable<Order>> GetByCustomerAsync( int customerId );
 
         /// <summary>
+        ///     Gets sale orders by location ID.
+        /// </summary>
+        Task<IEnumerable<Order>> GetByLocationAsync( int locationId );
+
+        /// <summary>
+        /// Gets orders by location and status.
+        /// </summary>
+        Task<IEnumerable<Order>> GetByLocationIdAndStatusAsync( int locationId, OrderStatus status );
+
+        /// <summary>
+        /// Gets orders by location and type.
+        /// </summary>
+        Task<IEnumerable<Order>> GetByLocationIdAndTypeAsync( int locationId, OrderType type );
+
+        /// <summary>
+        /// Gets active orders by location (Draft, Active, Fulfilled).
+        /// </summary>
+        Task<IEnumerable<Order>> GetActiveOrdersByLocationAsync( int locationId );
+
+        /// <summary>
+        /// Gets orders by multiple location IDs.
+        /// </summary>
+        Task<IEnumerable<Order>> GetByLocationIdsAsync( IEnumerable<int> locationIds );
+
+        /// <summary>
         ///     Gets orders by date range.
         /// </summary>
         Task<IEnumerable<Order>> GetByDateRangeAsync( DateTime startDate, DateTime endDate );
+
+        /// <summary>
+        /// Gets orders by location and date range.
+        /// </summary>
+        Task<IEnumerable<Order>> GetByLocationAndDateRangeAsync(
+            int locationId,
+            DateTime startDate,
+            DateTime endDate );
 
         /// <summary>
         ///     Gets overdue orders (DeliveryDate passed but status is still Draft or Active).
@@ -135,14 +159,62 @@ namespace Storix.Application.Repositories
         Task<IEnumerable<Order>> GetOverdueOrdersAsync();
 
         /// <summary>
-        ///     Gets orders by created by a specific user.
+        /// Gets overdue orders by location.
         /// </summary>
-        /// <param name="createdBy" ></param>
-        /// <returns></returns>
+        Task<IEnumerable<Order>> GetOverdueOrdersByLocationAsync( int locationId );
+
+        /// <summary>
+        ///     Gets orders created by a specific user.
+        /// </summary>
         Task<IEnumerable<Order>> GetByCreatedByAsync( int createdBy );
 
         /// <summary>
+        ///     Gets a paged list of orders.
+        ///     Uses SQL Server OFFSET-FETCH syntax.
+        /// </summary>
+        Task<IEnumerable<Order>> GetPagedAsync( int pageNumber, int pageSize );
+
+        /// <summary>
+        ///     Searches orders with multiple optional filters.
+        /// </summary>
+        Task<IEnumerable<Order>> SearchAsync(
+            string? searchTerm = null,
+            OrderType? type = null,
+            OrderStatus? status = null,
+            int? supplierId = null,
+            int? customerId = null,
+            int locationId = 0,
+            DateTime? startDate = null,
+            DateTime? endDate = null );
+
+        /// <summary>
+        ///     Gets order statistics for a date range.
+        /// </summary>
+        Task<OrderStatisticsDto?> GetOrderStatisticsAsync( DateTime startDate, DateTime endDate );
+
+        /// <summary>
+        /// Gets total revenue by location (from completed sale orders).
+        /// </summary>
+        Task<decimal> GetTotalRevenueByLocationAsync( int locationId );
+
+        /// <summary>
+        /// Gets order status distribution by location.
+        /// </summary>
+        Task<Dictionary<OrderStatus, int>> GetOrderStatusCountByLocationAsync( int locationId );
+
+        /// <summary>
+        ///     Gets the total value of orders by status.
+        /// </summary>
+        Task<decimal> GetTotalValueByStatusAsync( OrderStatus status );
+
+        /// <summary>
+        ///     Gets the total value of orders by type.
+        /// </summary>
+        Task<decimal> GetTotalValueByTypeAsync( OrderType type );
+
+        /// <summary>
         ///     Creates a new order and returns it with its generated ID.
+        ///     Uses SQL Server SCOPE_IDENTITY() to retrieve the newly inserted ID.
         /// </summary>
         Task<Order> CreateAsync( Order order );
 
@@ -157,7 +229,17 @@ namespace Storix.Application.Repositories
         Task<DatabaseResult> UpdateStatusAsync( int orderId, OrderStatus status );
 
         /// <summary>
-        ///     Activates an Order by setting its status from Draft to Active.
+        /// ✅ NEW: Transfers an order to a different location.
+        /// </summary>
+        Task<DatabaseResult> TransferOrderToLocationAsync( int orderId, int newLocationId );
+
+        /// <summary>
+        ///     Reverts an order to draft by setting its status from Active to Draft.
+        /// </summary>
+        Task<DatabaseResult> RevertToDraftOrderAsync( int orderId );
+
+        /// <summary>
+        ///     Activates an order by setting its status from Draft to Active.
         /// </summary>
         Task<DatabaseResult> ActivateOrderAsync( int orderId );
 
@@ -167,13 +249,21 @@ namespace Storix.Application.Repositories
         Task<DatabaseResult> FulfillOrderAsync( int orderId );
 
         /// <summary>
-        ///     Complete an order by setting its status to completed.
+        ///     Completes an order by setting its status to Completed.
         /// </summary>
         Task<DatabaseResult> CompleteOrderAsync( int orderId );
 
         /// <summary>
-        ///     Cancels an order by setting its status to cancelled.
+        ///     Cancels an order by setting its status to Cancelled.
+        ///     Uses SQL Server string concatenation with + operator and CHAR(13)+CHAR(10) for newline.
         /// </summary>
         Task<DatabaseResult> CancelOrderAsync( int orderId, string? reason = null );
+
+        /// <summary>
+        ///     Permanently deletes an order by ID.
+        ///     WARNING: Orders should typically NOT be deleted. Use status changes instead.
+        ///     This method should only be used for cleaning up test data or by administrators.
+        /// </summary>
+        Task<DatabaseResult> DeleteAsync( int orderId );
     }
 }

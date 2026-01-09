@@ -18,6 +18,8 @@ namespace Storix.Application.Stores.Orders
 
         string GetSupplierName( int supplierId );
 
+        string GetLocationName( int supplierId );
+
         void Clear();
 
         /// <summary>
@@ -43,12 +45,15 @@ namespace Storix.Application.Stores.Orders
 
         bool UpdateStatus( int orderId, OrderStatus newStatus );
 
+        void UpdateLocation( int orderId, int newLocationId );
+
         OrderDto? GetById( int orderId );
 
         List<OrderDto> GetAll( OrderType? type = null,
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             int skip = 0,
             int take = 100 );
 
@@ -60,6 +65,30 @@ namespace Storix.Application.Stores.Orders
 
         List<OrderDto> GetByCustomer( int customerId );
 
+        List<SalesOrderListDto> GetSalesOrderListByLocation( int locationId );
+
+        List<SalesOrderListDto> GetSalesOrderListByCustomer( int customerId );
+
+        List<SalesOrderListDto> GetSalesOrderListByUser( int userId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByCustomer( int customerId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByLocation( int locationId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByUser( int userId );
+
+        List<OrderDto> GetByLocation( int locationId );
+
+        List<OrderDto> GetOrdersByLocation( int locationId );
+
+        List<OrderDto> GetPurchaseOrdersByLocation( int locationId );
+
+        List<OrderDto> GetSalesOrdersByLocation( int locationId );
+
+        List<OrderDto> GetByLocationAndStatus( int locationId, OrderStatus orderStatus );
+
+        List<OrderDto> GetByLocationAndType( int locationId, OrderType orderType );
+
         List<OrderDto> GetOverdueOrders();
 
         List<OrderDto> GetByCreatedBy( int createdBy );
@@ -68,11 +97,15 @@ namespace Storix.Application.Stores.Orders
 
         List<OrderDto> GetActiveOrders();
 
+        List<OrderDto> GetActiveOrdersByLocation( int locationId );
+
         List<OrderDto> GetFulfilledOrders();
 
         List<OrderDto> GetCompletedOrders();
 
         List<OrderDto> GetCancelledOrders();
+
+        decimal GetTotalRevenueByLocation( int locationId );
 
         bool Exists( int orderId );
 
