@@ -56,31 +56,31 @@
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/revenue.png"
                                            CardTitle="Total Revenue"
-                                           CardValue="$48.5K"
-                                           ChangePercentage="↑ 15%"
+                                           CardValue="{Binding TotalRevenue}"
+                                           ChangePercentage="{Binding RevenueChange}"
                                            IconBackground="#D1FAE5" />
 
                     <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/products.png"
                                            CardTitle="Total Products"
-                                           CardValue="1,284"
-                                           ChangePercentage="↑ 12%"
+                                           CardValue="{Binding TotalProductsDisplay}"
+                                           ChangePercentage="{Binding ProductsChange}"
                                            IconBackground="#DBEAFE" />
 
                     <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/orders.png"
                                            CardTitle="Active Orders"
-                                           CardValue="87"
-                                           ChangePercentage="↑ 8%"
+                                           CardValue="{Binding ActiveOrdersDisplay}"
+                                           ChangePercentage="{Binding OrdersChange}"
                                            IconBackground="#FEF3C7" />
 
                     <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/alert.png"
                                            CardTitle="Low Stock Items"
-                                           CardValue="23"
+                                           CardValue="{Binding LowStockItemsDisplay}"
                                            ChangePercentage="Action needed"
                                            IconBackground="#FEE2E2" />
 
@@ -88,16 +88,16 @@
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/profit.png"
                                            CardTitle="Profit Margin"
-                                           CardValue="32.4%"
-                                           ChangePercentage="↑ 3.2%"
+                                           CardValue="{Binding ProfitMargin}"
+                                           ChangePercentage="{Binding ProfitMarginChange}"
                                            IconBackground="#E9D5FF" />
 
                     <resources:CustomCards Background="{DynamicResource CardBackgroundColor}"
                                            BorderBrush="{DynamicResource CardBorderColor}"
                                            CardImage="/Assets/Icons/turnover.png"
                                            CardTitle="Inventory Turnover"
-                                           CardValue="4.2x"
-                                           ChangePercentage="↑ 0.5x"
+                                           CardValue="{Binding InventoryTurnover}"
+                                           ChangePercentage="{Binding TurnoverChange}"
                                            IconBackground="#CFFAFE" />
                 </WrapPanel>
 
@@ -125,26 +125,20 @@
                                            Text="Revenue Trend" />
                                 <ComboBox Width="120"
                                           HorizontalAlignment="Right"
-                                          SelectedIndex="0">
+                                          SelectedIndex="{Binding SelectedTimePeriodIndex, Mode=TwoWay}">
                                     <ComboBoxItem Content="Last 7 days" />
                                     <ComboBoxItem Content="Last 30 days" />
                                     <ComboBoxItem Content="Last 3 months" />
                                     <ComboBoxItem Content="Last year" />
                                 </ComboBox>
                             </Grid>
-
-                            <!--  Placeholder for Chart Control  -->
-                            <Border Height="280"
-                                    Background="{DynamicResource ChartPlaceholderBackground}"
-                                    BorderBrush="{DynamicResource CardBorderColor}"
-                                    BorderThickness="1"
-                                    CornerRadius="8">
-                                <TextBlock HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           FontSize="16"
-                                           Foreground="{DynamicResource SecondaryTextColor}"
-                                           Text="📊 Line Chart: Revenue Over Time" />
-                            </Border>
+                            <!--  <lvc:CartesianChart Height="280"  -->
+                            <!--  d:DataContext="{d:DesignInstance Type=viewModels:DashboardViewModel}"  -->
+                            <!--  AnimationsSpeed="00:00:00.5"  -->
+                            <!--  Series="{Binding RevenueChartSeries}"  -->
+                            <!--  TooltipPosition="Top"  -->
+                            <!--  XAxes="{Binding RevenueChartXAxes}"  -->
+                            <!--  YAxes="{Binding RevenueChartYAxes}" />  -->
                         </StackPanel>
                     </Border>
 
@@ -260,7 +254,7 @@
                             <StackPanel>
                                 <Border Margin="0,0,0,10"
                                         Padding="15"
-                                        Background="#DBEAFE"
+                                        Background="#FFFBEB "
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
@@ -269,14 +263,14 @@
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
                                                    FontWeight="Bold"
-                                                   Foreground="#3B82F6"
-                                                   Text="34" />
+                                                   Foreground="#F59E0B"
+                                                   Text="{Binding DraftOrders}" />
                                     </Grid>
                                 </Border>
 
                                 <Border Margin="0,0,0,10"
                                         Padding="15"
-                                        Background="#FEF3C7"
+                                        Background="#DBEAFE"
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
@@ -285,13 +279,13 @@
                                         <TextBlock HorizontalAlignment="Right"
                                                    FontSize="20"
                                                    FontWeight="Bold"
-                                                   Foreground="#F59E0B"
-                                                   Text="28" />
+                                                   Foreground="#3B82F6"
+                                                   Text="{Binding ActiveOrders}" />
                                     </Grid>
                                 </Border>
                                 <Border Margin="0,0,0,10"
                                         Padding="15"
-                                        Background="#8B5CF6"
+                                        Background="#F3E8FF "
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
@@ -301,13 +295,13 @@
                                                    FontSize="20"
                                                    FontWeight="Bold"
                                                    Foreground="Violet"
-                                                   Text="28" />
+                                                   Text="{Binding FulfilledOrders}" />
                                     </Grid>
                                 </Border>
 
                                 <Border Margin="0,0,0,10"
                                         Padding="15"
-                                        Background="#D1FAE5"
+                                        Background="#D1FAE5 "
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
@@ -317,12 +311,12 @@
                                                    FontSize="20"
                                                    FontWeight="Bold"
                                                    Foreground="#10B981"
-                                                   Text="142" />
+                                                   Text="{Binding CompletedOrders}" />
                                     </Grid>
                                 </Border>
 
                                 <Border Padding="15"
-                                        Background="#FEE2E2"
+                                        Background="#FEE2E2 "
                                         CornerRadius="8">
                                     <Grid>
                                         <TextBlock FontWeight="SemiBold"
@@ -332,7 +326,7 @@
                                                    FontSize="20"
                                                    FontWeight="Bold"
                                                    Foreground="#EF4444"
-                                                   Text="5" />
+                                                   Text="{Binding CancelledOrders}" />
                                     </Grid>
                                 </Border>
                             </StackPanel>
