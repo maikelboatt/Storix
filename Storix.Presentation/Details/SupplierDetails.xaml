@@ -1,0 +1,556 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Details.SupplierDetails"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:suppliers="clr-namespace:Storix.Core.ViewModels.Suppliers;assembly=Storix.Core"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=suppliers:SupplierDetailsViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="800"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="80"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           Text="Loading supplier details..."
+                           TextAlignment="Center" />
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section  -->
+                <Border Grid.Row="0"
+                        Margin="0,0,0,20"
+                        Padding="20"
+                        Background="{DynamicResource CardBackgroundColor}"
+                        BorderBrush="{DynamicResource PrimaryBorderColor}"
+                        BorderThickness="2"
+                        CornerRadius="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Width="32"
+                                                            Height="32"
+                                                            Foreground="#10B981"
+                                                            Kind="TruckDeliveryOutline" />
+                                <TextBlock Margin="12,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Californian FB"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
+                                           Text="Supplier Details" />
+                            </StackPanel>
+                            <TextBlock Margin="44,5,0,0"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="Complete information about this supplier"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <!--  Status Badge  -->
+                        <Border Grid.Column="1"
+                                Padding="15,8"
+                                VerticalAlignment="Center"
+                                Background="#D1FAE5"
+                                CornerRadius="8">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Width="18"
+                                                            Height="18"
+                                                            Foreground="#065F46"
+                                                            Kind="CheckCircleOutline" />
+                                <TextBlock Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           FontWeight="Bold"
+                                           Foreground="#065F46"
+                                           Text="Active Supplier" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!--  Content  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Supplier Information Card  -->
+                        <Border Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!--  Supplier Name & ID  -->
+                                <StackPanel Grid.Row="0">
+                                    <TextBlock FontSize="22"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="{Binding Supplier.Name}"
+                                               TextWrapping="Wrap" />
+                                    <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                                        <Border Padding="10,5"
+                                                Background="#E0E7FF"
+                                                CornerRadius="6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="14"
+                                                                            Height="14"
+                                                                            VerticalAlignment="Center"
+                                                                            Foreground="#4338CA"
+                                                                            Kind="Pound" />
+                                                <TextBlock Margin="6,0,0,0"
+                                                           FontFamily="Consolas"
+                                                           FontSize="13"
+                                                           FontWeight="Bold"
+                                                           Foreground="#4338CA"
+                                                           Text="{Binding Supplier.SupplierId}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!--  Contact Information  -->
+                                <Border Grid.Row="1"
+                                        Margin="0,20,0,0"
+                                        Padding="15"
+                                        Background="{DynamicResource InfoBackgroundColor}"
+                                        BorderBrush="{DynamicResource InfoBorderColor}"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!--  Email  -->
+                                        <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="16"
+                                                                            Height="16"
+                                                                            Foreground="#3B82F6"
+                                                                            Kind="EmailOutline" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                                           Text="EMAIL" />
+                                            </StackPanel>
+                                            <Button Margin="0,6,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    Command="{Binding SendEmailCommand}"
+                                                    Style="{DynamicResource LinkButton}">
+                                                <TextBlock FontSize="14"
+                                                           Foreground="#3B82F6"
+                                                           Text="{Binding Supplier.Email}"
+                                                           TextDecorations="Underline"
+                                                           TextWrapping="Wrap" />
+                                            </Button>
+                                        </StackPanel>
+
+                                        <!--  Phone  -->
+                                        <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="16"
+                                                                            Height="16"
+                                                                            Foreground="#10B981"
+                                                                            Kind="PhoneOutline" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="{DynamicResource SecondaryTextColor}"
+                                                           Text="PHONE" />
+                                            </StackPanel>
+                                            <Button Margin="0,6,0,0"
+                                                    HorizontalAlignment="Left"
+                                                    Command="{Binding CallPhoneCommand}"
+                                                    Style="{DynamicResource LinkButton}">
+                                                <TextBlock FontSize="14"
+                                                           Foreground="#10B981"
+                                                           Text="{Binding Supplier.Phone}"
+                                                           TextDecorations="Underline" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <!--  Address  -->
+                                <Border Grid.Row="2"
+                                        Margin="0,15,0,0"
+                                        Padding="15"
+                                        Background="#FEF3C7"
+                                        BorderBrush="#F59E0B"
+                                        BorderThickness="1"
+                                        CornerRadius="6">
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <iconPacks:PackIconMaterial Width="16"
+                                                                        Height="16"
+                                                                        Foreground="#92400E"
+                                                                        Kind="MapMarkerOutline" />
+                                            <TextBlock Margin="8,0,0,0"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       Foreground="#78350F"
+                                                       Text="ADDRESS" />
+                                        </StackPanel>
+                                        <TextBlock Margin="0,6,0,0"
+                                                   FontSize="14"
+                                                   Foreground="#92400E"
+                                                   Text="{Binding Supplier.Address}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!--  Statistics Section  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="22"
+                                                                Height="22"
+                                                                Foreground="#3B82F6"
+                                                                Kind="ChartBoxOutline" />
+                                    <TextBlock Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="Supplier Statistics" />
+                                </StackPanel>
+
+                                <Grid Margin="0,15,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--  Total Products  -->
+                                    <Border Grid.Column="0"
+                                            Margin="0,0,10,0"
+                                            Padding="20"
+                                            Background="#DBEAFE"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#1E40AF"
+                                                                            Kind="PackageVariant" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#1E40AF"
+                                                           Text="PRODUCTS" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#1E40AF"
+                                                       Text="{Binding TotalProducts}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--  Active Orders  -->
+                                    <Border Grid.Column="1"
+                                            Margin="5,0"
+                                            Padding="20"
+                                            Background="#D1FAE5"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#065F46"
+                                                                            Kind="ClipboardListOutline" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#065F46"
+                                                           Text="ACTIVE ORDERS" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#065F46"
+                                                       Text="{Binding ActiveOrders}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--  Total Value  -->
+                                    <Border Grid.Column="2"
+                                            Margin="5,0"
+                                            Padding="20"
+                                            Background="#FEE2E2"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#991B1B"
+                                                                            Kind="CurrencyUsd" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#991B1B"
+                                                           Text="TOTAL VALUE" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#991B1B"
+                                                       Text="{Binding TotalPurchaseValue, StringFormat='${0:N0}'}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--  Last Order  -->
+                                    <Border Grid.Column="3"
+                                            Margin="10,0,0,0"
+                                            Padding="20"
+                                            Background="#E0E7FF"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#4338CA"
+                                                                            Kind="CalendarClockOutline" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#4338CA"
+                                                           Text="LAST ORDER" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="16"
+                                                       FontWeight="Bold"
+                                                       Foreground="#4338CA"
+                                                       Text="{Binding LastOrderDateDisplay}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Supplied Products  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{Binding HasProducts, Converter={StaticResource ToVisibilityConverter}}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Width="22"
+                                                                    Height="22"
+                                                                    Foreground="#F59E0B"
+                                                                    Kind="PackageVariantClosed" />
+                                        <TextBlock Margin="10,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="Supplied Products" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource SecondaryTextColor}">
+                                        <Run Text="Showing" />
+                                        <Run FontWeight="Bold" Text="{Binding SuppliedProducts.Count, Mode=OneWay}" />
+                                        <Run Text="of" />
+                                        <Run FontWeight="Bold" Text="{Binding TotalProducts, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Grid>
+
+                                <!--  Products List  -->
+                                <ItemsControl Margin="0,15,0,0" ItemsSource="{Binding SuppliedProducts}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,10"
+                                                    Padding="15"
+                                                    Background="#F8FAFC"
+                                                    BorderBrush="#E2E8F0"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Cursor="Hand">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#EFF6FF" />
+                                                                <Setter Property="BorderBrush" Value="#3B82F6" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock FontSize="14"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                                   Text="{Binding Name}" />
+                                                        <TextBlock Margin="0,4,0,0"
+                                                                   FontFamily="Consolas"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                                   Text="{Binding SKU}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="16"
+                                                               FontWeight="Bold"
+                                                               Foreground="#10B981"
+                                                               Text="{Binding Price, StringFormat='${0:N2}'}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!--  View All Button  -->
+                                <Button Height="40"
+                                        Margin="0,10,0,0"
+                                        Command="{Binding ViewAllProductsCommand}"
+                                        Style="{DynamicResource OpenBtn}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   Text="View All Products" />
+                                        <iconPacks:PackIconMaterial Width="16"
+                                                                    Height="16"
+                                                                    Margin="8,0,0,0"
+                                                                    VerticalAlignment="Center"
+                                                                    Kind="ArrowRight" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,25,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Edit Button  -->
+                    <Button Grid.Column="0"
+                            Width="140"
+                            Height="40"
+                            HorizontalAlignment="Left"
+                            Command="{Binding EditSupplierCommand}"
+                            Style="{DynamicResource EditBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="16"
+                                                        Height="16"
+                                                        VerticalAlignment="Center"
+                                                        Kind="PencilOutline" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Text="Edit Supplier" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Print Button  -->
+                    <Button Grid.Column="1"
+                            Width="130"
+                            Height="42"
+                            Margin="0,0,10,0"
+                            Command="{Binding PrintDetailsCommand}"
+                            Style="{DynamicResource OpenBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="PrinterOutline" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Print" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Close Button  -->
+                    <Button Grid.Column="2"
+                            Width="130"
+                            Height="42"
+                            Command="{Binding CloseCommand}"
+                            Style="{DynamicResource CreateBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Check" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="Close" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>

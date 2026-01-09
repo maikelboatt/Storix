@@ -1,0 +1,656 @@
+﻿<views:MvxWpfView x:Class="Storix.Presentation.Details.CategoryDetails"
+                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                  xmlns:categories="clr-namespace:Storix.Core.ViewModels.Categories;assembly=Storix.Core"
+                  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                  xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+                  xmlns:loadingSpinnerControl="clr-namespace:LoadingSpinnerControl;assembly=LoadingSpinnerControl"
+                  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                  xmlns:views="clr-namespace:MvvmCross.Platforms.Wpf.Views;assembly=MvvmCross.Platforms.Wpf"
+                  d:DataContext="{d:DesignInstance Type=categories:CategoryDetailsViewModel,
+                                                   IsDesignTimeCreatable=True}"
+                  d:DesignHeight="auto"
+                  d:DesignWidth="800"
+                  mc:Ignorable="d">
+    <Border Padding="30"
+            Background="{DynamicResource PrimaryBackgroundColor}"
+            BorderBrush="{DynamicResource SecondaryBorderColor}"
+            BorderThickness="1"
+            CornerRadius="12">
+        <Grid>
+            <!--  Loading Overlay  -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+                <loadingSpinnerControl:LoadingSpinner Diameter="80"
+                                                      IsLoading="{Binding IsLoading}"
+                                                      Thickness="3" />
+                <TextBlock Margin="0,10"
+                           FontFamily="Californian FB"
+                           FontSize="14"
+                           Foreground="{DynamicResource SecondaryTextColor}"
+                           Text="Loading category details..."
+                           TextAlignment="Center" />
+            </StackPanel>
+
+            <!--  Main Content  -->
+            <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!--  Header Section  -->
+                <Border Grid.Row="0"
+                        Margin="0,0,0,20"
+                        Padding="20"
+                        Background="{DynamicResource CardBackgroundColor}"
+                        BorderBrush="{DynamicResource PrimaryBorderColor}"
+                        BorderThickness="2"
+                        CornerRadius="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Width="32"
+                                                            Height="32"
+                                                            Foreground="#8B5CF6"
+                                                            Kind="ShapeOutline" />
+                                <TextBlock Margin="12,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontFamily="Californian FB"
+                                           FontSize="24"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextColor}"
+                                           Text="Category Details" />
+                            </StackPanel>
+                            <TextBlock Margin="44,5,0,0"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="Complete information about this category"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <!--  Category Type Badge  -->
+                        <Border Grid.Column="1"
+                                Padding="15,8"
+                                VerticalAlignment="Center"
+                                CornerRadius="8">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="#E0E7FF" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsParentCategory}" Value="True">
+                                            <Setter Property="Background" Value="#DBEAFE" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Width="18" Height="18">
+                                    <iconPacks:PackIconMaterial.Style>
+                                        <Style TargetType="iconPacks:PackIconMaterial">
+                                            <Setter Property="Kind" Value="FolderOutline" />
+                                            <Setter Property="Foreground" Value="#4338CA" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsParentCategory}" Value="True">
+                                                    <Setter Property="Kind" Value="FolderMultipleOutline" />
+                                                    <Setter Property="Foreground" Value="#1E40AF" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </iconPacks:PackIconMaterial.Style>
+                                </iconPacks:PackIconMaterial>
+                                <TextBlock Margin="8,0,0,0"
+                                           VerticalAlignment="Center"
+                                           FontSize="13"
+                                           FontWeight="Bold">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Subcategory" />
+                                            <Setter Property="Foreground" Value="#4338CA" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsParentCategory}" Value="True">
+                                                    <Setter Property="Text" Value="Parent Category" />
+                                                    <Setter Property="Foreground" Value="#1E40AF" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!--  Content  -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!--  Category Information Card  -->
+                        <Border Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <!--  Category Name & ID  -->
+                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                    <TextBlock FontSize="22"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="{Binding Category.Name}"
+                                               TextWrapping="Wrap" />
+                                    <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                                        <Border Padding="10,5"
+                                                Background="#E0E7FF"
+                                                CornerRadius="6">
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="14"
+                                                                            Height="14"
+                                                                            VerticalAlignment="Center"
+                                                                            Foreground="#4338CA"
+                                                                            Kind="Pound" />
+                                                <TextBlock Margin="6,0,0,0"
+                                                           FontFamily="Consolas"
+                                                           FontSize="13"
+                                                           FontWeight="Bold"
+                                                           Foreground="#4338CA"
+                                                           Text="{Binding Category.CategoryId}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!--  Category Image  -->
+                                <Border Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="1"
+                                        Width="120"
+                                        Height="120"
+                                        Margin="20,0,0,0"
+                                        BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                        BorderThickness="2"
+                                        CornerRadius="8"
+                                        Visibility="{Binding Category.ImageUrl, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <Image Source="{Binding Category.ImageUrl}" Stretch="UniformToFill" />
+                                </Border>
+
+                                <!--  No Image Placeholder  -->
+                                <Border Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="1"
+                                        Width="120"
+                                        Height="120"
+                                        Margin="20,0,0,0"
+                                        Background="#F1F5F9"
+                                        BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                        BorderThickness="2"
+                                        CornerRadius="8"
+                                        Visibility="{Binding Category.ImageUrl, Converter={StaticResource InverseNullToVisibilityConverter}}">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <iconPacks:PackIconMaterial Width="48"
+                                                                    Height="48"
+                                                                    HorizontalAlignment="Center"
+                                                                    Foreground="#94A3B8"
+                                                                    Kind="ImageOutline" />
+                                        <TextBlock Margin="0,8,0,0"
+                                                   HorizontalAlignment="Center"
+                                                   FontSize="10"
+                                                   Foreground="#64748B"
+                                                   Text="No Image" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!--  Description  -->
+                                <Border Grid.Row="1"
+                                        Grid.Column="0"
+                                        Margin="0,15,0,0"
+                                        Padding="15"
+                                        Background="{DynamicResource InfoBackgroundColor}"
+                                        BorderBrush="{DynamicResource InfoBorderColor}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Visibility="{Binding Category.Description, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <StackPanel>
+                                        <TextBlock FontSize="12"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                   Text="📝 DESCRIPTION" />
+                                        <TextBlock Margin="0,6,0,0"
+                                                   FontSize="13"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="{Binding Category.Description}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!--  Parent Category Info  -->
+                                <Border Grid.Row="2"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,20,0,0"
+                                        Padding="15"
+                                        Background="#FEF3C7"
+                                        BorderBrush="#F59E0B"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Visibility="{Binding ParentCategoryName, Converter={StaticResource NullToVisibilityConverter}}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <iconPacks:PackIconMaterial Grid.Column="0"
+                                                                    Width="20"
+                                                                    Height="20"
+                                                                    VerticalAlignment="Center"
+                                                                    Foreground="#92400E"
+                                                                    Kind="FolderArrowUpOutline" />
+                                        <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                            <TextBlock FontSize="11"
+                                                       FontWeight="Bold"
+                                                       Foreground="#78350F"
+                                                       Text="PARENT CATEGORY" />
+                                            <TextBlock Margin="0,4,0,0"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#92400E"
+                                                       Text="{Binding ParentCategoryName}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!--  Statistics Section  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="22"
+                                                                Height="22"
+                                                                Foreground="#3B82F6"
+                                                                Kind="ChartBoxOutline" />
+                                    <TextBlock Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="Category Statistics" />
+                                </StackPanel>
+
+                                <Grid Margin="0,15,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--  Total Products  -->
+                                    <Border Grid.Column="0"
+                                            Margin="0,0,10,0"
+                                            Padding="20"
+                                            Background="#DBEAFE"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#1E40AF"
+                                                                            Kind="PackageVariant" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#1E40AF"
+                                                           Text="PRODUCTS" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#1E40AF"
+                                                       Text="{Binding TotalProducts}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--  Subcategories  -->
+                                    <Border Grid.Column="1"
+                                            Margin="5,0"
+                                            Padding="20"
+                                            Background="#D1FAE5"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#065F46"
+                                                                            Kind="FolderMultiple" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#065F46"
+                                                           Text="SUBCATEGORIES" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#065F46"
+                                                       Text="{Binding TotalSubcategories}" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!--  Total Value  -->
+                                    <Border Grid.Column="2"
+                                            Margin="10,0,0,0"
+                                            Padding="20"
+                                            Background="#FEE2E2"
+                                            CornerRadius="8">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <iconPacks:PackIconMaterial Width="18"
+                                                                            Height="18"
+                                                                            Foreground="#991B1B"
+                                                                            Kind="CurrencyUsd" />
+                                                <TextBlock Margin="8,0,0,0"
+                                                           FontSize="12"
+                                                           FontWeight="Bold"
+                                                           Foreground="#991B1B"
+                                                           Text="TOTAL VALUE" />
+                                            </StackPanel>
+                                            <TextBlock Margin="0,8,0,0"
+                                                       FontSize="28"
+                                                       FontWeight="Bold"
+                                                       Foreground="#991B1B"
+                                                       Text="{Binding TotalCategoryValue, StringFormat='${0:N0}'}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Subcategories List  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{Binding HasSubcategories, Converter={StaticResource ToVisibilityConverter}}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <iconPacks:PackIconMaterial Width="22"
+                                                                Height="22"
+                                                                Foreground="#10B981"
+                                                                Kind="FolderMultipleOutline" />
+                                    <TextBlock Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="18"
+                                               FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextColor}"
+                                               Text="Subcategories" />
+                                </StackPanel>
+
+                                <!--  Subcategories Grid  -->
+                                <ItemsControl Margin="0,15,0,0" ItemsSource="{Binding Subcategories}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Width="180"
+                                                    Height="80"
+                                                    Margin="0,0,10,10"
+                                                    Padding="15"
+                                                    Background="#F8FAFC"
+                                                    BorderBrush="#E2E8F0"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    Cursor="Hand">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#EFF6FF" />
+                                                                <Setter Property="BorderBrush" Value="#3B82F6" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <StackPanel>
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <iconPacks:PackIconMaterial Width="16"
+                                                                                    Height="16"
+                                                                                    Foreground="#3B82F6"
+                                                                                    Kind="FolderOutline" />
+                                                        <TextBlock Margin="8,0,0,0"
+                                                                   FontSize="14"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                                   Text="{Binding Name}"
+                                                                   TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <TextBlock Margin="0,8,0,0"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource SecondaryTextColor}">
+                                                        <Run Text="{Binding ProductCount}" />
+                                                        <Run Text="products" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <!--  Products in Category (Sample)  -->
+                        <Border Margin="0,20,0,0"
+                                Padding="20"
+                                Background="{DynamicResource CardBackgroundColor}"
+                                BorderBrush="{DynamicResource SecondaryBorderColor}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Visibility="{Binding HasProducts, Converter={StaticResource ToVisibilityConverter}}">
+                            <StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                        <iconPacks:PackIconMaterial Width="22"
+                                                                    Height="22"
+                                                                    Foreground="#F59E0B"
+                                                                    Kind="PackageVariantClosed" />
+                                        <TextBlock Margin="10,0,0,0"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="18"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                   Text="Products in Category" />
+                                    </StackPanel>
+
+                                    <TextBlock Grid.Column="1"
+                                               VerticalAlignment="Center"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource SecondaryTextColor}">
+                                        <Run Text="Showing" />
+                                        <Run FontWeight="Bold" Text="{Binding RecentProducts.Count, Mode=OneWay}" />
+                                        <Run Text="of" />
+                                        <Run FontWeight="Bold" Text="{Binding TotalProducts, Mode=OneWay}" />
+                                    </TextBlock>
+                                </Grid>
+
+                                <!--  Products List  -->
+                                <ItemsControl Margin="0,15,0,0" ItemsSource="{Binding RecentProducts}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,0,0,10"
+                                                    Padding="15"
+                                                    Background="#F8FAFC"
+                                                    BorderBrush="#E2E8F0"
+                                                    BorderThickness="1"
+                                                    CornerRadius="6"
+                                                    Cursor="Hand">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#EFF6FF" />
+                                                                <Setter Property="BorderBrush" Value="#3B82F6" />
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock FontSize="14"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource PrimaryTextColor}"
+                                                                   Text="{Binding Name}" />
+                                                        <TextBlock Margin="0,4,0,0"
+                                                                   FontFamily="Consolas"
+                                                                   FontSize="12"
+                                                                   Foreground="{DynamicResource SecondaryTextColor}"
+                                                                   Text="{Binding SKU}" />
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Margin="0,0,20,0"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="14"
+                                                               Foreground="{DynamicResource SecondaryTextColor}">
+                                                        <Run Text="Stock:" />
+                                                        <Run FontWeight="Bold" Text="{Binding Stock}" />
+                                                    </TextBlock>
+
+                                                    <TextBlock Grid.Column="2"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="16"
+                                                               FontWeight="Bold"
+                                                               Foreground="#10B981"
+                                                               Text="{Binding Price, StringFormat='${0:N2}'}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!--  View All Button  -->
+                                <Button Height="40"
+                                        Margin="0,10,0,0"
+                                        Command="{Binding ViewAllProductsCommand}"
+                                        Style="{DynamicResource OpenBtn}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock VerticalAlignment="Center"
+                                                   FontSize="13"
+                                                   Text="View All Products" />
+                                        <iconPacks:PackIconMaterial Width="16"
+                                                                    Height="16"
+                                                                    Margin="8,0,0,0"
+                                                                    VerticalAlignment="Center"
+                                                                    Kind="ArrowRight" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Footer Buttons  -->
+                <Grid Grid.Row="2" Margin="0,25,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!--  Edit Button  -->
+                    <Button Grid.Column="0"
+                            Width="140"
+                            Height="40"
+                            HorizontalAlignment="Left"
+                            Command="{Binding EditCategoryCommand}"
+                            Style="{DynamicResource EditBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="16"
+                                                        Height="16"
+                                                        VerticalAlignment="Center"
+                                                        Kind="PencilOutline" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="13"
+                                       Text="Edit Category" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Print Button  -->
+                    <Button Grid.Column="1"
+                            Width="130"
+                            Height="42"
+                            Margin="0,0,10,0"
+                            Command="{Binding PrintDetailsCommand}"
+                            Style="{DynamicResource OpenBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="PrinterOutline" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       Text="Print" />
+                        </StackPanel>
+                    </Button>
+
+                    <!--  Close Button  -->
+                    <Button Grid.Column="2"
+                            Width="130"
+                            Height="42"
+                            Command="{Binding CloseCommand}"
+                            Style="{DynamicResource CreateBtn}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Width="18"
+                                                        Height="18"
+                                                        VerticalAlignment="Center"
+                                                        Kind="Check" />
+                            <TextBlock Margin="8,0,0,0"
+                                       VerticalAlignment="Center"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Text="Close" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</views:MvxWpfView>
