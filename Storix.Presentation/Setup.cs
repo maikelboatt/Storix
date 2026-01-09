@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MvvmCross.IoC;
 using MvvmCross.Platforms.Wpf.Core;
@@ -18,7 +17,7 @@ namespace Storix.Presentation
         protected override ILoggerFactory? CreateLogFactory()
         {
             _configuration = new ConfigurationBuilder()
-                             .SetBasePath(Directory.GetCurrentDirectory())
+                             .SetBasePath(AppContext.BaseDirectory)
                              .AddJsonFile("appsettings.json", false, true)
                              .Build();
 

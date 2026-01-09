@@ -88,6 +88,13 @@ namespace Storix.Infrastructure
                     .AsInterfaces()
                     .RegisterAsLazySingleton();
 
+                // Register Helpers
+                assembly
+                    .CreatableTypes()
+                    .EndingWith("Helper")
+                    .AsInterfaces()
+                    .RegisterAsLazySingleton();
+
                 // Register Validation Classes
                 assembly
                     .CreatableTypes()
@@ -139,24 +146,42 @@ namespace Storix.Infrastructure
                 MvxViewModel viewModel = (MvxViewModel)(iocProvider.Resolve(viewModelType)
                                                         ?? throw new MvxIoCResolveException($"Failed to resolve ViewModel of type: {viewModelType.FullName}"));
 
-                // Find the Prepare method - search in base classes too!
-                MethodInfo? prepareMethod = FindPrepareMethod(viewModelType, parameter?.GetType() ?? typeof(int));
+                // ✅ Find the Prepare method with the actual parameter type
+                Type? parameterType = parameter?.GetType();
+                MethodInfo? prepareMethod = null;
+
+                if (parameterType != null)
+                {
+                    // Try to find Prepare method that matches the parameter type
+                    prepareMethod = FindPrepareMethod(viewModelType, parameterType);
+                }
+
+                // Fallback to int parameter if no specific type found
+                if (prepareMethod == null && parameter != null)
+                {
+                    prepareMethod = FindPrepareMethod(viewModelType, typeof(int));
+                    if (prepareMethod != null)
+                    {
+                        // Convert parameter to int if needed
+                        parameter = parameter switch
+                        {
+                            int intParam => intParam,
+                            _            => Convert.ToInt32(parameter)
+                        };
+                    }
+                }
 
                 if (prepareMethod != null)
                 {
                     try
                     {
-                        object convertedParameter = parameter switch
-                        {
-                            null         => 0,
-                            int intParam => intParam,
-                            _            => Convert.ToInt32(parameter)
-                        };
-
-                        System.Diagnostics.Debug.WriteLine($"🔧 Calling Prepare({convertedParameter})");
-
-                        prepareMethod.Invoke(viewModel, [convertedParameter]);
-
+                        System.Diagnostics.Debug.WriteLine($"🔧 Calling Prepare with {parameter?.GetType().Name ?? "null"}");
+                        prepareMethod.Invoke(
+                            viewModel,
+                            new[]
+                            {
+                                parameter
+                            });
                         System.Diagnostics.Debug.WriteLine($"✅ Prepare called successfully");
                     }
                     catch (Exception ex)
@@ -165,17 +190,13 @@ namespace Storix.Infrastructure
                         throw new MvxException($"Failed to invoke Prepare method on {viewModelType.Name}: {ex.Message}", ex);
                     }
                 }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"⚠️ No Prepare method found for {viewModelType.Name}");
-                }
 
-                // Initialize the ViewModel
                 System.Diagnostics.Debug.WriteLine($"🔧 Calling Initialize()");
                 await viewModel.Initialize();
                 System.Diagnostics.Debug.WriteLine($"✅ Initialize() completed");
 
                 return viewModel;
+
             });
         }
 
