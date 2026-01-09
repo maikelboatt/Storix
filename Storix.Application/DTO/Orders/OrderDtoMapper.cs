@@ -14,6 +14,7 @@ namespace Storix.Application.DTO.Orders
             Status = order.Status,
             SupplierId = order.SupplierId,
             CustomerId = order.CustomerId,
+            LocationId = order.LocationId,
             OrderDate = order.OrderDate,
             DeliveryDate = order.DeliveryDate,
             Notes = order.Notes,
@@ -29,7 +30,8 @@ namespace Storix.Application.DTO.Orders
             dto.OrderDate,
             dto.DeliveryDate,
             dto.Notes,
-            dto.CreatedBy
+            dto.CreatedBy,
+            dto.LocationId
         );
 
         public static CreateOrderDto ToCreateDto( this OrderDto dto ) => new()
@@ -37,6 +39,7 @@ namespace Storix.Application.DTO.Orders
             Type = dto.Type,
             SupplierId = dto.SupplierId,
             CustomerId = dto.CustomerId,
+            LocationId = dto.LocationId,
             OrderDate = dto.OrderDate,
             DeliveryDate = dto.DeliveryDate,
             Notes = dto.Notes,
@@ -47,6 +50,7 @@ namespace Storix.Application.DTO.Orders
         {
             OrderId = dto.OrderId,
             Status = dto.Status,
+            LocationId = dto.LocationId,
             DeliveryDate = dto.DeliveryDate,
             Notes = dto.Notes
         };
@@ -56,6 +60,7 @@ namespace Storix.Application.DTO.Orders
             Type = order.Type,
             SupplierId = order.SupplierId,
             CustomerId = order.CustomerId,
+            LocationId = order.LocationId,
             OrderDate = order.OrderDate,
             DeliveryDate = order.DeliveryDate,
             Notes = order.Notes,
@@ -71,14 +76,19 @@ namespace Storix.Application.DTO.Orders
             dto.OrderDate,
             dto.DeliveryDate,
             dto.Notes,
-            dto.CreatedBy
+            dto.CreatedBy,
+            dto.LocationId
         );
 
-        public static SalesOrderListDto ToSalesOrderListDto( this Order order, string customerName, decimal totalAmount ) => new()
+        public static SalesOrderListDto ToSalesOrderListDto( this Order order,
+            string customerName,
+            string locationName,
+            decimal totalAmount ) => new()
         {
             OrderId = order.OrderId,
             Status = order.Status,
             CustomerName = customerName,
+            LocationName = locationName,
             OrderDate = order.OrderDate,
             DeliveryDate = order.DeliveryDate,
             Notes = order.Notes,
@@ -86,11 +96,15 @@ namespace Storix.Application.DTO.Orders
             TotalAmount = totalAmount
         };
 
-        public static PurchaseOrderListDto ToPurchaseOrderListDto( this Order order, string supplierName, decimal totalAmount ) => new()
+        public static PurchaseOrderListDto ToPurchaseOrderListDto( this Order order,
+            string supplierName,
+            string locationName,
+            decimal totalAmount ) => new()
         {
             OrderId = order.OrderId,
             Status = order.Status,
             SupplierName = supplierName,
+            LocationName = locationName,
             OrderDate = order.OrderDate,
             DeliveryDate = order.DeliveryDate,
             Notes = order.Notes,
@@ -101,6 +115,7 @@ namespace Storix.Application.DTO.Orders
         public static Order ToDomain( this UpdateOrderDto dto, Order existingOrder ) => existingOrder with
         {
             Status = dto.Status,
+            LocationId = (int)dto.LocationId!,
             DeliveryDate = dto.DeliveryDate,
             Notes = dto.Notes
         };

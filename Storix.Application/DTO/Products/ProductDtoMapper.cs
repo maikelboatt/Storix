@@ -151,6 +151,25 @@ namespace Storix.Application.DTO.Products
             IsLowStock = product.IsLowStock(currentStock)
         };
 
+        public static ProductListDto ToListDto( this ProductDto productDto,
+            string? categoryName,
+            string? supplierName = null,
+            int currentStock = 0 ) => new()
+        {
+            ProductId = productDto.ProductId,
+            Name = productDto.Name,
+            SKU = productDto.SKU,
+            Barcode = productDto.Barcode,
+            Price = productDto.Price,
+            Cost = productDto.Cost,
+            MinStockLevel = productDto.MinStockLevel,
+            MaxStockLevel = productDto.MaxStockLevel,
+            CategoryName = categoryName,
+            SupplierName = supplierName,
+            CurrentStock = currentStock,
+            IsLowStock = productDto.IsLowStock(currentStock)
+        };
+
         public static ProductWithDetailsDto ToDetailsDto( this Product product,
             string categoryName,
             string supplierName,

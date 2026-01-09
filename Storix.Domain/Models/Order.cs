@@ -11,7 +11,8 @@ namespace Storix.Domain.Models
         DateTime OrderDate,
         DateTime? DeliveryDate,
         string? Notes,
-        int CreatedBy )
+        int CreatedBy,
+        int LocationId )
     {
         // You can add computed properties
         public bool IsOverdue => DeliveryDate.HasValue && DeliveryDate < DateTime.UtcNow;

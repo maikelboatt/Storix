@@ -7,6 +7,7 @@ namespace Storix.Application.DTO.Orders
     {
         public int OrderId { get; set; }
         public string CustomerName { get; set; } = string.Empty;
+        public string LocationName { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
         public OrderStatus Status { get; set; }
         public decimal TotalAmount { get; set; }

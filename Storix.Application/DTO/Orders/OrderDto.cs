@@ -10,6 +10,7 @@ namespace Storix.Application.DTO.Orders
         public OrderStatus Status { get; set; }
         public int? SupplierId { get; set; }
         public int? CustomerId { get; set; }
+        public int LocationId { get; set; }
         public DateTime OrderDate { get; set; }
         public DateTime? DeliveryDate { get; set; }
         public string? Notes { get; set; }

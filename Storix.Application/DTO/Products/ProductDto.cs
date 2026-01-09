@@ -19,5 +19,7 @@ namespace Storix.Application.DTO.Products
         public DateTime? UpdatedDate { get; set; }
 
         public override string ToString() => Name;
+
+        public bool IsLowStock( int currentStock ) => currentStock <= MinStockLevel;
     }
 }
