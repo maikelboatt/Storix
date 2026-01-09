@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Storix.Application.Common;
 using Storix.Application.Common.Errors;
 using Storix.Application.DTO.Categories;
@@ -10,6 +7,9 @@ using Storix.Application.Repositories;
 using Storix.Application.Services.Categories.Interfaces;
 using Storix.Application.Stores.Categories;
 using Storix.Domain.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Storix.Application.Services.Categories
 {

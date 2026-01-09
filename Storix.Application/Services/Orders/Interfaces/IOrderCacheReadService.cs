@@ -24,6 +24,7 @@ namespace Storix.Application.Services.Orders.Interfaces
             OrderStatus? status = null,
             int? supplierId = null,
             int? customerId = null,
+            int locationId = 0,
             int skip = 0,
             int take = 100 );
 
@@ -34,6 +35,42 @@ namespace Storix.Application.Services.Orders.Interfaces
         IEnumerable<OrderDto> GetOrdersBySupplierInCache( int supplierId );
 
         IEnumerable<OrderDto> GetOrdersByCustomerInCache( int customerId );
+
+        IEnumerable<OrderDto> GetOrdersByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetOrdersByLocationAndStatusInCache( int locationId, OrderStatus orderStatus );
+
+        IEnumerable<OrderDto> GetOrdersByLocationAndTypeInCache( int locationId, OrderType orderType );
+
+        IEnumerable<OrderDto> GetActiveOrderByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetSalesOrdersByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetPurchaseOrdersByLocationInCache( int locationId );
+
+        List<SalesOrderListDto> GetSalesOrderListByCustomerInCache( int customerId );
+
+        List<SalesOrderListDto> GetSalesOrderListByUserInCache( int userId );
+
+        List<SalesOrderListDto> GetSalesOrderListByLocationInCache( int locationId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByCustomerInCache( int customerId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByUserInCache( int userId );
+
+        List<PurchaseOrderListDto> GetPurchaseOrderListByLocationInCache( int locationId );
+
+        IEnumerable<OrderDto> GetOrderListBySupplierInCache( int supplierId );
+
+        IEnumerable<OrderDto> GetOrderListByCustomerInCache( int customerId );
+
+        IEnumerable<OrderDto> GetOrderListLocationInCache( int locationId );
+
+        string GetSupplierNameInCache( int supplierId );
+
+        string GetCustomerNameInCache( int customerId );
+
+        string GetLocationNameInCache( int locationId );
 
         IEnumerable<OrderDto> GetOverdueOrdersInCache();
 
@@ -48,6 +85,8 @@ namespace Storix.Application.Services.Orders.Interfaces
         IEnumerable<OrderDto> GetCompletedOrdersInCache();
 
         IEnumerable<OrderDto> GetCancelledOrdersInCache();
+
+        decimal GetTotalRevenueByLocationAsync( int locationId );
 
         bool OrderExistsInCache( int orderId );
 
