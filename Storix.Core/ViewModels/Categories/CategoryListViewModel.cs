@@ -41,6 +41,7 @@ namespace Storix.Core.ViewModels.Categories
 
             // Initialize commands
             OpenCategoryFormCommand = new MvxCommand<int>(ExecuteCategoryForm);
+            OpenCategoryDetailsCommand = new MvxCommand<int>(ExecuteCategoryDetails);
             OpenCategoryDeleteCommand = new MvxCommand<int>(ExecuteCategoryDelete);
 
         }
@@ -204,16 +205,19 @@ namespace Storix.Core.ViewModels.Categories
         #region Commands
 
         public IMvxCommand<int> OpenCategoryFormCommand { get; }
+        public IMvxCommand<int> OpenCategoryDetailsCommand { get; }
         public IMvxCommand<int> OpenCategoryDeleteCommand { get; }
 
         private void ExecuteCategoryDelete( int categoryId )
         {
-            _modalNavigationControl.PopUp<CategoryDeleteViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CategoryDeleteViewModel>(parameter: categoryId);
         }
+
+        private void ExecuteCategoryDetails( int categoryId ) => _modalNavigationControl.PopUp<CategoryDetailsViewModel>(parameter: categoryId);
 
         private void ExecuteCategoryForm( int categoryId )
         {
-            _modalNavigationControl.PopUp<CategoryFormViewModel>(categoryId);
+            _modalNavigationControl.PopUp<CategoryFormViewModel>(parameter: categoryId);
         }
 
         #endregion

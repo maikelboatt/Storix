@@ -147,12 +147,12 @@ namespace Storix.Core.ViewModels.Locations
 
         private void ExecuteLocationDelete( int locationId )
         {
-            _modalNavigationControl.PopUp<LocationDeleteViewModel>(locationId);
+            _modalNavigationControl.PopUp<LocationDeleteViewModel>(parameter: locationId);
         }
 
         private void ExecuteLocationForm( int locationId )
         {
-            _modalNavigationControl.PopUp<LocationFormViewModel>(locationId);
+            _modalNavigationControl.PopUp<LocationFormViewModel>(parameter: locationId);
         }
 
         #endregion

@@ -17,6 +17,7 @@
         <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
     </views:MvxWpfView.Resources>
     <Grid>
+        <!--  Loading Overlay  -->
         <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
 
             <loadingSpinnerControl:LoadingSpinner Diameter="100"
@@ -30,21 +31,82 @@
                        TextAlignment="Center" />
         </StackPanel>
 
+        <!--  Main Content  -->
         <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
             <Grid Margin="3">
-                <!--  Row definitions for the header and content sections  -->
                 <Grid.RowDefinitions>
+                    <!--  Filter Header (shown when filtering)  -->
+                    <RowDefinition Height="Auto" />
+                    <!--  Search and Actions  -->
                     <RowDefinition Height="60" />
+                    <!--  DataGrid  -->
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
+                <!--  Filter Header Section (Category/Supplier)  -->
+                <Border Grid.Row="0"
+                        Margin="15,10,15,10"
+                        Padding="20,15"
+                        Background="{DynamicResource CardBackgroundColor}"
+                        BorderBrush="{DynamicResource PrimaryBorderColor}"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Visibility="{Binding IsFiltered, Converter={StaticResource ToVisibilityConverter}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!--  Filter Icon  -->
+                        <iconPacks:PackIconMaterial Grid.Column="0"
+                                                    Width="32"
+                                                    Height="32"
+                                                    VerticalAlignment="Center"
+                                                    Foreground="#3B82F6"
+                                                    Kind="FilterOutline" />
+
+                        <!--  Filter Title & Subtitle  -->
+                        <StackPanel Grid.Column="1"
+                                    Margin="15,0,0,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock FontFamily="Californian FB"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryTextColor}"
+                                       Text="{Binding FilterTitle}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Margin="0,4,0,0"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextColor}"
+                                       Text="{Binding FilterSubtitle}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <!--  Close Filter Button (Power Off style)  -->
+                        <Button Grid.Column="2"
+                                Width="50"
+                                Height="50"
+                                Margin="10,0,0,0"
+                                VerticalAlignment="Center"
+                                Command="{Binding CloseCommand}"
+                                Style="{DynamicResource DelBtn}"
+                                ToolTip="Close Filter">
+                            <iconPacks:PackIconMaterial Width="24"
+                                                        Height="24"
+                                                        Foreground="White"
+                                                        Kind="Power"
+                                                        Style="{StaticResource IconButtonIcon}" />
+                        </Button>
+                    </Grid>
+                </Border>
+
                 <!--  Header section containing search and action buttons  -->
-                <Grid Grid.Row="0">
+                <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*" />
                         <!--  Search takes more space  -->
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
@@ -55,40 +117,9 @@
                                                Data="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                                                Placeholder="Search Products..." />
 
-                    <!--  Button to create Sales Order  -->
-                    <Button Grid.Column="1"
-                            Width="120"
-                            Margin="10,0"
-                            HorizontalAlignment="Right"
-                            Command="{Binding OpenCreateSalesOrderCommand}"
-                            Style="{DynamicResource OpenBtn}"
-                            ToolTip="Create Sales Order">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
-                                                        Kind="CartPlus"
-                                                        Style="{StaticResource IconButtonIcon}" />
-                            <TextBlock VerticalAlignment="Center" Text="Sale" />
-                        </StackPanel>
-                    </Button>
-
-                    <!--  Button to create Purchase Order  -->
-                    <Button Grid.Column="2"
-                            Width="120"
-                            Margin="10,0"
-                            HorizontalAlignment="Right"
-                            Command="{Binding OpenCreatePurchaseOrderCommand}"
-                            Style="{DynamicResource OpenBtn}"
-                            ToolTip="Create Purchase Order">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Margin="0,0,5,0"
-                                                        Kind="PackageUp"
-                                                        Style="{StaticResource IconButtonIcon}" />
-                            <TextBlock VerticalAlignment="Center" Text="Purchase" />
-                        </StackPanel>
-                    </Button>
 
                     <!--  Button to add new Product  -->
-                    <Button Grid.Column="3"
+                    <Button Grid.Column="1"
                             Width="120"
                             Margin="10,0,15,0"
                             HorizontalAlignment="Right"
@@ -107,7 +138,7 @@
                 </Grid>
 
                 <!--  DataGrid displaying the list of members  -->
-                <DataGrid Grid.Row="1"
+                <DataGrid Grid.Row="2"
                           Background="{DynamicResource SecondaryBackgroundColor}"
                           CellStyle="{StaticResource DataGridCellStyle1}"
                           ColumnHeaderStyle="{StaticResource DataGridColumnHeaderStyle1}"
@@ -178,14 +209,14 @@
                         <DataGridTextColumn Width="*"
                                             Binding="{Binding MaxStockLevel}"
                                             CanUserResize="False"
-                                            Header="Max Stock Level"
+                                            Header="Max Stock"
                                             IsReadOnly="True" />
 
                         <!--  Column displaying the Min Stock Level of the product  -->
                         <DataGridTextColumn Width="*"
                                             Binding="{Binding MinStockLevel}"
                                             CanUserResize="False"
-                                            Header="Min Stock Level"
+                                            Header="Min Stock"
                                             IsReadOnly="True" />
 
                         <!--  Column containing operation buttons for each member  -->
@@ -197,7 +228,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <!--  Button to open the details dialog for a member  -->
                                         <Button Margin="0,0,5,0"
-                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenAddMemberPaymentDialogCommand}"
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenProductDetailsCommand}"
                                                 CommandParameter="{Binding ProductId}"
                                                 IsDefault="True"
                                                 Style="{DynamicResource CreateBtn}">

@@ -42,6 +42,7 @@ namespace Storix.Core.ViewModels.Suppliers
             // Initialize commands
             OpenSupplierFormCommand = new MvxCommand<int>(ExecuteSupplierForm);
             OpenSupplierDeleteCommand = new MvxCommand<int>(ExecuteSupplierDelete);
+            OpenSupplierDetailsCommand = new MvxCommand<int>(ExecuteSupplierDetails);
         }
 
 
@@ -203,15 +204,22 @@ namespace Storix.Core.ViewModels.Suppliers
 
         public IMvxCommand<int> OpenSupplierFormCommand { get; }
         public IMvxCommand<int> OpenSupplierDeleteCommand { get; }
+        public IMvxCommand<int> OpenSupplierDetailsCommand { get; }
+
+
+        private void ExecuteSupplierForm( int supplierId )
+        {
+            _modalNavigationControl.PopUp<SupplierFormViewModel>(supplierId);
+        }
 
         private void ExecuteSupplierDelete( int supplierId )
         {
             _modalNavigationControl.PopUp<SupplierDeleteViewModel>(supplierId);
         }
 
-        private void ExecuteSupplierForm( int supplierId )
+        private void ExecuteSupplierDetails( int supplierId )
         {
-            _modalNavigationControl.PopUp<SupplierFormViewModel>(supplierId);
+            _modalNavigationControl.PopUp<SupplierDetailsViewModel>(supplierId);
         }
 
         #endregion

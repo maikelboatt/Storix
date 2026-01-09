@@ -17,8 +17,7 @@
         <BooleanToVisibilityConverter x:Key="ToVisibilityConverter" />
     </views:MvxWpfView.Resources>
     <Grid>
-        <StackPanel VerticalAlignment="Center"
-                    Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
+        <StackPanel VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource ToVisibilityConverter}, UpdateSourceTrigger=PropertyChanged}">
 
             <loadingSpinnerControl:LoadingSpinner Diameter="100"
                                                   IsLoading="{Binding IsLoading}"
@@ -31,8 +30,7 @@
                        TextAlignment="Center" />
         </StackPanel>
 
-        <Grid
-            Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
+        <Grid Visibility="{Binding IsLoading, Converter={StaticResource InverseBooleanToVisibilityConverter}, ConverterParameter=true, UpdateSourceTrigger=PropertyChanged}">
             <Grid Margin="3">
                 <!--  Row definitions for the header and content sections  -->
                 <Grid.RowDefinitions>
@@ -91,8 +89,7 @@
                         <DataGridTemplateColumn Width="Auto" Header="Select">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox
-                                        IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
@@ -154,32 +151,29 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
-                                        <!--  Button to open the details dialog for a member  -->
+                                        <!--  Button to open the details dialogue for a member  -->
                                         <Button Margin="0,0,5,0"
-                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenAddMemberPaymentDialogCommand}"
+                                                Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSalesOrderDetailsCommand}"
                                                 CommandParameter="{Binding OrderId}"
                                                 IsDefault="True"
                                                 Style="{DynamicResource CreateBtn}">
-                                            <iconPacks:PackIconMaterial Kind="OpenInNew"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="OpenInNew" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
-                                        <!--  Button to open the update dialog for a member  -->
+                                        <!--  Button to open the update dialogue for a member  -->
                                         <Button Margin="0,0,5,0"
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSalesOrderFormCommand}"
                                                 CommandParameter="{Binding OrderId}"
                                                 Style="{DynamicResource EditBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantMinus" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
 
-                                        <!--  Button to open the delete dialog for a member  -->
+                                        <!--  Button to open the delete dialogue for a member  -->
                                         <Button Margin="0,0,5,0"
                                                 Command="{Binding RelativeSource={RelativeSource AncestorType={x:Type UserControl}}, Path=DataContext.OpenSalesOrderDeleteCommand}"
                                                 CommandParameter="{Binding OrderId}"
                                                 Style="{DynamicResource DelBtn}">
-                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove"
-                                                                        Style="{StaticResource IconButtonIcon}" />
+                                            <iconPacks:PackIconMaterial Kind="PackageVariantRemove" Style="{StaticResource IconButtonIcon}" />
                                         </Button>
                                     </StackPanel>
                                 </DataTemplate>

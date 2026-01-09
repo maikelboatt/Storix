@@ -6,9 +6,15 @@ using Microsoft.Extensions.Logging;
 using MvvmCross.Commands;
 using MvvmCross.ViewModels;
 using Storix.Application.Common;
+using Storix.Application.DTO.Customers;
+using Storix.Application.DTO.Locations;
 using Storix.Application.DTO.Orders;
+using Storix.Application.DTO.Users;
 using Storix.Application.Managers.Interfaces;
+using Storix.Application.Services.Customers.Interfaces;
+using Storix.Application.Services.Locations.Interfaces;
 using Storix.Application.Services.Orders.Interfaces;
+using Storix.Application.Services.Users.Interfaces;
 using Storix.Application.Stores.Orders;
 using Storix.Core.Control;
 using Storix.Core.ViewModels.Orders;
@@ -17,29 +23,44 @@ using Storix.Domain.Models;
 
 namespace Storix.Core.ViewModels.Orders.Sales
 {
-    public class SalesOrderListViewModel:MvxViewModel
+    public class SalesOrderListViewModel:MvxViewModel<OrderListViewModelParameter>
     {
         private readonly IOrderService _orderService;
         private readonly IOrderItemManager _orderItemManager;
         private readonly IOrderStore _orderStore;
+        private readonly IOrderCacheReadService _orderCacheReadService;
+        private readonly ICustomerCacheReadService _customerCacheReadService;
+        private readonly IUserCacheReadService _userCacheReadService;
+        private readonly ILocationCacheReadService _locationCacheReadService;
         private readonly IModalNavigationControl _modalNavigationControl;
         private readonly ILogger<SalesOrderListViewModel> _logger;
 
-        private MvxObservableCollection<SalesOrderListItemViewModel> _salesOrders = new();
-        private List<SalesOrderListItemViewModel> _allSalesOrders = new();
+        private MvxObservableCollection<SalesOrderListItemViewModel> _salesOrders = [];
+        private List<SalesOrderListItemViewModel> _allSalesOrders = [];
         private string _searchText = string.Empty;
         private bool _isLoading;
+        private OrderListViewModelParameter _filter;
+        private string _filterTitle = string.Empty;
+        private string _filterSubtitle = string.Empty;
 
         public SalesOrderListViewModel(
             IOrderService orderService,
             IOrderItemManager orderItemManager,
             IOrderStore orderStore,
+            IOrderCacheReadService orderCacheReadService,
+            ICustomerCacheReadService customerCacheReadService,
+            IUserCacheReadService userCacheReadService,
+            ILocationCacheReadService locationCacheReadService,
             IModalNavigationControl modalNavigationControl,
             ILogger<SalesOrderListViewModel> logger )
         {
             _orderService = orderService;
             _orderItemManager = orderItemManager;
             _orderStore = orderStore;
+            _orderCacheReadService = orderCacheReadService;
+            _customerCacheReadService = customerCacheReadService;
+            _userCacheReadService = userCacheReadService;
+            _locationCacheReadService = locationCacheReadService;
             _modalNavigationControl = modalNavigationControl;
             _logger = logger;
 
@@ -50,6 +71,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
             // Initialize commands
             OpenSalesOrderFormCommand = new MvxCommand<int>(ExecuteOpenSalesOrderForm);
+            OpenSalesOrderDetailsCommand = new MvxCommand<int>(ExecuteOpenSalesOrderDetails);
             OpenSalesOrderDeleteCommand = new MvxCommand<int>(ExecuteOpenSalesOrderDelete);
             RefreshCommand = new MvxAsyncCommand(LoadSalesOrdersAsync);
         }
@@ -67,7 +89,8 @@ namespace Storix.Core.ViewModels.Orders.Sales
             {
                 try
                 {
-                    string customerName = _orderStore.GetCustomerName(order.CustomerId ?? 0);
+                    string customerName = _orderCacheReadService.GetCustomerNameInCache(order.CustomerId ?? 0);
+                    string locationName = _orderCacheReadService.GetLocationNameInCache(order.LocationId);
                     DatabaseResult<decimal> totalAmountResult =
                         await _orderItemManager.GetOrderTotalValueAsync(order.OrderId);
 
@@ -75,7 +98,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
                         ? totalAmountResult.Value
                         : 0m;
 
-                    SalesOrderListDto dto = order.ToSalesOrderListDto(customerName, totalAmount);
+                    SalesOrderListDto dto = order.ToSalesOrderListDto(customerName, locationName, totalAmount);
                     SalesOrderListItemViewModel vm = new(dto);
 
                     // Update on UI thread
@@ -112,7 +135,8 @@ namespace Storix.Core.ViewModels.Orders.Sales
                         return;
                     }
 
-                    string customerName = _orderStore.GetCustomerName(order.CustomerId ?? 0);
+                    string customerName = _orderCacheReadService.GetCustomerNameInCache(order.CustomerId ?? 0);
+                    string locationName = _orderCacheReadService.GetLocationNameInCache(order.LocationId);
                     DatabaseResult<decimal> totalAmountResult =
                         await _orderItemManager.GetOrderTotalValueAsync(order.OrderId);
 
@@ -120,7 +144,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
                         ? totalAmountResult.Value
                         : 0m;
 
-                    SalesOrderListDto dto = order.ToSalesOrderListDto(customerName, totalAmount);
+                    SalesOrderListDto dto = order.ToSalesOrderListDto(customerName, locationName, totalAmount);
 
                     // Update on UI thread
                     await InvokeOnMainThreadAsync(() =>
@@ -160,6 +184,16 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
         #region ViewModel Lifecycle
 
+        public override void Prepare( OrderListViewModelParameter parameter )
+        {
+            _filter = parameter ?? throw new ArgumentNullException(nameof(parameter));
+
+            _logger.LogInformation(
+                "📦 Preparing SalesOrderListViewModel with filter: {FilterType}, EntityId: {EntityId}",
+                _filter.FilterType,
+                _filter.EntityId);
+        }
+
         public override async Task Initialize()
         {
             IsLoading = true;
@@ -186,7 +220,96 @@ namespace Storix.Core.ViewModels.Orders.Sales
 
         #endregion
 
-        #region Data Loading
+        #region Data Loading and Filtering
+
+        private void LoadAndFilterSalesOrdersAsync()
+        {
+            switch (_filter.FilterType)
+            {
+                case OrderFilterType.Customer:
+                    FilterByCustomer(_filter.EntityId);
+                    SetCustomerFilterInfo(_filter.EntityId);
+                    break;
+
+                case OrderFilterType.CreatedBy:
+                    FilterByUser(_filter.EntityId);
+                    SetUserFilterInfo(_filter.EntityId);
+                    break;
+
+                case OrderFilterType.Location:
+                    FilterByLocation(_filter.EntityId);
+                    SetLocationFilterInfo(_filter.EntityId);
+                    break;
+                default:
+                    _logger.LogInformation("Unspecified filter type: {FilterType}, will display all sales orders", _filter.FilterType);
+                    LoadSalesOrdersAsync();
+                    break;
+            }
+        }
+
+
+        private void FilterByCustomer( int customerId )
+        {
+            List<SalesOrderListDto> result = _orderCacheReadService
+                                             .GetSalesOrderListByCustomerInCache(customerId)
+                                             .ToList();
+
+            if (result.Count == 0)
+            {
+                _logger.LogInformation("No sales orders found for customer ID {CustomerId}", customerId);
+                SalesOrders = [];
+                _allSalesOrders.Clear();
+                return;
+            }
+
+            _allSalesOrders = result
+                              .Select(dto => new SalesOrderListItemViewModel(dto))
+                              .ToList();
+
+            ApplyFilter();
+        }
+
+        private void FilterByUser( int filterEntityId )
+        {
+            List<SalesOrderListDto> result = _orderCacheReadService
+                                             .GetSalesOrderListByUserInCache(filterEntityId)
+                                             .ToList();
+
+            if (result.Count == 0)
+            {
+                _logger.LogInformation("No sales orders found for user ID {UserId}", filterEntityId);
+                SalesOrders = [];
+                _allSalesOrders.Clear();
+                return;
+            }
+
+            _allSalesOrders = result
+                              .Select(dto => new SalesOrderListItemViewModel(dto))
+                              .ToList();
+
+            ApplyFilter();
+        }
+
+        private void FilterByLocation( int filterEntityId )
+        {
+            List<SalesOrderListDto> result = _orderCacheReadService
+                                             .GetSalesOrderListByLocationInCache(filterEntityId)
+                                             .ToList();
+
+            if (result.Count == 0)
+            {
+                _logger.LogInformation("No sales orders found for location ID {LocationId}", filterEntityId);
+                SalesOrders = [];
+                _allSalesOrders.Clear();
+                return;
+            }
+
+            _allSalesOrders = result
+                              .Select(dto => new SalesOrderListItemViewModel(dto))
+                              .ToList();
+
+            ApplyFilter();
+        }
 
         private async Task LoadSalesOrdersAsync()
         {
@@ -198,7 +321,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
                 if (!salesOrdersResult.IsSuccess || salesOrdersResult.Value == null)
                 {
                     _logger.LogError("Failed to load sales orders: {ErrorMessage}", salesOrdersResult.ErrorMessage);
-                    SalesOrders = new MvxObservableCollection<SalesOrderListItemViewModel>();
+                    SalesOrders = [];
                     _allSalesOrders.Clear();
                     return;
                 }
@@ -214,6 +337,51 @@ namespace Storix.Core.ViewModels.Orders.Sales
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading sales orders");
+            }
+        }
+
+        private void SetCustomerFilterInfo( int customerId )
+        {
+            CustomerDto? customer = _customerCacheReadService.GetCustomerByIdInCache(customerId);
+            if (customer != null)
+            {
+                FilterTitle = $"Orders for {customer.Name}";
+                FilterSubtitle = "Showing all products for this customer";
+            }
+            else
+            {
+                FilterTitle = "Orders for Customer";
+                FilterSubtitle = $"Customer ID: {customer}";
+            }
+        }
+
+        private void SetUserFilterInfo( int userId )
+        {
+            UserDto? user = _userCacheReadService.GetByIdFromCache(userId);
+            if (user != null)
+            {
+                FilterTitle = $"Orders created by {user.FullName}";
+                FilterSubtitle = "Showing all orders created by this user";
+            }
+            else
+            {
+                FilterTitle = "Orders by User";
+                FilterSubtitle = $"User ID: {userId}";
+            }
+        }
+
+        private void SetLocationFilterInfo( int locationId )
+        {
+            LocationDto? location = _locationCacheReadService.GetLocationByIdInCache(locationId);
+            if (location != null)
+            {
+                FilterTitle = $"Orders in {location.Name}";
+                FilterSubtitle = "Showing all orders in this location";
+            }
+            else
+            {
+                FilterTitle = "Products in Location";
+                FilterSubtitle = $"Location ID: {locationId}";
             }
         }
 
@@ -257,6 +425,24 @@ namespace Storix.Core.ViewModels.Orders.Sales
             }
         }
 
+        /// <summary>
+        /// Title describing the filter (e.g., "John Doe's Orders")
+        /// </summary>
+        public string FilterTitle
+        {
+            get => _filterTitle;
+            private set => SetProperty(ref _filterTitle, value);
+        }
+
+        /// <summary>
+        /// Subtitle with additional filter information
+        /// </summary>
+        public string FilterSubtitle
+        {
+            get => _filterSubtitle;
+            private set => SetProperty(ref _filterSubtitle, value);
+        }
+
         public bool IsLoading
         {
             get => _isLoading;
@@ -271,6 +457,7 @@ namespace Storix.Core.ViewModels.Orders.Sales
         #region Commands
 
         public IMvxCommand<int> OpenSalesOrderFormCommand { get; }
+        public IMvxCommand<int> OpenSalesOrderDetailsCommand { get; }
         public IMvxCommand<int> OpenSalesOrderDeleteCommand { get; }
         public IMvxAsyncCommand RefreshCommand { get; }
 
@@ -278,6 +465,9 @@ namespace Storix.Core.ViewModels.Orders.Sales
         {
             _modalNavigationControl.PopUp<SalesOrderFormViewModel>(orderId);
         }
+
+        private void ExecuteOpenSalesOrderDetails( int salesOrderId ) => _modalNavigationControl.PopUp<SalesOrderDetailsViewModel>(salesOrderId);
+
 
         private void ExecuteOpenSalesOrderDelete( int orderId )
         {

@@ -50,6 +50,7 @@ namespace Storix.Core.ViewModels.Orders.Purchase
 
             // Initialize commands
             OpenPurchaseOrderFormCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderForm);
+            OpenPurchaseOrderDetailsCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderDetails);
             OpenPurchaseOrderDeleteCommand = new MvxCommand<int>(ExecuteOpenPurchaseOrderDelete);
             RefreshCommand = new MvxAsyncCommand(LoadPurchaseOrdersAsync);
         }
@@ -68,6 +69,8 @@ namespace Storix.Core.ViewModels.Orders.Purchase
                 try
                 {
                     string supplierName = _orderStore.GetSupplierName(order.SupplierId ?? 0);
+                    string locationName = _orderStore.GetLocationName(order.LocationId);
+
                     DatabaseResult<decimal> totalAmountResult =
                         await _orderItemManager.GetOrderTotalValueAsync(order.OrderId);
 
@@ -75,7 +78,7 @@ namespace Storix.Core.ViewModels.Orders.Purchase
                         ? totalAmountResult.Value
                         : 0m;
 
-                    PurchaseOrderListDto dto = order.ToPurchaseOrderListDto(supplierName, totalAmount);
+                    PurchaseOrderListDto dto = order.ToPurchaseOrderListDto(supplierName, locationName, totalAmount);
                     PurchaseOrderListItemViewModel vm = new(dto);
 
                     // Update on UI thread
@@ -113,6 +116,8 @@ namespace Storix.Core.ViewModels.Orders.Purchase
                     }
 
                     string supplierName = _orderStore.GetSupplierName(order.SupplierId ?? 0);
+                    string locationName = _orderStore.GetLocationName(order.LocationId);
+
                     DatabaseResult<decimal> totalAmountResult =
                         await _orderItemManager.GetOrderTotalValueAsync(order.OrderId);
 
@@ -120,7 +125,7 @@ namespace Storix.Core.ViewModels.Orders.Purchase
                         ? totalAmountResult.Value
                         : 0m;
 
-                    PurchaseOrderListDto dto = order.ToPurchaseOrderListDto(supplierName, totalAmount);
+                    PurchaseOrderListDto dto = order.ToPurchaseOrderListDto(supplierName, locationName, totalAmount);
 
                     // Update on UI thread
                     await InvokeOnMainThreadAsync(() =>
@@ -273,17 +278,22 @@ namespace Storix.Core.ViewModels.Orders.Purchase
         #region Commands
 
         public IMvxCommand<int> OpenPurchaseOrderFormCommand { get; }
+        public IMvxCommand<int> OpenPurchaseOrderDetailsCommand { get; }
         public IMvxCommand<int> OpenPurchaseOrderDeleteCommand { get; }
         public IMvxAsyncCommand RefreshCommand { get; }
 
         private void ExecuteOpenPurchaseOrderForm( int orderId )
         {
-            _modalNavigationControl.PopUp<PurchaseOrderFormViewModel>(orderId);
+            _modalNavigationControl.PopUp<PurchaseOrderFormViewModel>(parameter: orderId);
         }
+
+        private void ExecuteOpenPurchaseOrderDetails( int purchaseOrderId ) =>
+            _modalNavigationControl.PopUp<PurchaseOrderDetailsViewModel>(parameter: purchaseOrderId);
+
 
         private void ExecuteOpenPurchaseOrderDelete( int orderId )
         {
-            _modalNavigationControl.PopUp<PurchaseOrderDeleteViewModel>(orderId);
+            _modalNavigationControl.PopUp<PurchaseOrderDeleteViewModel>(parameter: orderId);
         }
 
         #endregion

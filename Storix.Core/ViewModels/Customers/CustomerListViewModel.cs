@@ -41,6 +41,7 @@ namespace Storix.Core.ViewModels.Customers
             // Initialize commands
             OpenCustomerFormCommand = new MvxCommand<int>(ExecuteCustomerForm);
             OpenCustomerDeleteCommand = new MvxCommand<int>(ExecuteCustomerDelete);
+            OpenCustomerDetailsCommand = new MvxCommand<int>(ExecuteCustomerDetails);
 
         }
 
@@ -201,15 +202,21 @@ namespace Storix.Core.ViewModels.Customers
 
         public IMvxCommand<int> OpenCustomerFormCommand { get; }
         public IMvxCommand<int> OpenCustomerDeleteCommand { get; }
+        public IMvxCommand<int> OpenCustomerDetailsCommand { get; }
+
+        private void ExecuteCustomerForm( int customerId )
+        {
+            _modalNavigationControl.PopUp<CustomerFormViewModel>(customerId);
+        }
 
         private void ExecuteCustomerDelete( int customerId )
         {
             _modalNavigationControl.PopUp<CustomerDeleteViewModel>(customerId);
         }
 
-        private void ExecuteCustomerForm( int customerId )
+        private void ExecuteCustomerDetails( int customerId )
         {
-            _modalNavigationControl.PopUp<CustomerFormViewModel>(customerId);
+            _modalNavigationControl.PopUp<CustomerDetailsViewModel>(customerId);
         }
 
         #endregion
